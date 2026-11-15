@@ -1,0 +1,20 @@
+/* PokerIO cards: the same ivory as the platform's letter tiles. Loaded with the home page (cover).
+   A card takes its width from the `--cw` custom property of its container. */
+.pk-card {
+  --w: var(--cw, 48px);
+  flex: none; display: grid; place-content: center; justify-items: center;
+  width: var(--w); aspect-ratio: 5 / 7; border-radius: calc(var(--w) * 0.14);
+  background:
+    radial-gradient(120% 90% at 25% 10%, rgba(255, 255, 255, 0.75), transparent 55%),
+    linear-gradient(165deg, var(--tile-face), var(--tile-face-2));
+  color: var(--tile-ink);
+  box-shadow: 0 calc(var(--w) * 0.05) 0 var(--tile-edge), 0 6px 14px -4px rgba(0, 0, 0, 0.6);
+  font-family: var(--font-display); font-weight: 800; font-size: calc(var(--w) * 0.44); line-height: 0.95;
+  user-select: none; -webkit-user-select: none;
+}
+.pk-card i { font-style: normal; font-size: 0.95em; }
+.pk-card.is-red { color: #cf3a40; }
+.pk-card--back {
+  background: repeating-linear-gradient(45deg, #9a2c40 0 5px, #7d2233 5px 10px);
+  box-shadow: inset 0 0 0 calc(var(--w) * 0.07) var(--tile-face), 0 calc(var(--w) * 0.05) 0 var(--tile-edge), 0 6px 14px -4px rgba(0, 0, 0, 0.6);
+}

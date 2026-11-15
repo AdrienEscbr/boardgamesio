@@ -1,0 +1,5 @@
+/* Home-page thumbnail (loaded with the home page, not with the table). */
+.pk-cover { display: flex; align-items: flex-end; height: 42px; padding-left: 4px; --cw: 27px; } /* same height as the Scrabble tiles */
+.pk-cover__card { margin-right: -5px; transform: rotate(calc((var(--i) - 1) * 8deg)); transform-origin: 50% 100%; }
+.pk-cover__card:nth-child(2) { translate: 0 -3px; }
+.pk-cover .pk-card { box-shadow: 0 1px 0 var(--tile-edge), 0 4px 10px -4px rgba(0, 0, 0, 0.5); }
