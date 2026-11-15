@@ -6,6 +6,7 @@
   "scripts": { "dev": "vite --host", "build": "vite build", "preview": "vite preview --host" },
   "dependencies": {
     "@bgio/naval": "*",
+    "@bgio/p4": "*",
     "@bgio/scrabble": "*",
     "@bgio/tarot": "*",
     "@bgio/ui": "*",
