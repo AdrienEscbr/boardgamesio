@@ -1,0 +1,14 @@
+{
+  "name": "boardgamesio",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "games/*", "apps/*"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev:server": "npm run dev -w @bgio/server",
+    "dev:web": "npm run dev -w @bgio/web",
+    "start": "npm start -w @bgio/server",
+    "build": "npm run build -w @bgio/web",
+    "test": "node --test \"packages/*/test/*.test.js\" \"games/*/test/*.test.js\""
+  }
+}

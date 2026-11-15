@@ -1,0 +1,8 @@
+{
+  "name": "@bgio/ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { "./*": "./src/*" },
+  "peerDependencies": { "react": "^19", "motion": "^14", "zustand": "^5", "socket.io-client": "^4" }
+}
