@@ -7,9 +7,11 @@ import { playTiles } from '@bgio/scrabble/engine';
 import { createTarotPlugin, basicBot } from '@bgio/tarot/server';
 import { createNavalPlugin } from '@bgio/naval/server';
 import { FLEET, randomVolley } from '@bgio/naval/engine';
+import { createP4Plugin } from '@bgio/p4/server';
 
 const tarot = createTarotPlugin({ trickPauseMs: 0, chienPauseMs: 0 });
 const naval = createNavalPlugin({ placementMs: 60_000, finalPauseMs: 0 });
+const p4 = createP4Plugin({ roundPauseMs: 0 });
 
 /** Scrabble with a dictionary that accepts everything (moves are random in tests). */
 const scrabbleAnyWord = {
@@ -50,7 +52,7 @@ const clients = new Set();
 
 before(async () => {
   server = createPlatformServer({
-    games: [scrabbleAnyWord, race, tarot, naval],
+    games: [scrabbleAnyWord, race, tarot, naval, p4],
     origins: [],
     timings: { lobbyGraceMs: 150, awayTurnMs: 150, botMinMs: 20, botMaxMs: 40 },
   });
@@ -349,6 +351,28 @@ test('naval: a human places a fleet and sinks (or is sunk by) a robot over the n
   assert.equal(state.status, 'finished');
   assert.equal(state.game.results.ranking.length, 2);
   assert.equal(state.game.boards[bot.id].fleet.length, FLEET.length);
+  host.close();
+});
+
+test('p4: a human plays a round against a robot over the network', async () => {
+  const host = await connect();
+  const { room } = await host.call('room:create', { gameId: 'p4', settings: { target: 1, botLevel: 'easy' } });
+  await host.call('room:addBot', { roomId: room.id });
+  assert.equal((await host.call('room:start', { roomId: room.id })).ok, true);
+  const me = host.session.playerId;
+  let state = (await host.call('room:sync', { roomId: room.id })).room;
+  assert.equal(state.game.cols, 7);
+  for (let guard = 0; guard < 100 && state.status !== 'finished'; guard++) {
+    if (state.game.turn === me) {
+      assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'drop', col: 99 } })).error, 'INVALID_COLUMN');
+      const res = await host.call('game:action', { roomId: room.id, action: { type: 'drop', col: state.game.legal[0] } });
+      assert.equal(res.ok, true, res.error);
+    }
+    const seq = state.game.seq;
+    state = await host.nextState((s) => s.game && s.game.seq > seq);
+  }
+  assert.equal(state.status, 'finished');
+  assert.equal(state.game.results.ranking[0].wins, 1);
   host.close();
 });
 
