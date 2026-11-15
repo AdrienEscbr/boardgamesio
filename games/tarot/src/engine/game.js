@@ -464,6 +464,7 @@ export function viewFor(game, viewerId) {
     trickNumber: d.trickNumber,
     trick: d.trick,
     lastTrick: d.tricks[d.tricks.length - 1] ?? null,
+    tricks: d.tricks, // public: every finished trick was seen by all (lets bots and players count cards)
     poignees: d.poignees,
     // Help for the viewer's own decision (all derivable from what they already see).
     legal: myTurn && d.phase === 'playing' ? legalCards(hand, trickCards, playOpts(game)) : null,

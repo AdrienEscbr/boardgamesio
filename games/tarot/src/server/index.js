@@ -1,6 +1,6 @@
 // TarotIO as a platform game plugin (see packages/core-server/src/plugin.js).
 import {
-  CONTRACT_ORDER, GameError, autoDiscard, isBout, isKing, isTrump, callCard, callableCards, createGame, decideChelem, makeDiscard, markReady,
+  CONTRACT_ORDER, GameError, autoDiscard, botAction, isBout, isKing, isTrump, callCard, callableCards, createGame, decideChelem, makeDiscard, markReady,
   nextDeal, placeBid, playCard, stopGame, timeoutAction, viewFor,
 } from '../engine/index.js';
 
@@ -98,7 +98,7 @@ export const tarot = {
     return v;
   },
 
-  bot: basicBot,
+  bot: (view, playerId) => botAction(view, playerId),
 };
 
 export default tarot;
