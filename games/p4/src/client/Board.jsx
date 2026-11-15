@@ -35,12 +35,14 @@ function Slot({ seat, c, r, rows, win, clearing }) {
  * @param clearing  the round is over: every disc drops out through the bottom
  * @param ghostSeat colour of the disc held above the board (the player to move), or null
  * @param playable  columns one may drop into; onDrop(col) when one is chosen
+ * @param armed     touch screens: the column chosen by a first tap (the ghost waits above it)
  */
-export default function Board({ cols, rows, board, line = null, clearing = false, ghostSeat = null, playable = [], onDrop, className = '', style }) {
+export default function Board({ cols, rows, board, line = null, clearing = false, ghostSeat = null, playable = [], armed = null, onDrop, className = '', style }) {
   const [hover, setHover] = useState(null);
   const lit = new Set(line ?? []);
   const canPlay = !!onDrop && ghostSeat != null;
-  const col = canPlay && hover != null && playable.includes(hover) ? hover : null;
+  const target = armed ?? hover;
+  const col = canPlay && target != null && playable.includes(target) ? target : null;
 
   return (
     <div className={`p4-board ${canPlay ? 'is-live' : ''} ${className}`} style={{ '--cols': cols, '--rows': rows, ...style }}>
@@ -85,7 +87,7 @@ export default function Board({ cols, rows, board, line = null, clearing = false
                 <button
                   key={c}
                   type="button"
-                  className={`p4-col ${col === c ? 'is-hover' : ''}`}
+                  className={`p4-col ${col === c ? 'is-hover' : ''} ${armed === c ? 'is-armed' : ''}`}
                   disabled={!playable.includes(c)}
                   onPointerEnter={() => setHover(c)}
                   onFocus={() => setHover(c)}

@@ -1,0 +1,90 @@
+/* =========================================================
+   P4IO game screen. Builds on p4.css (board, discs).
+   ========================================================= */
+.p4-game {
+  height: 100dvh; min-height: 0;
+  display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
+}
+.p4-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2) 0; min-width: 0; }
+.p4-bar__title { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: var(--space-2); white-space: nowrap; overflow: hidden; }
+.p4-bar__name { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; }
+.p4-bar__chip { padding: 2px 9px; border-radius: var(--radius-full); background: var(--glass); font-size: var(--text-xs); font-weight: 800; }
+.p4-bar__sub { color: var(--ink-2); font-size: var(--text-xs); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.p4-bar__side { display: flex; gap: 2px; }
+.p4-icon { color: var(--ink-2); }
+@media (hover: hover) and (pointer: fine) { .p4-icon:hover { background: rgba(255, 255, 255, 0.08); color: var(--ink); } }
+
+/* players */
+.p4-players { list-style: none; margin: 0; padding: var(--space-2) var(--space-2) 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.p4-player {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+  padding: 4px 12px 4px 4px; border-radius: var(--radius-full); background: var(--glass);
+  font-weight: 700; font-size: var(--text-sm); overflow: hidden;
+  transition: box-shadow 200ms ease;
+}
+.p4-player .p4-disc { width: 26px; height: 26px; flex: none; }
+.p4-player.is-turn { box-shadow: 0 0 0 2px var(--brass), 0 0 22px -6px rgba(226, 182, 90, 0.9); }
+.p4-player.is-away { opacity: 0.6; }
+.p4-player__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 9em; }
+.p4-player__wins { display: inline-flex; gap: 3px; }
+.p4-player__wins i { width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(246, 236, 223, 0.5); }
+.p4-player__wins i.is-won { background: var(--brass); box-shadow: 0 0 6px rgba(226, 182, 90, 0.8); }
+.p4-player__wins b { font-size: var(--text-md); }
+.p4-timer { position: absolute; left: 12px; right: 12px; bottom: 2px; height: 2px; border-radius: 1px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.p4-timer span { display: block; height: 100%; background: var(--brass); transform-origin: 0 50%; animation-name: p4-timer; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes p4-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* the board, as big as the screen allows */
+.p4-stage { container-type: size; min-height: 0; display: grid; place-items: center; padding: 0 var(--space-2); }
+.p4-stage .p4-board { --cell: min(calc(100cqw / (var(--cols) + 0.75)), calc(100cqh / (var(--rows) + 1.75)), 88px); }
+
+.p4-status { display: flex; align-items: center; justify-content: center; gap: var(--space-3); min-height: 48px; padding: var(--space-1) var(--space-4) calc(var(--space-2) + var(--safe-bottom)); color: var(--ink-2); font-weight: 600; font-size: var(--text-sm); text-align: center; }
+.p4-col.is-armed { background: linear-gradient(to bottom, transparent calc(var(--cell) * 1.3), rgba(255, 220, 150, 0.22)); box-shadow: inset 0 0 0 2px rgba(226, 182, 90, 0.6); }
+
+.p4-brass-btn, .p4-drop-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  height: 44px; padding: 0 22px; border: 0; border-radius: var(--radius-full);
+  background: linear-gradient(180deg, #fff1c2, var(--brass) 50%, #b8862c);
+  color: #2a1a00; font: inherit; font-size: var(--text-md); font-weight: 800; cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 -2px 0 rgba(110, 70, 0, 0.2) inset, 0 10px 24px -10px rgba(226, 182, 90, 0.7);
+  transition: transform 160ms var(--ease-out), filter 200ms ease;
+}
+.p4-brass-btn { min-width: 160px; }
+.p4-brass-btn:active, .p4-drop-btn:active { transform: scale(0.97); }
+.p4-brass-btn:focus-visible, .p4-drop-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+@media (hover: hover) { .p4-brass-btn:hover, .p4-drop-btn:hover { filter: brightness(1.05); } }
+
+/* round banner */
+.p4-banner {
+  position: fixed; left: 50%; top: 24%; translate: -50% -50%; z-index: 60; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: var(--space-4) var(--space-6); border-radius: var(--radius-xl);
+  background: rgba(24, 15, 9, 0.92); box-shadow: 0 0 0 2px var(--brass), 0 24px 60px -16px rgba(0, 0, 0, 0.75);
+  text-align: center; pointer-events: none;
+}
+.p4-banner .p4-disc { width: 40px; height: 40px; margin-bottom: 4px; }
+.p4-banner strong { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 800; color: #ffe7b0; letter-spacing: -0.02em; }
+.p4-banner span { color: var(--ink-2); font-size: var(--text-sm); }
+.p4-banner { width: max-content; }
+@media (max-width: 599px) {
+  .p4-banner { width: calc(100vw - 32px); padding: var(--space-3) var(--space-4); }
+  .p4-banner strong { font-size: var(--text-xl); }
+}
+
+/* host pause */
+.p4-paused { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; background: rgba(15, 9, 5, 0.55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.p4-paused__card { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-6) var(--space-8); border-radius: var(--radius-xl); background: rgba(30, 19, 12, 0.94); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 30px 60px -20px rgba(0, 0, 0, 0.7); text-align: center; color: var(--ink); }
+.p4-paused__card strong { font-family: var(--font-display); font-size: var(--text-2xl); }
+.p4-paused__text { color: var(--ink-2); margin-bottom: var(--space-3); }
+
+/* results */
+.p4-rank-disc { width: 44px; height: 44px; flex: none; }
+
+@media (min-width: 900px) {
+  .p4-bar { padding: var(--space-2) var(--space-4) 0; }
+  .p4-players { gap: var(--space-3); }
+  .p4-player { font-size: var(--text-md); padding: 5px 14px 5px 5px; }
+  .p4-player .p4-disc { width: 32px; height: 32px; }
+}
