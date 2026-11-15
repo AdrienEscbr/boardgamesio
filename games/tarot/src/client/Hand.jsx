@@ -11,7 +11,7 @@ import Card from './Card.jsx';
  * mode 'discard' : cards toggle in and out of `selected`; `locked` cannot be chosen
  * mode 'view'    : no interaction
  */
-export default function Hand({ cards, mode = 'view', playable = [], selected = [], fresh = [], locked = [], onPlay, onRefuse, onToggle, finePointer }) {
+export default function Hand({ cards, mode = 'view', playable = [], selected = [], fresh = [], locked = [], called = null, onPlay, onRefuse, onToggle, finePointer }) {
   const ref = useRef(null);
   const [width, setWidth] = useState(360);
   const [armed, setArmed] = useState(null); // touch: first tap arms a card, second tap plays it
@@ -71,7 +71,7 @@ export default function Hand({ cards, mode = 'view', playable = [], selected = [
             <motion.button
               key={card}
               type="button"
-              className={`t-hand__card ${isPlayable ? 'is-playable' : ''} ${mode === 'play' && !isPlayable ? 'is-dim' : ''} ${isSelected ? 'is-selected' : ''} ${fresh.includes(card) ? 'is-fresh' : ''} ${locked.includes(card) ? 'is-locked' : ''}`}
+              className={`t-hand__card ${isPlayable ? 'is-playable' : ''} ${mode === 'play' && !isPlayable ? 'is-dim' : ''} ${isSelected ? 'is-selected' : ''} ${fresh.includes(card) ? 'is-fresh' : ''} ${locked.includes(card) ? 'is-locked' : ''} ${card === called ? 'is-called' : ''}`}
               style={{ zIndex: z, width: cardW }}
               initial={{ opacity: 0, y: 60, x, rotate: rot }}
               animate={{ opacity: 1, x, y: y - (isSelected ? cardW * 0.32 : 0), rotate: rot }}
@@ -92,6 +92,7 @@ export default function Hand({ cards, mode = 'view', playable = [], selected = [
               aria-disabled={mode === 'play' && !isPlayable}
             >
               <Card card={card} />
+              {card === called && <span className="t-hand__called">Appelé</span>}
             </motion.button>
           );
         })}

@@ -299,7 +299,40 @@
 .t-call__card { position: relative; width: clamp(56px, 16vw, 84px); transition: transform var(--dur-press) var(--ease-out); }
 .t-call__card:active { transform: scale(0.95); }
 @media (hover: hover) and (pointer: fine) { .t-call__card:hover { transform: translateY(-6px); } }
-.t-call__mine { position: absolute; left: 50%; bottom: -8px; translate: -50% 100%; font-size: 10px; white-space: nowrap; color: var(--felt-ink-2); }
+.t-call { align-items: flex-end; padding-bottom: 18px; }
+.t-call__card.is-good .tarot-card { box-shadow: 0 0 0 2px var(--gold), 0 10px 24px -10px rgba(246, 207, 122, 0.7); }
+.t-call__card.is-mine { width: clamp(46px, 12vw, 64px); filter: grayscale(0.7) brightness(0.62); transition: filter 200ms ease, transform var(--dur-press) var(--ease-out); }
+.t-call__card.is-mine.is-armed { filter: none; }
+.t-call__card.is-mine.is-armed .tarot-card { box-shadow: 0 0 0 2px #ff8f6b, 0 10px 24px -10px rgba(255, 143, 107, 0.7); }
+.t-call__sep { align-self: stretch; width: 1px; margin: 8px var(--space-1); background: rgba(255, 255, 255, 0.18); }
+.t-call__mine { position: absolute; left: 50%; bottom: -6px; translate: -50% 100%; font-size: 10px; font-weight: 600; white-space: nowrap; color: var(--felt-ink-2); }
+
+/* ---- the called partner learns it's them ---- */
+.t-called {
+  position: fixed; inset: 0; z-index: 135; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-5);
+  background: radial-gradient(circle at 50% 42%, rgba(246, 207, 122, 0.22), rgba(6, 18, 12, 0.78) 60%);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); cursor: pointer; perspective: 900px;
+}
+.t-called__card { position: relative; width: clamp(110px, 26vw, 170px); transform-style: preserve-3d; }
+.t-called__card .tarot-card { box-shadow: 0 0 0 3px var(--gold), 0 30px 60px -20px rgba(0, 0, 0, 0.8); }
+.t-called__glow {
+  position: absolute; inset: -18%; border-radius: 50%; z-index: -1;
+  background: radial-gradient(circle, rgba(246, 207, 122, 0.55), transparent 65%);
+  animation: t-called-pulse 1.4s ease-in-out infinite;
+}
+@keyframes t-called-pulse { 0%, 100% { opacity: 0.55; scale: 0.92; } 50% { opacity: 1; scale: 1.08; } }
+.t-called__text { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 var(--space-4); text-align: center; color: var(--felt-ink); }
+.t-called__text strong { font-family: var(--font-display); font-size: var(--text-3xl); font-weight: 800; color: var(--gold); letter-spacing: -0.02em; }
+.t-called__text span { font-size: var(--text-md); font-weight: 600; }
+.t-called__text small { font-size: var(--text-sm); color: var(--felt-ink-2); }
+@media (prefers-reduced-motion: reduce) { .t-called__glow { animation: none; } }
+
+/* the called card in the partner's hand, while the partnership is secret */
+.t-hand__card.is-called .tarot-card { box-shadow: 0 0 0 3px var(--gold), 0 0 22px -2px rgba(246, 207, 122, 0.8); }
+.t-hand__called {
+  position: absolute; left: 50%; top: -9px; translate: -50% 0; z-index: 2; padding: 1px 7px; border-radius: var(--radius-full);
+  background: var(--gold); color: #2a1a00; font-size: 10px; font-weight: 800; white-space: nowrap; pointer-events: none;
+}
 .t-poignee { margin-top: var(--space-2); display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); }
 .t-poignee__opts { display: flex; flex-wrap: wrap; gap: 6px; }
 .t-chip-btn { padding: 5px 10px; border-radius: var(--radius-full); background: rgba(255, 255, 255, 0.1); font-size: var(--text-xs); font-weight: 700; color: var(--felt-ink); }
@@ -422,7 +455,7 @@
 @media (min-width: 900px) {
   /* Use the room: cards and seats grow with the window (height-bound, so the hand always fits). */
   .tarot { --fan-x: 108px; --fan-y: 100px; --fan-side: 112px; }
-  .tarot__table { --centre-top: calc(var(--seat-half-h) * 2 + 8px); --trick-w: min(clamp(96px, 12.5vh, 150px), calc(var(--centre-h) / 2.7), 18cqw); }
+  .tarot__table { --centre-top: calc(var(--seat-half-h) * 2 + 8px); --trick-w: min(clamp(150px, 19.5vh, 235px), calc(var(--centre-h) / 1.73), 28cqw); }
   .tarot__table.seats-3 { --centre-top: 26cqh; }
   .t-order { padding: 4px 12px 4px 14px; }
   .t-order__name { font-size: var(--text-sm); max-width: 120px; }
@@ -432,7 +465,7 @@
   .t-seat__score { font-size: var(--text-md); }
   .t-chip { height: 22px; font-size: 12px; }
   .t-hidden__card { width: 30px; left: -15px; top: -24px; }
-  .t-chien__slot { width: min(clamp(64px, 8vh, 96px), calc(var(--centre-h) * 0.5 / 1.6), 9cqw); }
+  .t-chien__slot { width: min(clamp(100px, 12.5vh, 150px), calc(var(--centre-h) * 0.488), 14cqw); }
   .t-panel { padding: var(--space-3) var(--space-4); }
   .tarot__bar { padding: var(--space-2) var(--space-4) 0; }
   .t-deal { font-size: var(--text-sm); padding: 4px 12px 4px 5px; }

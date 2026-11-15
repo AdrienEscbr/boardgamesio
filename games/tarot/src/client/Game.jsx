@@ -50,6 +50,7 @@ export default function Game({ room, readOnly = false, onExitBoard }) {
   const [poignee, setPoignee] = useState(null);
   const [scoringOpen, setScoringOpen] = useState(false);
   const [moment, setMoment] = useState(null); // remarkable move banner
+  const [calledReveal, setCalledReveal] = useState(null); // "it's you!" for the called partner
   const [spotlight, setSpotlight] = useState(null); // player whose trick card is hovered
   // The bottom-left corner is my seat and my hand: notifications go to the top here.
   useToastPlacement('top');
@@ -169,7 +170,13 @@ export default function Game({ room, readOnly = false, onExitBoard }) {
       setMoment({ id: 'chelem', title: 'Chelem !', subtitle: v.result.slamBy === 'attack' ? 'L’attaque remporte tous les plis' : 'La défense remporte tous les plis', big: true, key: `slam-${v.donneNumber}` });
     }
     if (v.contract && !before.contract) toast({ title: `${nameOf(v.takerId)} ${v.takerId === me ? 'prenez' : 'prend'} : ${CONTRACT_LABELS[v.contract]}` });
-    if (v.calledCard && !before.calledCard) toast({ title: `${nameOf(v.takerId)} ${v.takerId === me ? 'appelez' : 'appelle'} ${cardLabel(v.calledCard)}`, description: v.iAmPartner ? 'C’est vous ! Gardez le secret.' : undefined });
+    if (v.calledCard && !before.calledCard) {
+      if (v.iAmPartner) {
+        setCalledReveal({ card: v.calledCard, taker: nameOf(v.takerId), key: `${v.donneNumber}` });
+        sound('bingo');
+        haptic('success');
+      } else toast({ title: `${nameOf(v.takerId)} ${v.takerId === me ? 'appelez' : 'appelle'} ${cardLabel(v.calledCard)}` });
+    }
     if (v.poignees.length > before.poignees.length) {
       const p = v.poignees[v.poignees.length - 1];
       if (p.playerId !== me) toast({ title: `${nameOf(p.playerId)} annonce une ${POIGNEE_LABELS[p.level].toLowerCase()}`, description: p.cards.map((c) => (c === EXCUSE ? 'Excuse' : c.slice(1))).join(' · ') });
@@ -186,6 +193,12 @@ export default function Game({ room, readOnly = false, onExitBoard }) {
     if (turn?.playerId === me && prevTurn.current !== me && !readOnly) { sound('turn'); haptic('turn'); }
     prevTurn.current = turn?.playerId;
   }, [turn?.playerId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!calledReveal) return undefined;
+    const t = setTimeout(() => setCalledReveal(null), 4200);
+    return () => clearTimeout(t);
+  }, [calledReveal]);
 
   useEffect(() => {
     if (!moment) return undefined;
@@ -348,6 +361,7 @@ export default function Game({ room, readOnly = false, onExitBoard }) {
           selected={selected}
           fresh={discarding ? (v.chien ?? []) : []}
           locked={locked}
+          called={v.iAmPartner ? v.calledCard : null}
           finePointer={finePointer}
           onPlay={play}
           onRefuse={refuse}
@@ -370,6 +384,40 @@ export default function Game({ room, readOnly = false, onExitBoard }) {
                   Reprendre
                 </button>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {calledReveal && (
+          <motion.div
+            key={calledReveal.key}
+            className="t-called"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.25 } }}
+            onClick={() => setCalledReveal(null)}
+            role="alert"
+          >
+            <motion.div
+              className="t-called__card"
+              initial={{ rotateY: 180, scale: 0.5, y: 40 }}
+              animate={{ rotateY: 0, scale: 1, y: 0 }}
+              transition={{ type: 'spring', bounce: 0.35, duration: 0.9, delay: 0.1 }}
+            >
+              <span className="t-called__glow" aria-hidden />
+              <Card card={calledReveal.card} />
+            </motion.div>
+            <motion.div
+              className="t-called__text"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45, duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+            >
+              <strong>C’est vous !</strong>
+              <span>{calledReveal.taker} a appelé {`${calledReveal.card.endsWith('13') ? 'la' : 'le'} ${cardLabel(calledReveal.card).toLowerCase()}`} : vous jouez ensemble.</span>
+              <small>Gardez le secret : personne d’autre ne le sait.</small>
             </motion.div>
           </motion.div>
         )}
