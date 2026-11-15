@@ -4,6 +4,7 @@ import { io as ioClient } from 'socket.io-client';
 import { createPlatformServer, GameError, isLocalNetworkOrigin } from '../src/index.js';
 import { scrabble } from '@bgio/scrabble/server';
 import { playTiles } from '@bgio/scrabble/engine';
+import { tarot, basicBot } from '@bgio/tarot/server';
 
 /** Scrabble with a dictionary that accepts everything (moves are random in tests). */
 const scrabbleAnyWord = {
@@ -44,7 +45,7 @@ const clients = new Set();
 
 before(async () => {
   server = createPlatformServer({
-    games: [scrabbleAnyWord, race],
+    games: [scrabbleAnyWord, race, tarot],
     origins: [],
     timings: { lobbyGraceMs: 150, awayTurnMs: 150, botMinMs: 20, botMaxMs: 40 },
   });
@@ -257,6 +258,36 @@ test('lobby: a reload keeps the place, staying away loses it, the host role move
   const other = await connect();
   assert.equal((await other.call('room:join', { roomId: room.id })).error, 'ROOM_NOT_FOUND');
   host.close(); other.close();
+});
+
+test('tarot: a human and two bots play a full deal over the network', async () => {
+  const host = await connect();
+  const { room } = await host.call('room:create', { gameId: 'tarot', settings: { donnes: 0 } });
+  await host.call('room:addBot', { roomId: room.id });
+  await host.call('room:addBot', { roomId: room.id });
+  assert.equal((await host.call('room:start', { roomId: room.id })).ok, true);
+  const me = host.session.playerId;
+  let state = (await host.call('room:sync', { roomId: room.id })).room;
+  assert.equal(state.game.myHand.length, 24);
+  for (let guard = 0; guard < 400; guard++) {
+    if (state.game.phase === 'scoring') break;
+    if (state.turn?.playerId === me) {
+      // Never offered a card that is not ours, and legal cards come from our hand.
+      for (const c of state.game.legal ?? []) assert.ok(state.game.myHand.includes(c));
+      const action = state.game.phase === 'bidding' && !state.game.highestBid ? { type: 'bid', bid: 'GARDE' } : basicBot(state.game);
+      const res = await host.call('game:action', { roomId: room.id, action });
+      assert.equal(res.ok, true, res.error);
+    }
+    const seq = state.game.seq;
+    state = await host.nextState((s) => s.game && s.game.seq > seq);
+  }
+  assert.equal(state.game.phase, 'scoring');
+  const total = Object.values(state.game.result.deltas).reduce((a, b) => a + b, 0);
+  assert.equal(total, 0);
+  assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'stop' } })).ok, true);
+  const end = await host.nextState((s) => s.status === 'finished');
+  assert.equal(end.game.results.ranking.length, 3);
+  host.close();
 });
 
 test('nicknames are validated', async () => {

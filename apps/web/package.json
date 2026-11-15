@@ -6,6 +6,7 @@
   "scripts": { "dev": "vite --host", "build": "vite build", "preview": "vite preview --host" },
   "dependencies": {
     "@bgio/scrabble": "*",
+    "@bgio/tarot": "*",
     "@bgio/ui": "*",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",

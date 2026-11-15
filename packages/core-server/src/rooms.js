@@ -219,7 +219,9 @@ export class RoomManager {
     for (const id of [...room.members]) if (!this.isPresent(room, id) && id !== playerId) this._dropMember(room, id);
     if (room.members.length < plugin.minPlayers) throw new GameError('NOT_ENOUGH_PLAYERS', { min: plugin.minPlayers });
     if (room.members.length > plugin.maxPlayers) throw new GameError('TOO_MANY_PLAYERS', { max: plugin.maxPlayers });
-    room.game = plugin.createGame({ playerIds: [...room.members], settings: { ...room.settings }, rng: this.rng, now: this.now() });
+    room.game = plugin.createGame({
+      playerIds: [...room.members], botIds: [...room.bots.keys()], settings: { ...room.settings }, rng: this.rng, now: this.now(),
+    });
     room.status = 'playing';
     room.turn = null;
     room.paused = false;
@@ -239,7 +241,7 @@ export class RoomManager {
   }
 
   _apply(room, playerId, action, auto) {
-    const result = this.plugin(room).act(room.game, playerId, action, { rng: this.rng, now: this.now(), auto });
+    const result = this.plugin(room).act(room.game, playerId, action, { rng: this.rng, now: this.now(), auto, isHost: playerId === room.hostId });
     this._afterChange(room);
     return result;
   }

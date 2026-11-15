@@ -4,5 +4,5 @@
   "private": true,
   "type": "module",
   "scripts": { "start": "node index.js", "dev": "node --watch index.js" },
-  "dependencies": { "@bgio/core-server": "*", "@bgio/scrabble": "*" }
+  "dependencies": { "@bgio/core-server": "*", "@bgio/scrabble": "*", "@bgio/tarot": "*" }
 }

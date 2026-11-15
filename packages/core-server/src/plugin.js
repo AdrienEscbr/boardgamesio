@@ -9,7 +9,7 @@
  * @property {object} defaultSettings          Must contain `maxPlayers` and `turnSeconds`.
  * @property {(base: object, patch: object, ctx: { memberCount: number }) => object} sanitizeSettings
  *           Returns validated settings; throws GameError('INVALID_SETTINGS') otherwise.
- * @property {(opts: { playerIds: string[], settings: object, rng: () => number, now: number }) => object} createGame
+ * @property {(opts: { playerIds: string[], botIds: string[], settings: object, rng: () => number, now: number }) => object} createGame
  * @property {(game: object, playerId: string, action: object, ctx: Ctx) => any} act
  *           Applies a player's action (`{ type, ...payload }`), mutating `game`. Throws GameError when illegal.
  * @property {(game: object) => Pending | null} pending
@@ -26,7 +26,7 @@
  *           Chooses an action from the bot's own view (so bots cannot cheat).
  * @property {() => void} [preload]           Warm-up at boot (dictionaries…).
  *
- * @typedef {{ rng: () => number, now: number, auto?: boolean }} Ctx
+ * @typedef {{ rng: () => number, now: number, auto?: boolean, isHost?: boolean }} Ctx
  * @typedef {{ turn: object | null, nickname: (id: string) => string }} ViewCtx
  * @typedef {{ key: string, playerId?: string, autoMs?: number, durationMs?: number }} Pending
  */
