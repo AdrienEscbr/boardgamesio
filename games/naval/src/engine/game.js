@@ -2,6 +2,7 @@
 // Pure apart from the injected rng. The state is mutated in place; every action validates
 // everything before touching it, so a refused action changes nothing.
 import { CELLS, FLEET, fleetError, isCell, lengthOf, randomFleet, shipCells } from './fleet.js';
+import { BOT_LEVELS } from './bot.js';
 
 export class GameError extends Error {
   constructor(code, details) {
@@ -34,6 +35,7 @@ export function createGame({ playerIds, botIds = [], settings = {}, rng = Math.r
     phase: 'placement',
     mode,
     turnMs: (settings.turnSeconds ?? 30) * 1000,
+    botLevel: BOT_LEVELS.includes(settings.botLevel) ? settings.botLevel : 'normal',
     players: playerIds.map((id) => ({ id, isBot: botIds.includes(id) })),
     boards: Object.fromEntries(playerIds.map((id) => [id, { ships: null, received: {} }])),
     ready: [],
@@ -222,6 +224,7 @@ export function viewFor(game, viewerId) {
     status: game.status,
     phase: game.phase,
     mode: game.mode,
+    botLevel: game.botLevel,
     me: viewerId,
     players: game.players.map((p) => ({
       id: p.id,

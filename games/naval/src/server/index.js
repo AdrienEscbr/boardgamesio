@@ -1,5 +1,5 @@
 // NavalIO as a platform game plugin (see packages/core-server/src/plugin.js).
-import { GameError, MODES, botAction, createGame, endPlacement, fire, placeFleet, viewFor } from '../engine/index.js';
+import { BOT_LEVELS, GameError, MODES, botAction, createGame, endPlacement, fire, placeFleet, smartVolley, viewFor } from '../engine/index.js';
 
 export const TURN_SECONDS_OPTIONS = [15, 20, 30, 45];
 const PLACEMENT_MS = 90_000;
@@ -12,6 +12,10 @@ function sanitizeSettings(base, patch = {}, { memberCount = 1 } = {}) {
   if (patch.mode !== undefined) {
     if (!MODES.includes(patch.mode)) throw new GameError('INVALID_SETTINGS', { field: 'mode' });
     next.mode = patch.mode;
+  }
+  if (patch.botLevel !== undefined) {
+    if (!BOT_LEVELS.includes(patch.botLevel)) throw new GameError('INVALID_SETTINGS', { field: 'botLevel' });
+    next.botLevel = patch.botLevel;
   }
   if (patch.turnSeconds !== undefined) {
     if (!TURN_SECONDS_OPTIONS.includes(patch.turnSeconds)) throw new GameError('INVALID_SETTINGS', { field: 'turnSeconds' });
@@ -35,7 +39,7 @@ export function createNavalPlugin({ placementMs = PLACEMENT_MS } = {}) {
     name: 'NavalIO',
     minPlayers: 2,
     maxPlayers: 4,
-    defaultSettings: { mode: 'classic', turnSeconds: 30, maxPlayers: 4 },
+    defaultSettings: { mode: 'classic', botLevel: 'normal', turnSeconds: 30, maxPlayers: 4 },
     sanitizeSettings,
 
     createGame: ({ playerIds, botIds, settings, rng }) => createGame({ playerIds, botIds, settings, rng }),
@@ -60,8 +64,8 @@ export function createNavalPlugin({ placementMs = PLACEMENT_MS } = {}) {
       endPlacement(game, { rng });
     },
 
-    // Time out or away: the robot plays for the player.
-    timeoutAction: (game, playerId) => botAction(viewFor(game, playerId), playerId, seeded(game.seq + 1)),
+    // Time out or away: a "normal" robot plays for the player, whatever the robots' level.
+    timeoutAction: (game, playerId) => ({ type: 'fire', shots: smartVolley(viewFor(game, playerId), seeded(game.seq + 1), 'normal') }),
     isFinished: (game) => game.status === 'finished',
 
     view(game, viewerId, { turn, nickname }) {
