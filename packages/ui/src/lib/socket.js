@@ -85,4 +85,21 @@ export const act = (roomId, action) => call('game:action', { roomId, action });
 // Wake the server early (Render cold start) as soon as the app loads.
 connect();
 
+// Keep-alive: Render's free tier puts the server to sleep after ~15 minutes without
+// HTTP requests, and WebSocket traffic does not count. While a tab is open and visible,
+// ping /health every 5 minutes so a game in progress is never interrupted.
+const KEEP_ALIVE_MS = 5 * 60_000;
+let keepAlive = null;
+function ping() {
+  fetch(`${SERVER_URL.replace(/\/$/, '')}/health`, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+}
+function syncKeepAlive() {
+  if (document.hidden) { clearInterval(keepAlive); keepAlive = null; return; }
+  if (!keepAlive) { ping(); keepAlive = setInterval(ping, KEEP_ALIVE_MS); }
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', syncKeepAlive);
+  syncKeepAlive();
+}
+
 if (import.meta.env.DEV) window.__scrabble = { useApp, socket };

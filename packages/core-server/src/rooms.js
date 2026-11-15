@@ -105,6 +105,7 @@ export class RoomManager {
       endsAt: room.paused ? null : (room.awayDeadline ?? t.endsAt),
       durationMs: t.durationMs,
       paused: !!room.paused,
+      pausedByHost: !!room.hostPaused,
     };
   }
 
@@ -127,6 +128,7 @@ export class RoomManager {
       game: null,
       turn: null,
       paused: false,
+      hostPaused: false,
       awayDeadline: null,
       createdAt: this.now(),
       timers: { turn: null, bot: null, cleanup: null, grace: new Map() },
@@ -225,9 +227,28 @@ export class RoomManager {
     room.status = 'playing';
     room.turn = null;
     room.paused = false;
+    room.hostPaused = false;
     room.awayDeadline = null;
     this._changed(room);
     return room;
+  }
+
+  /** The host freezes the game: clocks and bots stop, nobody can act until it resumes. */
+  pause(roomId, playerId) {
+    const room = this.get(roomId);
+    this._assertHost(room, playerId);
+    if (room.status !== 'playing') throw new GameError('NO_GAME');
+    room.hostPaused = true;
+    this._changed(room);
+  }
+
+  /** Resumes a paused game; whoever has to act gets a full turn again. */
+  resume(roomId, playerId) {
+    const room = this.get(roomId);
+    this._assertHost(room, playerId);
+    if (room.status !== 'playing') throw new GameError('NO_GAME');
+    room.hostPaused = false;
+    this._changed(room);
   }
 
   // ---- game actions -------------------------------------------------------
@@ -237,6 +258,7 @@ export class RoomManager {
     if (!room.game || room.status !== 'playing') throw new GameError('NO_GAME');
     if (!room.members.includes(playerId)) throw new GameError('NOT_IN_GAME');
     if (!action || typeof action.type !== 'string') throw new GameError('INVALID_ACTION');
+    if (room.hostPaused) throw new GameError('GAME_PAUSED');
     return this._apply(room, playerId, action, false);
   }
 
@@ -309,8 +331,8 @@ export class RoomManager {
     }
     const turn = room.turn;
 
-    // Nobody human is watching: freeze the game until someone comes back.
-    if (!this.humansPresent(room)) { room.paused = true; room.awayDeadline = null; return; }
+    // Nobody human is watching, or the host paused: freeze the game until it can go on.
+    if (!this.humansPresent(room) || room.hostPaused) { room.paused = true; room.awayDeadline = null; return; }
     if (room.paused) {
       room.paused = false;
       turn.startedAt = now;

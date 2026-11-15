@@ -204,7 +204,7 @@
 
 @media (min-width: 640px) {
   .sheet-root { place-items: center; padding: var(--space-6); }
-  .sheet { max-width: 440px; border-radius: var(--radius-xl); padding-bottom: 0; }
+  .sheet { max-width: 440px; max-height: calc(100dvh - 2 * var(--space-6)); border-radius: var(--radius-xl); padding-bottom: 0; }
   .sheet--lg { max-width: 560px; }
 }
 

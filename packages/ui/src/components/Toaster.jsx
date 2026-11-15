@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { create } from 'zustand';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useMediaQuery } from '../lib/useMediaQuery.js';
@@ -7,6 +8,8 @@ import './toaster.css';
 let seq = 0;
 const useToasts = create((set) => ({
   toasts: [],
+  placement: 'auto', // 'auto': top on phones, bottom-left on desktop; 'top': always top
+  setPlacement: (placement) => set({ placement }),
   push: (t) => set((s) => ({ toasts: [...s.toasts.slice(-2), t] })),
   remove: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 }));
@@ -14,6 +17,14 @@ const useToasts = create((set) => ({
 /**
  * toast('Texte') / toast({ title, description, tone: 'error' | 'success' | 'info', icon, duration })
  */
+/** Lets a screen move notifications away from its own controls while it is mounted. */
+export function useToastPlacement(placement) {
+  useEffect(() => {
+    useToasts.getState().setPlacement(placement);
+    return () => useToasts.getState().setPlacement('auto');
+  }, [placement]);
+}
+
 export function toast(input) {
   const t = typeof input === 'string' ? { title: input } : input;
   const id = ++seq;
@@ -29,10 +40,12 @@ export default function Toaster() {
   const remove = useToasts((s) => s.remove);
   const reduce = useReducedMotion();
   // Enter and leave through the nearest screen edge: top on phones, bottom on desktop.
-  const fromBottom = useMediaQuery('(min-width: 1024px)');
+  const wide = useMediaQuery('(min-width: 1024px)');
+  const placement = useToasts((s) => s.placement);
+  const fromBottom = wide && placement === 'auto';
   const off = fromBottom ? 24 : -24;
   return (
-    <div className="toaster" aria-live="polite" role="status">
+    <div className={`toaster ${placement === 'top' ? 'toaster--top' : ''}`} aria-live="polite" role="status">
       <AnimatePresence initial={false}>
         {toasts.map((t) => (
           <motion.div

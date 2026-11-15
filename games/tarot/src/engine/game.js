@@ -99,6 +99,8 @@ function startDonne(game, rng, { rotate = true, redeal = false } = {}) {
       trick: null,
       trickNumber: 0,
       tricks: [],
+      trickPause: false, // a finished trick stays on the table for a moment
+      chienPause: false, // the chien stays face up for everyone before a bot taker discards
       firstCardPlayed: [],
       poignees: [],
       result: null,
@@ -175,6 +177,12 @@ function afterCall(game) {
   if (d.contract === 'PRISE' || d.contract === 'GARDE') {
     d.phase = 'discard';
     d.hands[d.takerId] = [...d.hands[d.takerId], ...d.chien];
+    // A bot would discard within a second: give the table time to read the chien.
+    if (game.botIds.includes(d.takerId)) {
+      d.chienPause = true;
+      d.turn = null;
+      return;
+    }
   } else {
     d.phase = 'chelem';
   }
@@ -274,7 +282,24 @@ export function playCard(game, playerId, card, { poignee = null } = {}) {
   if (last) { endDonne(game); return; }
   d.trickNumber += 1;
   d.trick = { leaderId: winnerId, cards: [] };
-  d.turn = winnerId;
+  // Nobody plays until everyone has seen who won the trick (see resumePlay).
+  d.turn = null;
+  d.trickPause = true;
+}
+
+/** Ends the pause after a trick (the winner leads) or after the chien was shown (the taker discards). */
+export function resumePlay(game) {
+  const d = game.donne;
+  if (d.chienPause) {
+    d.chienPause = false;
+    d.turn = d.takerId;
+    game.seq += 1;
+    return;
+  }
+  if (d.phase !== 'playing' || !d.trickPause) return;
+  d.trickPause = false;
+  d.turn = d.trick.leaderId;
+  game.seq += 1;
 }
 
 export const teamOf = (d, id) => (id === d.takerId || (id != null && id === d.partnerId) ? 'attack' : 'defense');
@@ -352,7 +377,13 @@ function endDonne(game) {
   d.phase = 'scoring';
   d.turn = null;
   d.ready = game.botIds.filter((id) => seatOf(game, id) >= 0);
-  if (game.settings.donnes && game.donneNumber >= game.settings.donnes) finishGame(game);
+  d.lastDeal = !!game.settings.donnes && game.donneNumber >= game.settings.donnes;
+}
+
+/** After the summary: the next deal, or the end of the game after the last one. */
+function afterSummary(game, rng) {
+  if (game.donne.lastDeal) finishGame(game);
+  else startDonne(game, rng);
 }
 
 function finishGame(game) {
@@ -372,11 +403,11 @@ export function markReady(game, playerId, { rng = Math.random } = {}) {
   if (d.phase !== 'scoring') throw new GameError('WRONG_PHASE', { phase: d.phase });
   if (!d.ready.includes(playerId)) d.ready.push(playerId);
   game.seq += 1;
-  if (d.ready.length >= game.n) startDonne(game, rng);
+  if (d.ready.length >= game.n) afterSummary(game, rng);
 }
 
 export function nextDeal(game, { rng = Math.random } = {}) {
-  if (game.status === 'playing' && game.donne.phase === 'scoring') startDonne(game, rng);
+  if (game.status === 'playing' && game.donne.phase === 'scoring') afterSummary(game, rng);
 }
 
 /** Ends an open-ended game after a deal (host decision). */
@@ -463,6 +494,8 @@ export function viewFor(game, viewerId) {
     chelemAnnounced: d.chelemAnnounced,
     trickNumber: d.trickNumber,
     trick: d.trick,
+    trickPause: d.trickPause,
+    chienPause: d.chienPause,
     lastTrick: d.tricks[d.tricks.length - 1] ?? null,
     tricks: d.tricks, // public: every finished trick was seen by all (lets bots and players count cards)
     poignees: d.poignees,
@@ -474,6 +507,7 @@ export function viewFor(game, viewerId) {
     counting: game.settings.countingAid && d.phase === 'playing' && (game.n < 5 || partnerKnown) ? countSoFar(d) : null,
     result: d.result,
     ready: d.phase === 'scoring' ? d.ready : [],
+    lastDeal: !!d.lastDeal,
     history: game.history,
     notice: game.notice,
     seq: game.seq,

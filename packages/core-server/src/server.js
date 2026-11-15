@@ -101,6 +101,8 @@ export function createPlatformServer({
     on('room:addBot', ({ roomId }) => ({ botId: rooms.addBot(roomId, playerId) }));
     on('room:removeBot', ({ roomId, botId }) => { rooms.removeBot(roomId, playerId, botId); });
     on('room:start', ({ roomId }) => { rooms.start(roomId, playerId); });
+    on('room:pause', ({ roomId }) => { rooms.pause(roomId, playerId); });
+    on('room:resume', ({ roomId }) => { rooms.resume(roomId, playerId); });
     on('room:sync', ({ roomId }) => ({ room: rooms.view(rooms.get(roomId), playerId) }));
 
     on('game:action', ({ roomId, action }) => ({ result: rooms.act(roomId, playerId, action) }));

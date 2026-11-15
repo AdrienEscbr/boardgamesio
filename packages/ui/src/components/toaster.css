@@ -13,6 +13,7 @@
 /* Desktop: bottom-left, in the free space under the players — never over the board or the history. */
 @media (min-width: 1024px) {
   .toaster { top: auto; bottom: var(--space-6); left: var(--space-6); transform: none; width: 300px; }
+  .toaster.toaster--top { top: calc(var(--safe-top) + var(--space-12)); bottom: auto; left: var(--space-6); }
 }
 .toast {
   pointer-events: auto;

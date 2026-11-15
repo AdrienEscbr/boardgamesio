@@ -21,6 +21,7 @@ const messages = {
   GAME_OVER: 'La partie est terminée.',
   NOT_IN_GAME: 'Vous ne participez pas à cette partie.',
   NOT_YOUR_TURN: 'Ce n’est pas votre tour.',
+  GAME_PAUSED: 'La partie est en pause.',
 };
 
 /** @param {Record<string, string | ((details: any) => string)>} map */

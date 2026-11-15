@@ -4,7 +4,9 @@ import { io as ioClient } from 'socket.io-client';
 import { createPlatformServer, GameError, isLocalNetworkOrigin } from '../src/index.js';
 import { scrabble } from '@bgio/scrabble/server';
 import { playTiles } from '@bgio/scrabble/engine';
-import { tarot, basicBot } from '@bgio/tarot/server';
+import { createTarotPlugin, basicBot } from '@bgio/tarot/server';
+
+const tarot = createTarotPlugin({ trickPauseMs: 0, chienPauseMs: 0 });
 
 /** Scrabble with a dictionary that accepts everything (moves are random in tests). */
 const scrabbleAnyWord = {
@@ -234,6 +236,32 @@ test('a game nobody is watching is paused, and resumes with a fresh clock', asyn
   assert.equal(r.turn.paused, false);
   assert.ok(r.turn.endsAt - r.serverNow > 25_000, 'fresh turn clock');
   back.close();
+});
+
+test('the host can pause and resume a game; nothing moves meanwhile', async () => {
+  const host = await connect();
+  const guest = await connect();
+  const { room } = await host.call('room:create', { gameId: 'race' });
+  await guest.call('room:join', { roomId: room.id });
+  await host.call('room:addBot', { roomId: room.id });
+  await host.call('room:start', { roomId: room.id });
+  assert.equal((await guest.call('room:pause', { roomId: room.id })).error, 'NOT_HOST');
+  assert.equal((await host.call('room:pause', { roomId: room.id })).ok, true);
+  let s = (await host.call('room:sync', { roomId: room.id })).room;
+  assert.equal(s.turn.pausedByHost, true);
+  assert.equal(s.turn.endsAt, null);
+  const who = s.turn.playerId;
+  const actor = who === host.session.playerId ? host : who === guest.session.playerId ? guest : null;
+  if (actor) assert.equal((await actor.call('game:action', { roomId: room.id, action: { type: 'add', n: 1 } })).error, 'GAME_PAUSED');
+  const before = s.game.log.length;
+  await wait(250); // longer than bot and away delays
+  s = (await host.call('room:sync', { roomId: room.id })).room;
+  assert.equal(s.game.log.length, before, 'bots and timers are frozen');
+  assert.equal((await host.call('room:resume', { roomId: room.id })).ok, true);
+  s = (await host.call('room:sync', { roomId: room.id })).room;
+  assert.equal(s.turn.pausedByHost, false);
+  assert.ok(s.turn.endsAt > s.serverNow);
+  host.close(); guest.close();
 });
 
 test('lobby: a reload keeps the place, staying away loses it, the host role moves on', async () => {

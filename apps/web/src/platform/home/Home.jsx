@@ -150,7 +150,7 @@ export default function Home() {
           <div className="games__grid">
             {GAMES.map((g) => (
               <article key={g.id} className="game-card card">
-                <GameCover letters={g.coverLetters} />
+                {g.Cover ? <g.Cover /> : <GameCover letters={g.coverLetters} />}
                 <div className="game-card__body">
                   <h3 className="game-card__name">{g.name}</h3>
                   <p className="game-card__tagline">{g.tagline}</p>

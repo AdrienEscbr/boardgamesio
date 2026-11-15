@@ -1,12 +1,15 @@
 // TarotIO as a platform game plugin (see packages/core-server/src/plugin.js).
 import {
-  CONTRACT_ORDER, GameError, autoDiscard, botAction, isBout, isKing, isTrump, callCard, callableCards, createGame, decideChelem, makeDiscard, markReady,
+  CONTRACT_ORDER, GameError, autoDiscard, botAction, isBout, isKing, isTrump, resumePlay, callCard, callableCards, createGame, decideChelem, makeDiscard, markReady,
   nextDeal, placeBid, playCard, stopGame, timeoutAction, viewFor,
 } from '../engine/index.js';
 
 export const DONNES_OPTIONS = [0, 5, 10, 15]; // 0 = until the host stops
 export const TURN_SECONDS_OPTIONS = [20, 30, 45, 60];
-const SCORING_PAUSE_MS = 25_000;
+// The next deal starts when everyone is ready; this only unblocks a table if someone left.
+const SCORING_PAUSE_MS = 180_000;
+const TRICK_PAUSE_MS = 1_400;
+const CHIEN_PAUSE_MS = 5_000;
 
 function sanitizeSettings(base, patch = {}, { memberCount = 1 } = {}) {
   const next = { ...base };
@@ -53,12 +56,14 @@ export function basicBot(view) {
   }
 }
 
-export const tarot = {
+/** Pauses are configurable so tests can run at full speed. */
+export function createTarotPlugin({ trickPauseMs = TRICK_PAUSE_MS, scoringPauseMs = SCORING_PAUSE_MS, chienPauseMs = CHIEN_PAUSE_MS } = {}) {
+  return {
   id: 'tarot',
   name: 'TarotIO',
   minPlayers: 3,
   maxPlayers: 5,
-  defaultSettings: { donnes: 5, turnSeconds: 30, countingAid: false, maxPlayers: 5 },
+  defaultSettings: { donnes: 5, turnSeconds: 30, countingAid: true, maxPlayers: 5 },
   sanitizeSettings,
 
   createGame: ({ playerIds, botIds, settings, rng }) => createGame({ playerIds, botIds, settings, rng }),
@@ -81,13 +86,18 @@ export const tarot = {
   pending(game) {
     if (game.status !== 'playing') return null;
     const d = game.donne;
-    if (d.phase === 'scoring') return { key: `d${game.donneNumber}-scoring`, autoMs: SCORING_PAUSE_MS };
+    if (d.phase === 'scoring') return { key: `d${game.donneNumber}-scoring`, autoMs: scoringPauseMs };
+    if (d.trickPause) return { key: `s${game.seq}-pause`, autoMs: trickPauseMs };
+    if (d.chienPause) return { key: `s${game.seq}-chien`, autoMs: chienPauseMs };
     // Building the discard takes longer than playing a card.
     const slow = d.phase === 'discard' || d.phase === 'calling';
     return { key: `s${game.seq}`, playerId: d.turn, ...(slow ? { durationMs: 60_000 } : {}) };
   },
 
-  advance: (game, { rng }) => nextDeal(game, { rng }),
+  advance(game, { rng }) {
+    if (game.donne.trickPause || game.donne.chienPause) resumePlay(game);
+    else nextDeal(game, { rng });
+  },
   timeoutAction,
   isFinished: (game) => game.status === 'finished',
 
@@ -99,6 +109,8 @@ export const tarot = {
   },
 
   bot: (view, playerId) => botAction(view, playerId),
-};
+  };
+}
 
+export const tarot = createTarotPlugin();
 export default tarot;

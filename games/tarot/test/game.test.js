@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createGame, placeBid, callCard, makeDiscard, decideChelem, playCard, markReady, stopGame, viewFor,
-  timeoutAction, legalCards, autoDiscard, callableCards, countDeal, poigneeOptions, isTrump,
+  timeoutAction, legalCards, autoDiscard, resumePlay, callableCards, countDeal, poigneeOptions, isTrump,
   CONTRACT_ORDER, POIGNEE_THRESHOLDS, EXCUSE, PETIT,
 } from '../src/engine/index.js';
 import { tarot } from '../src/server/index.js';
@@ -25,6 +25,7 @@ const players = (n) => ['p1', 'p2', 'p3', 'p4', 'p5'].slice(0, n);
 /** Plays one decision for whoever must act, choosing at random among legal options. */
 function randomStep(game, rng) {
   const d = game.donne;
+  if (d.trickPause || d.chienPause) return resumePlay(game);
   const id = d.turn;
   switch (d.phase) {
     case 'bidding': {
@@ -151,6 +152,7 @@ test('views never leak hands, the hidden chien or the called partner', () => {
   // Play until the called card falls: then everybody knows the partner.
   let guard = 0;
   while (!d.partnerRevealed && d.phase === 'playing' && guard++ < 200) {
+    if (d.trickPause) { resumePlay(game); continue; }
     playCard(game, d.turn, legalCards(d.hands[d.turn], d.trick.cards.map((c) => c.card), { calledCard: d.calledCard, firstTrick: d.trickNumber === 1 })[0]);
   }
   if (d.partnerRevealed) assert.equal(viewFor(game, game.players.find((p) => p.id !== d.takerId && p.id !== d.partnerId).id).partnerId, d.partnerId);
@@ -197,6 +199,7 @@ test('the platform plugin: timeouts always produce a legal action, the host can 
     let guard = 0;
     while (game.donne.phase !== 'scoring' && guard++ < 400) {
       const p = tarot.pending(game);
+      if (p.autoMs != null) { tarot.advance(game, { rng }); continue; }
       // Absent players pass: the first one to speak takes, then everything else is automatic.
       const action = game.donne.phase === 'bidding' && game.donne.bids.length === 0 ? { type: 'bid', bid: 'PRISE' } : timeoutAction(game, p.playerId);
       tarot.act(game, p.playerId, action, { rng, auto: true });
