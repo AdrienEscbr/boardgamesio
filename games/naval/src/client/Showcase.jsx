@@ -3,15 +3,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { CELLS, FLEET, lengthOf, randomFleet, shipCells } from '../engine/index.js';
 import Board from './Board.jsx';
 import Ship from './Ship.jsx';
+import { SHIP_NAMES } from './i18n.js';
 import './naval.css';
-
-export const SHIP_NAMES = {
-  carrier: 'Porte-avions',
-  battleship: 'Croiseur',
-  cruiser: 'Contre-torpilleur',
-  submarine: 'Sous-marin',
-  destroyer: 'Torpilleur',
-};
 
 const seeded = (seed) => () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
 const withCells = (fleet) => fleet.map((s) => ({ ...s, cells: shipCells(s.cell, s.dir, lengthOf(s.type)) }));

@@ -52,6 +52,25 @@ function click(ac, { at = 0, freq = 2400, gain = 0.25, dur = 0.035 }) {
   src.start(t);
 }
 
+/** Filtered noise burst: splashes, explosions, rumbles. */
+function noise(ac, { at = 0, dur = 0.5, freq = 1000, type = 'lowpass', gain = 0.2, q = 0.8 }) {
+  const t = ac.currentTime + at;
+  const len = Math.floor(ac.sampleRate * dur);
+  const buf = ac.createBuffer(1, len, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const f = ac.createBiquadFilter();
+  f.type = type;
+  f.frequency.value = freq;
+  f.Q.value = q;
+  const g = ac.createGain();
+  g.gain.value = gain;
+  src.connect(f).connect(g).connect(ac.destination);
+  src.start(t);
+}
+
 const SOUNDS = {
   // Wooden tile set down on the board
   place: (ac, at = 0) => { click(ac, { at, freq: 1800 }); tone(ac, { at, freq: 190, slideTo: 120, dur: 0.07, gain: 0.12 }); },
@@ -64,6 +83,11 @@ const SOUNDS = {
   error: (ac) => { tone(ac, { freq: 180, type: 'square', dur: 0.09, gain: 0.04 }); tone(ac, { freq: 150, type: 'square', at: 0.1, dur: 0.12, gain: 0.04 }); },
   tick: (ac) => click(ac, { freq: 4200, gain: 0.08, dur: 0.015 }),
   join: (ac) => tone(ac, { freq: 740, dur: 0.14, gain: 0.06, slideTo: 880 }),
+  // Naval: a distant gun, water, an explosion, a ship going down.
+  cannon: (ac) => { noise(ac, { freq: 380, dur: 0.35, gain: 0.35 }); tone(ac, { freq: 90, slideTo: 45, dur: 0.25, gain: 0.12 }); },
+  splash: (ac) => { noise(ac, { freq: 1600, type: 'bandpass', dur: 0.55, gain: 0.3, q: 0.6 }); noise(ac, { at: 0.05, freq: 3200, type: 'highpass', dur: 0.35, gain: 0.06 }); },
+  boom: (ac) => { noise(ac, { freq: 700, dur: 0.8, gain: 0.5 }); tone(ac, { freq: 70, slideTo: 32, dur: 0.6, gain: 0.2 }); },
+  sink: (ac) => { tone(ac, { freq: 220, slideTo: 55, dur: 1.4, gain: 0.08, type: 'triangle' }); noise(ac, { at: 0.2, freq: 500, dur: 1.2, gain: 0.18 }); },
 };
 
 export function sound(name, at) {

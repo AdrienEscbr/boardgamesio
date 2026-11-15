@@ -31,6 +31,8 @@ const PATHS = {
   bot: <><rect x="4" y="8" width="16" height="12" rx="3" /><path d="M12 8V4" /><circle cx="12" cy="3" r="1" /><path d="M9 13h.01M15 13h.01" /><path d="M9.5 17h5" /><path d="M2 13v2M22 13v2" /></>,
   cards: <><rect x="3" y="5" width="11" height="15" rx="2" /><path d="M14 7.5 18.5 9a2 2 0 0 1 1.3 2.5l-3 9a2 2 0 0 1-2.5 1.3L12 21" /></>,
   pause: <><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></>,
+  target: <><circle cx="12" cy="12" r="7.5" /><circle cx="12" cy="12" r="2.5" /><path d="M12 2v4M12 18v4M2 12h4M18 12h4" /></>,
+  arrowRight: <path d="M5 12h14M13 6l6 6-6 6" />,
   vibrate: <><rect x="7" y="3" width="10" height="18" rx="2" /><path d="M3 9v6M21 9v6" /></>,
   keyboard: <><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" /></>,
 };

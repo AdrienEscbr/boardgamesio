@@ -9,7 +9,7 @@ import { createNavalPlugin } from '@bgio/naval/server';
 import { FLEET, randomVolley } from '@bgio/naval/engine';
 
 const tarot = createTarotPlugin({ trickPauseMs: 0, chienPauseMs: 0 });
-const naval = createNavalPlugin({ placementMs: 60_000 });
+const naval = createNavalPlugin({ placementMs: 60_000, finalPauseMs: 0 });
 
 /** Scrabble with a dictionary that accepts everything (moves are random in tests). */
 const scrabbleAnyWord = {

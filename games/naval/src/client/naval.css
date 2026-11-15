@@ -40,11 +40,13 @@
   width: calc(var(--grid) + var(--cell) * 1.2);
   padding: calc(var(--cell) * 0.6) 0 calc(var(--cell) * 0.3) calc(var(--cell) * 0.9);
 }
-.nv-board__label { font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); margin: 0 0 6px; text-align: center; }
+.nv-board__label { position: relative; z-index: 1; font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); margin: 0 0 calc(6px + var(--grid) * (1 - cos(var(--tilt))) * 0.92); text-align: center; }
 .nv-stage { perspective: calc(var(--grid) * 2.6); perspective-origin: 50% 0%; }
 .nv-plane {
   position: relative;
   width: var(--grid); height: var(--grid);
+  /* a tilted plane leaves empty room above it: pull it up by what the tilt removes */
+  margin-top: calc(var(--grid) * (cos(var(--tilt)) - 1) * 0.92);
   transform-origin: 50% 100%;
   transform: rotateX(var(--tilt));
   transform-style: preserve-3d;
@@ -162,14 +164,15 @@
 /* shells fly in screen space */
 .nv-sky { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 5; }
 .nv-shell {
+  opacity: 0;
   position: absolute; left: 0; top: 0; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%;
   background: radial-gradient(circle, #fff, #ffe08a 40%, #ff8a3d 75%);
   box-shadow: 0 0 12px 4px rgba(255, 170, 80, 0.7);
 }
 .nv-shell-trail {
-  position: absolute; left: 0; top: 0; width: 54px; height: 4px; margin: -2px 0 0 -54px;
-  transform-origin: 100% 50%; border-radius: 2px;
-  background: linear-gradient(to right, transparent, rgba(255, 225, 170, 0.85));
+  opacity: 0;
+  position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible;
+  fill: none; stroke: rgb(255, 225, 170); stroke-linecap: round; stroke-linejoin: round;
 }
 
 /* ---------------- cells: hover reticle ---------------- */
@@ -178,11 +181,11 @@
 .nv-board.is-target .nv-cell:not(:disabled) { cursor: crosshair; }
 .nv-board.is-target .nv-cell:not(:disabled)::before {
   content: ''; position: absolute; inset: 8%; border-radius: 50%;
-  border: 2px solid var(--gold); opacity: 0; scale: 1.5;
+  border: 2px solid var(--gold); opacity: 0; scale: 1.5; pointer-events: none;
   transition: opacity 120ms ease, scale 180ms var(--ease-out);
 }
 .nv-board.is-target .nv-cell:not(:disabled)::after {
-  content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 120ms ease;
+  content: ''; position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 120ms ease;
   background:
     linear-gradient(var(--gold), var(--gold)) 50% 0 / 2px 26% no-repeat,
     linear-gradient(var(--gold), var(--gold)) 50% 100% / 2px 26% no-repeat,

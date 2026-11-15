@@ -146,6 +146,14 @@ test('plugin: settings, pending and full robot games in every mode', () => {
       let turns = 0;
       while (!plugin.isFinished(game)) {
         const p = plugin.pending(game);
+        if (p.autoMs != null) {
+          // The last fleet just sank: a short pause, then the results.
+          assert.equal(game.phase, 'final');
+          assert.equal(p.autoMs, 3500);
+          assert.equal(viewFor(game, 'P1').boards.P2.fleet, undefined); // not revealed yet
+          plugin.advance(game, { rng });
+          continue;
+        }
         assert.ok(p.playerId);
         if (mode === 'salvo') assert.equal(p.durationMs, 60_000);
         // P1 is "away": the timeout action plays for them, the others are robots.

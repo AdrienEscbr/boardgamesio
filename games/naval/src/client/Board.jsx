@@ -29,9 +29,10 @@ const cellStyle = (cell) => ({ left: `calc(var(--cell) * ${colOf(cell)})`, top: 
  * @param fx        transient impacts [{ id, cell, kind: 'splash' | 'boom' | 'sunk' }]
  * @param shells    shells in flight [{ id, cell, from: 'near' | 'far' }]; onLand(id) at impact
  * @param onCell    makes the grid a target (click a cell to shoot)
+ * @param aims      cells aimed at, not fired yet; locked: fired, waiting for the server
  * @param tilt      degrees
  */
-export default function Board({ ships = [], wrecks = [], received = {}, fx = [], shells = [], onLand, onCell, tilt = 30, label, className = '' }) {
+export default function Board({ ships = [], wrecks = [], received = {}, fx = [], shells = [], aims = [], locked = [], onLand, onCell, tilt = 30, label, className = '', style }) {
   const root = useRef(null);
   const cellRefs = useRef([]);
   const [, force] = useState(0);
@@ -53,7 +54,7 @@ export default function Board({ ships = [], wrecks = [], received = {}, fx = [],
   };
 
   return (
-    <div className={`nv-board ${onCell ? 'is-target' : ''} ${className}`} ref={root} style={{ '--tilt': `${tilt}deg` }}>
+    <div className={`nv-board ${onCell ? 'is-target' : ''} ${className}`} ref={root} style={{ '--tilt': `${tilt}deg`, ...style }}>
       {label && <div className="nv-board__label">{label}</div>}
       <div className="nv-stage">
         <div className="nv-plane">
@@ -76,6 +77,10 @@ export default function Board({ ships = [], wrecks = [], received = {}, fx = [],
           {Object.entries(received).map(([c, r]) => (
             <span key={`m${c}`} className={`nv-mark is-${r}`} style={cellStyle(Number(c))} />
           ))}
+
+          {/* aimed cells */}
+          {aims.map((c) => <span key={`a${c}`} className="nv-aim" style={cellStyle(c)} />)}
+          {locked.map((c) => <span key={`l${c}`} className="nv-aim is-locked" style={cellStyle(c)} />)}
 
           {/* standing effects */}
           {fires.map((c) => <span key={`f${c}`} className="nv-fx" style={cellStyle(c)}><Fire seed={c} /></span>)}
@@ -115,7 +120,7 @@ export default function Board({ ships = [], wrecks = [], received = {}, fx = [],
         {shells.map((s) => {
           const to = pointOf(s.cell);
           if (!to) return null;
-          return <Shell key={s.id} from={startOf(s.from)} to={to} onLand={() => onLand?.(s.id)} />;
+          return <Shell key={s.id} from={startOf(s.from)} to={to} delay={s.delay ?? 0} onLand={() => onLand?.(s.id)} />;
         })}
       </div>
     </div>

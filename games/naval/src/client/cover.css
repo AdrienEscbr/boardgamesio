@@ -1,0 +1,15 @@
+/* Home-page thumbnail (loaded with the home page, not with the game). */
+.nv-cover { height: 42px; width: 78px; perspective: 160px; display: flex; align-items: flex-end; }
+.nv-cover__sea {
+  position: relative; width: 78px; height: 48px; transform-origin: 50% 100%; transform: rotateX(38deg); transform-style: preserve-3d;
+  border-radius: 5px;
+  background:
+    linear-gradient(to right, rgba(255, 255, 255, 0.18) 1px, transparent 1px) 0 0 / 9.75px 9.6px,
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 1px, transparent 1px) 0 0 / 9.75px 9.6px,
+    linear-gradient(160deg, #2b8fb4, #15607f 60%, #0f4a64);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2), 0 8px 14px -6px rgba(0, 0, 0, 0.5);
+}
+.nv-cover__ship { position: absolute; left: 10px; top: 19px; width: 39px; height: 10px; filter: drop-shadow(0 2px 2px rgba(0, 10, 20, 0.5)); }
+.nv-cover__ship svg { display: block; width: 100%; height: 100%; }
+.nv-cover__miss { position: absolute; left: 60px; top: 7px; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.85); }
+.nv-cover__flame { position: absolute; left: 25px; top: 4px; width: 9px; transform-origin: 50% 100%; transform: rotateX(-38deg); filter: drop-shadow(0 0 3px rgba(255, 140, 50, 0.9)); }

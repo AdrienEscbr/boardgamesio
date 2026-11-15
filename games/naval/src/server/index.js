@@ -3,6 +3,8 @@ import { BOT_LEVELS, GameError, MODES, botAction, createGame, endPlacement, fire
 
 export const TURN_SECONDS_OPTIONS = [15, 20, 30, 45];
 const PLACEMENT_MS = 90_000;
+// The last fleet sinks on screen before the results replace the table.
+const FINAL_PAUSE_MS = 3_500;
 // A salvo (up to five shots) deserves more time than a single shot.
 const SALVO_TIME_FACTOR = 2;
 
@@ -33,7 +35,7 @@ function sanitizeSettings(base, patch = {}, { memberCount = 1 } = {}) {
 const seeded = (seed) => () => { seed = (seed * 16807 + 11) % 2147483647; return seed / 2147483647; };
 
 /** Durations are configurable so tests can run at full speed. */
-export function createNavalPlugin({ placementMs = PLACEMENT_MS } = {}) {
+export function createNavalPlugin({ placementMs = PLACEMENT_MS, finalPauseMs = FINAL_PAUSE_MS } = {}) {
   return {
     id: 'naval',
     name: 'NavalIO',
@@ -47,7 +49,12 @@ export function createNavalPlugin({ placementMs = PLACEMENT_MS } = {}) {
     act(game, playerId, action) {
       switch (action.type) {
         case 'place': return placeFleet(game, playerId, action.fleet);
-        case 'fire': return fire(game, playerId, action.shots);
+        case 'fire': {
+          const result = fire(game, playerId, action.shots);
+          // Hold the result a moment: the game ends once everyone has seen the last ship go down.
+          if (game.status === 'finished') { game.status = 'playing'; game.phase = 'final'; }
+          return result;
+        }
         default: throw new GameError('INVALID_ACTION');
       }
     },
@@ -56,11 +63,13 @@ export function createNavalPlugin({ placementMs = PLACEMENT_MS } = {}) {
       if (game.status !== 'playing') return null;
       // Everyone places at the same time: the platform only watches the clock.
       if (game.phase === 'placement') return { key: 'placement', autoMs: placementMs };
+      if (game.phase === 'final') return { key: 'final', autoMs: finalPauseMs };
       const slow = game.mode === 'salvo';
       return { key: `s${game.seq}`, playerId: game.turn, ...(slow ? { durationMs: game.turnMs * SALVO_TIME_FACTOR } : {}) };
     },
 
     advance(game, { rng }) {
+      if (game.phase === 'final') { game.status = 'finished'; game.phase = 'over'; game.seq += 1; return; }
       endPlacement(game, { rng });
     },
 

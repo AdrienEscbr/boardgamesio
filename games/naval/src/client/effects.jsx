@@ -80,11 +80,16 @@ export function Bubbles() {
   );
 }
 
+// Trail: 12 points spread over the last 9 % of the flight; [first point, last point, width, opacity].
+const TRAIL_POINTS = 12;
+const TRAIL_STEP = 0.0075;
+const TRAIL_SEGMENTS = [[0, 4, 4, 0.9], [4, 8, 2.8, 0.5], [8, 12, 1.8, 0.2]];
+
 /**
  * A shell flying in screen space from `from` to `to` ({ x, y } in the overlay's pixels),
  * along an arc. Calls onLand at impact.
  */
-export function Shell({ from, to, duration = 0.7, onLand }) {
+export function Shell({ from, to, duration = 0.7, delay = 0, onLand }) {
   const ref = useRef(null);
   const trail = useRef(null);
   useEffect(() => {
@@ -96,14 +101,27 @@ export function Shell({ from, to, duration = 0.7, onLand }) {
     });
     const controls = animate(0, 1, {
       duration,
+      delay,
       ease: [0.35, 0, 0.65, 1],
       onUpdate: (t) => {
         const p = at(t);
-        const q = at(Math.max(0, t - 0.06));
-        const angle = Math.atan2(p.y - q.y, p.x - q.x);
         const s = 1 + Math.sin(t * Math.PI) * 0.6; // closer to the eye at the top of the arc
-        if (ref.current) ref.current.style.transform = `translate(${p.x}px, ${p.y}px) scale(${s})`;
-        if (trail.current) trail.current.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${angle}rad) scale(${s})`;
+        if (ref.current) {
+          ref.current.style.opacity = '1';
+          ref.current.style.transform = `translate(${p.x}px, ${p.y}px) scale(${s})`;
+        }
+        // The trail follows the arc itself: points sampled just behind the shell on the same curve,
+        // drawn as three segments, thinner and fainter towards the tail.
+        if (trail.current) {
+          trail.current.style.opacity = '1';
+          const pts = Array.from({ length: TRAIL_POINTS + 1 }, (_, k) => at(Math.max(0, t - k * TRAIL_STEP)));
+          const segs = trail.current.children;
+          TRAIL_SEGMENTS.forEach(([from, to, width], i) => {
+            const d = pts.slice(from, to + 1).map((q, j) => `${j ? 'L' : 'M'}${q.x.toFixed(1)} ${q.y.toFixed(1)}`).join(' ');
+            segs[i].setAttribute('d', d);
+            segs[i].setAttribute('stroke-width', (width * s).toFixed(2));
+          });
+        }
       },
       onComplete: () => onLand?.(),
     });
@@ -111,7 +129,9 @@ export function Shell({ from, to, duration = 0.7, onLand }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
-      <span ref={trail} className="nv-shell-trail" />
+      <svg ref={trail} className="nv-shell-trail" aria-hidden>
+        {TRAIL_SEGMENTS.map(([, , , opacity], i) => <path key={i} strokeOpacity={opacity} />)}
+      </svg>
       <span ref={ref} className="nv-shell" />
     </>
   );

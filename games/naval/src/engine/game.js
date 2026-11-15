@@ -240,6 +240,7 @@ export function viewFor(game, viewerId) {
     turnNumber: game.turnNumber,
     shotsDue: game.phase === 'battle' && game.turn === viewerId ? shotsDue(game, viewerId) : 0,
     lastVolley: game.lastVolley,
+    history: game.shots.slice(-60), // every shot is public: the latest ones feed the log
     eliminated: game.eliminated,
     seq: game.seq,
     winnerId: game.winnerId,
