@@ -1,0 +1,79 @@
+// NavalIO as a platform game plugin (see packages/core-server/src/plugin.js).
+import { GameError, MODES, botAction, createGame, endPlacement, fire, placeFleet, viewFor } from '../engine/index.js';
+
+export const TURN_SECONDS_OPTIONS = [15, 20, 30, 45];
+const PLACEMENT_MS = 90_000;
+// A salvo (up to five shots) deserves more time than a single shot.
+const SALVO_TIME_FACTOR = 2;
+
+function sanitizeSettings(base, patch = {}, { memberCount = 1 } = {}) {
+  const next = { ...base };
+  if (!patch || typeof patch !== 'object') return next;
+  if (patch.mode !== undefined) {
+    if (!MODES.includes(patch.mode)) throw new GameError('INVALID_SETTINGS', { field: 'mode' });
+    next.mode = patch.mode;
+  }
+  if (patch.turnSeconds !== undefined) {
+    if (!TURN_SECONDS_OPTIONS.includes(patch.turnSeconds)) throw new GameError('INVALID_SETTINGS', { field: 'turnSeconds' });
+    next.turnSeconds = patch.turnSeconds;
+  }
+  if (patch.maxPlayers !== undefined) {
+    const n = patch.maxPlayers;
+    if (!Number.isInteger(n) || n < 2 || n > 4 || n < memberCount) throw new GameError('INVALID_SETTINGS', { field: 'maxPlayers' });
+    next.maxPlayers = n;
+  }
+  return next;
+}
+
+/** A small deterministic rng, so an automatic shot does not need the platform's. */
+const seeded = (seed) => () => { seed = (seed * 16807 + 11) % 2147483647; return seed / 2147483647; };
+
+/** Durations are configurable so tests can run at full speed. */
+export function createNavalPlugin({ placementMs = PLACEMENT_MS } = {}) {
+  return {
+    id: 'naval',
+    name: 'NavalIO',
+    minPlayers: 2,
+    maxPlayers: 4,
+    defaultSettings: { mode: 'classic', turnSeconds: 30, maxPlayers: 4 },
+    sanitizeSettings,
+
+    createGame: ({ playerIds, botIds, settings, rng }) => createGame({ playerIds, botIds, settings, rng }),
+
+    act(game, playerId, action) {
+      switch (action.type) {
+        case 'place': return placeFleet(game, playerId, action.fleet);
+        case 'fire': return fire(game, playerId, action.shots);
+        default: throw new GameError('INVALID_ACTION');
+      }
+    },
+
+    pending(game) {
+      if (game.status !== 'playing') return null;
+      // Everyone places at the same time: the platform only watches the clock.
+      if (game.phase === 'placement') return { key: 'placement', autoMs: placementMs };
+      const slow = game.mode === 'salvo';
+      return { key: `s${game.seq}`, playerId: game.turn, ...(slow ? { durationMs: game.turnMs * SALVO_TIME_FACTOR } : {}) };
+    },
+
+    advance(game, { rng }) {
+      endPlacement(game, { rng });
+    },
+
+    // Time out or away: the robot plays for the player.
+    timeoutAction: (game, playerId) => botAction(viewFor(game, playerId), playerId, seeded(game.seq + 1)),
+    isFinished: (game) => game.status === 'finished',
+
+    view(game, viewerId, { turn, nickname }) {
+      const v = viewFor(game, viewerId);
+      v.players = v.players.map((p) => ({ ...p, nickname: nickname(p.id) }));
+      v.turnClock = turn;
+      return v;
+    },
+
+    bot: (view, playerId, rng) => botAction(view, playerId, rng),
+  };
+}
+
+export const naval = createNavalPlugin();
+export default naval;

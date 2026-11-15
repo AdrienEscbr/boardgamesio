@@ -5,8 +5,11 @@ import { createPlatformServer, GameError, isLocalNetworkOrigin } from '../src/in
 import { scrabble } from '@bgio/scrabble/server';
 import { playTiles } from '@bgio/scrabble/engine';
 import { createTarotPlugin, basicBot } from '@bgio/tarot/server';
+import { createNavalPlugin } from '@bgio/naval/server';
+import { FLEET, randomVolley } from '@bgio/naval/engine';
 
 const tarot = createTarotPlugin({ trickPauseMs: 0, chienPauseMs: 0 });
+const naval = createNavalPlugin({ placementMs: 60_000 });
 
 /** Scrabble with a dictionary that accepts everything (moves are random in tests). */
 const scrabbleAnyWord = {
@@ -47,7 +50,7 @@ const clients = new Set();
 
 before(async () => {
   server = createPlatformServer({
-    games: [scrabbleAnyWord, race, tarot],
+    games: [scrabbleAnyWord, race, tarot, naval],
     origins: [],
     timings: { lobbyGraceMs: 150, awayTurnMs: 150, botMinMs: 20, botMaxMs: 40 },
   });
@@ -315,6 +318,37 @@ test('tarot: a human and two bots play a full deal over the network', async () =
   assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'stop' } })).ok, true);
   const end = await host.nextState((s) => s.status === 'finished');
   assert.equal(end.game.results.ranking.length, 3);
+  host.close();
+});
+
+test('naval: a human places a fleet and sinks (or is sunk by) a robot over the network', async () => {
+  const host = await connect();
+  const { room } = await host.call('room:create', { gameId: 'naval', settings: { mode: 'salvo' } });
+  await host.call('room:addBot', { roomId: room.id });
+  assert.equal((await host.call('room:start', { roomId: room.id })).ok, true);
+  const me = host.session.playerId;
+  let state = (await host.call('room:sync', { roomId: room.id })).room;
+  assert.equal(state.game.phase, 'placement');
+  const bot = state.game.players.find((p) => p.id !== me);
+  assert.equal(bot.ready, true);
+  // One ship per even row, from column 0.
+  const fleet = FLEET.map(({ type }, i) => ({ type, cell: i * 20, dir: 'h' }));
+  assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'place', fleet: fleet.slice(1) } })).error, 'FLEET_INCOMPLETE');
+  assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'place', fleet } })).ok, true);
+  state = await host.nextState((s) => s.game?.phase === 'battle');
+  for (let guard = 0; guard < 400 && state.status !== 'finished'; guard++) {
+    // The robot's fleet is never sent while it is afloat.
+    assert.equal(state.game.boards[bot.id].fleet, undefined);
+    if (state.game.turn === me) {
+      const res = await host.call('game:action', { roomId: room.id, action: { type: 'fire', shots: randomVolley(state.game) } });
+      assert.equal(res.ok, true, res.error);
+    }
+    const seq = state.game.seq;
+    state = await host.nextState((s) => s.game && s.game.seq > seq);
+  }
+  assert.equal(state.status, 'finished');
+  assert.equal(state.game.results.ranking.length, 2);
+  assert.equal(state.game.boards[bot.id].fleet.length, FLEET.length);
   host.close();
 });
 
