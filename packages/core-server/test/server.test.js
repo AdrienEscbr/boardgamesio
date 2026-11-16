@@ -8,10 +8,12 @@ import { createTarotPlugin, basicBot } from '@bgio/tarot/server';
 import { createNavalPlugin } from '@bgio/naval/server';
 import { FLEET, randomVolley } from '@bgio/naval/engine';
 import { createP4Plugin } from '@bgio/p4/server';
+import { createDutchPlugin } from '@bgio/dutch/server';
 
 const tarot = createTarotPlugin({ trickPauseMs: 0, chienPauseMs: 0 });
 const naval = createNavalPlugin({ placementMs: 60_000, finalPauseMs: 0 });
 const p4 = createP4Plugin({ roundPauseMs: 0 });
+const dutch = createDutchPlugin({ peekMs: 60_000, botBurnMs: 0, burnMs: 0, revealMs: 0 });
 
 /** Scrabble with a dictionary that accepts everything (moves are random in tests). */
 const scrabbleAnyWord = {
@@ -52,7 +54,7 @@ const clients = new Set();
 
 before(async () => {
   server = createPlatformServer({
-    games: [scrabbleAnyWord, race, tarot, naval, p4],
+    games: [scrabbleAnyWord, race, tarot, naval, p4, dutch],
     origins: [],
     timings: { lobbyGraceMs: 150, awayTurnMs: 150, botMinMs: 20, botMaxMs: 40 },
   });
@@ -373,6 +375,45 @@ test('p4: a human plays a round against a robot over the network', async () => {
   }
   assert.equal(state.status, 'finished');
   assert.equal(state.game.results.ranking[0].wins, 1);
+  host.close();
+});
+
+test('dutch: a human plays against a robot over the network, without ever seeing its cards', async () => {
+  const host = await connect();
+  const { room } = await host.call('room:create', { gameId: 'dutch', settings: { target: 50, botLevel: 'easy' } });
+  await host.call('room:addBot', { roomId: room.id });
+  assert.equal((await host.call('room:start', { roomId: room.id })).ok, true);
+  const me = host.session.playerId;
+  let state = (await host.call('room:sync', { roomId: room.id })).room;
+  assert.equal(state.game.phase, 'peek');
+  assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'peek', slot: 1 } })).ok, true);
+  state = await host.nextState((s) => s.game?.players.find((p) => p.id === me).peeked === 1);
+  assert.deepEqual(state.game.players.find((p) => p.id === me).slots.map((s) => !!s.card), [false, true, false, false]);
+  assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'ready' } })).ok, true);
+  state = await host.nextState((s) => s.game?.phase === 'play');
+  for (let guard = 0; guard < 600 && state.status !== 'finished'; guard++) {
+    const g = state.game;
+    const bot = g.players.find((p) => p.id !== me);
+    if (g.phase === 'play') assert.ok(bot.slots.every((s) => !s || s.card === null), 'the robot\'s cards stay hidden');
+    assert.equal(g.memory, undefined);
+    if (g.phase === 'peek' && !g.players.find((p) => p.id === me).ready) {
+      assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'ready' } })).ok, true);
+    } else if (g.phase === 'play' && g.turn === me) {
+      // Call "Dutch" at once (it usually fails: the game is short); otherwise draw and discard.
+      const action = g.step === 'start' ? (g.dutchBy ? { type: 'draw' } : { type: 'dutch' })
+        : g.step === 'drawn' ? { type: 'discard' } : { type: 'skip' };
+      if (g.step === 'start' && !g.dutchBy) {
+        assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'take', slot: 42 } })).error, 'INVALID_SLOT');
+      }
+      const res = await host.call('game:action', { roomId: room.id, action });
+      assert.equal(res.ok, true, res.error);
+    }
+    const seq = g.seq;
+    state = await host.nextState((s) => s.game && s.game.seq > seq);
+  }
+  assert.equal(state.status, 'finished');
+  assert.equal(state.game.results.ranking.length, 2);
+  assert.ok(state.game.history.length >= 1);
   host.close();
 });
 
