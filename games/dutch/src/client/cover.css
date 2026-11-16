@@ -1,0 +1,10 @@
+/* Home-page thumbnail (loaded with the home page, not with the table). */
+.dt-cover { display: flex; align-items: flex-end; height: 42px; padding-left: 4px; --cw: 25px; }
+.dt-cover__card { margin-right: -6px; transform: rotate(calc((var(--i) - 1) * 9deg)); transform-origin: 50% 100%; }
+.dt-cover__card:nth-child(2) { translate: 0 -3px; z-index: 1; }
+/* the card look, without the table's stylesheet */
+.dt-cover .dc { display: block; width: 25px; aspect-ratio: 250 / 400; perspective: 200px; }
+.dt-cover .dc__inner { display: block; position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
+.dt-cover .dc__face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.dt-cover .dc__back { transform: rotateY(180deg); }
+.dt-cover .dc__face svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.35)); }

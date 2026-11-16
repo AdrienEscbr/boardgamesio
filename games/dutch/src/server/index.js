@@ -7,8 +7,8 @@ export const TURN_SECONDS_OPTIONS = [15, 20, 30, 45];
 // Time to choose and look at two cards (everyone ready ends it sooner).
 const PEEK_MS = 15_000;
 // After a discard: robots react after BOT_BURN_MS, humans still have BURN_MS after the last burn.
-const BOT_BURN_MS = 1_000;
-const BURN_MS = 1_800;
+export const BOT_BURN_MS = 1_000;
+export const BURN_MS = 1_800;
 // The next round starts when everyone is ready (as TarotIO's next deal); this only
 // unblocks a table if someone left.
 const REVEAL_MS = 180_000;

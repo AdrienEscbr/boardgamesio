@@ -8,6 +8,7 @@ Plateforme de jeux de société en ligne : un serveur et un site communs, et un 
 | TarotIO | 3 à 5, robots possibles | En cours |
 | PokerIO | 2 à 6, robots possibles | Jouable |
 | PlanchettesIO | 1 à 4 | Jouable |
+| DutchIO | 2 à 6, robots possibles | Jouable |
 
 ## Démarrer en local
 

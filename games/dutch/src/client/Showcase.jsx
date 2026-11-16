@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage } from '@bgio/ui/lib/i18n.js';
 import { haptic, sound } from '@bgio/ui/lib/feedback.js';
 import { toast, useToastPlacement } from '@bgio/ui/components/Toaster.jsx';
-import { createDutchPlugin } from '../server/index.js';
+import { BOT_BURN_MS, BURN_MS, createDutchPlugin } from '../server/index.js';
 import Table from './Table.jsx';
 import { LEVEL_LABELS } from './i18n.js';
 import './i18n.js';
@@ -12,9 +12,6 @@ const BOTS = ['ada', 'turing', 'hopper', 'lovelace', 'knuth'];
 const NAMES = { me: 'Vous', ada: 'Ada', turing: 'Turing', hopper: 'Hopper', lovelace: 'Lovelace', knuth: 'Knuth' };
 const TURN_MS = 30_000;
 const plugin = createDutchPlugin();
-// Same pauses as the server (see server/index.js): robots react, then a last moment for humans.
-const BOT_BURN_MS = 1_000;
-const BURN_MS = 1_800;
 
 /**
  * Design review page for DutchIO (/#/dev/dutch): a whole game against robots on this
