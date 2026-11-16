@@ -1,0 +1,533 @@
+/* =========================================================
+   DutchIO — a night-blue table, Delft faience cards.
+   Gold = "your turn / for you"; cyan = looking; violet = exchanging;
+   flame = burning; red = a mistake.
+   ========================================================= */
+.dt {
+  --ink: #eef3fb;
+  --ink-2: rgba(226, 234, 248, 0.68);
+  --ink-3: rgba(226, 234, 248, 0.42);
+  --glass: rgba(6, 14, 34, 0.5);
+  --plate: rgba(9, 18, 42, 0.9);
+  --line: rgba(190, 210, 245, 0.14);
+  --gold: #f3c76b;
+  --gold-2: #d99a2b;
+  --eye: #7fd4ff;
+  --swap: #b9a2ff;
+  --flame: #ff7b45;
+  --wrong: #ff5d6c;
+  --cobalt: #2456a6;
+  --glaze: #f6f9fe;
+  min-height: 100dvh;
+  color: var(--ink);
+  background:
+    radial-gradient(60% 45% at 50% 46%, rgba(120, 160, 255, 0.16), transparent 70%),
+    radial-gradient(130% 100% at 50% 40%, #1b3466 0%, #0f1f45 52%, #070f26 100%),
+    #070f26;
+  position: relative;
+  isolation: isolate;
+}
+/* a faint Delft tile lattice on the cloth */
+.dt::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.5;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(140, 175, 240, 0.09) 0 5px, transparent 6px) 0 0 / 64px 64px,
+    linear-gradient(45deg, transparent 48%, rgba(140, 175, 240, 0.05) 49% 51%, transparent 52%) 0 0 / 64px 64px,
+    linear-gradient(-45deg, transparent 48%, rgba(140, 175, 240, 0.05) 49% 51%, transparent 52%) 0 0 / 64px 64px;
+  mask-image: radial-gradient(75% 70% at 50% 45%, #000 30%, transparent 85%);
+}
+
+/* ---- the card ---- */
+.dc { display: block; flex: none; width: var(--cw, 64px); aspect-ratio: 250 / 400; perspective: calc(var(--cw, 64px) * 9); }
+.dc__inner { display: block; position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
+.dc__face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 8% / 5%; }
+.dc__back { transform: rotateY(180deg); }
+.dc__face .tarot-card, .dc-back { display: block; width: 100%; height: 100%; border-radius: 8% / 5%; }
+.dc-back { box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1), 0 6px 16px -6px rgba(0, 0, 0, 0.55); }
+
+/* ---- stage: opponents, centre, me, dock ---- */
+.dt-stage {
+  container-type: size;
+  position: relative;
+  height: 100%; min-height: 0;
+  display: grid;
+  justify-items: center; align-items: center;
+}
+/* Wide screens: around a table. Next player on my left, the one before me on my right. */
+.dt-stage.is-wide {
+  grid-template-areas: "rail rail rail" "top top top" "left centre right" ". mine dock";
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  padding: 8px 24px 0;
+  --cw-me: clamp(48px, min(7.4cqw, 11.2cqh), 132px);
+  --cw-opp: clamp(30px, min(calc(64cqw / (var(--top) * 2.8)), 7.4cqh), 84px);
+  --cw-pile: clamp(44px, min(6.4cqw, 11cqh), 116px);
+}
+/* Tall screens (phones): the others in a row above the table. */
+.dt-stage.is-tall {
+  grid-template-areas: "rail" "top" "centre" "mine" "dock";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  padding-top: 6px;
+  --cw-me: clamp(44px, min(21cqw, 10cqh), 112px);
+  --cw-opp: clamp(20px, min(calc(88cqw / (var(--top) * 2.6)), 6.4cqh), 74px);
+  --cw-pile: clamp(40px, min(21cqw, 11.5cqh), 100px);
+}
+.dt-stage.is-wide .dt-top { padding-top: 18px; }
+.dt-top { grid-area: top; display: flex; justify-content: center; align-items: flex-start; gap: clamp(12px, 4cqw, 72px); padding: 0 12px; width: 100%; }
+.dt-side { align-self: center; position: relative; z-index: 1; }
+/* the side players sit at the rim of the table, not at the edge of the screen */
+.dt-side.is-left { grid-area: left; justify-self: end; margin-right: clamp(24px, 6cqw, 140px); }
+.dt-side.is-right { grid-area: right; justify-self: start; margin-left: clamp(24px, 6cqw, 140px); }
+.dt-top, .dt-centre, .dt-mine, .dt-dock { position: relative; z-index: 1; }
+/* the table itself: a faience-rimmed oval under the centre */
+.dt-stage::before {
+  content: ''; position: absolute; z-index: 0; pointer-events: none;
+  left: 50%; top: 50%; translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(70, 110, 200, 0.28), rgba(40, 75, 150, 0.14) 70%, rgba(30, 60, 130, 0.05));
+  box-shadow: inset 0 0 0 2px rgba(190, 210, 245, 0.12), inset 0 0 60px rgba(0, 0, 0, 0.25), 0 0 0 10px rgba(10, 22, 52, 0.35), 0 0 0 11px rgba(190, 210, 245, 0.08);
+}
+.dt-stage.is-wide::before { width: min(70cqw, 1180px); height: 60cqh; top: 47%; }
+.dt-stage.is-tall::before { width: 96cqw; height: 34cqh; top: 47%; }
+.dt-centre { grid-area: centre; display: flex; align-items: center; justify-content: center; gap: clamp(14px, 3cqw, 48px); --cw: var(--cw-pile); padding: 8px 0 24px; }
+.dt-mine { grid-area: mine; align-self: end; padding-bottom: 10px; }
+.dt-stage.is-wide .dt-mine { padding-bottom: 22px; }
+.dt-stage.is-tall .dt-centre { padding: 12px 0 22px; }
+.dt-dock { grid-area: dock; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px; padding: 6px 16px calc(10px + var(--safe-bottom, 0px)); width: min(640px, 100%); height: calc(116px + var(--safe-bottom, 0px)); }
+.dt-stage.is-wide .dt-dock { align-self: end; justify-self: start; align-items: flex-start; width: min(420px, 100%); height: 150px; margin-left: 150px; padding-bottom: 28px; }
+.dt-stage.is-wide .dt-status { justify-content: flex-start; text-align: left; font-size: var(--text-md); }
+.dt-stage.is-wide .dt-actions { justify-content: flex-start; }
+
+/* ---- seats ---- */
+.dt-seat { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+.dt-seat.is-opp { --cw: var(--cw-opp); }
+.dt-seat.is-me { --cw: var(--cw-me); flex-direction: column-reverse; }
+.dt-seat.is-me { position: relative; }
+.dt-stage.is-wide .dt-seat.is-me .dt-plate { position: absolute; left: calc(100% + 18px); bottom: 0; }
+.dt-grid { position: relative; display: grid; grid-template-columns: repeat(var(--cols, 2), var(--cw)); grid-template-rows: repeat(var(--rows, 2), auto); gap: calc(var(--cw) * 0.13); }
+
+.dt-plate {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 8px; max-width: 100%;
+  padding: 3px 12px 4px 3px; border-radius: 999px; background: var(--plate);
+  box-shadow: 0 0 0 1px var(--line), 0 8px 20px -10px rgba(0, 0, 0, 0.7);
+  white-space: nowrap; transition: box-shadow 220ms ease;
+}
+.dt-plate .avatar { box-shadow: none; }
+.dt-bot { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 50%; background: rgba(255, 255, 255, 0.1); color: var(--ink-2); }
+.dt-plate__who { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.dt-plate__name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-sm); font-weight: 700; }
+.dt-plate__score { color: var(--ink-2); font-size: var(--text-xs); font-weight: 600; }
+.dt-seat.is-turn .dt-plate { box-shadow: 0 0 0 2px var(--gold), 0 0 26px -4px rgba(243, 199, 107, 0.85); }
+.dt-chip { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: var(--ink-2); font-size: 11px; font-weight: 800; letter-spacing: 0.02em; }
+.dt-chip.is-ok { background: color-mix(in oklab, var(--success) 35%, transparent); color: #d9ffe9; }
+.dt-timer { position: absolute; left: 14px; right: 14px; bottom: 1px; height: 2px; border-radius: 1px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.dt-timer span, .dt-bar span { display: block; height: 100%; background: var(--gold); transform-origin: 0 50%; animation: dt-drain linear forwards; }
+@keyframes dt-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.dt-bar { display: block; width: min(240px, 60%); height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+
+/* ---- a place for a card ---- */
+.dt-slot {
+  position: relative; display: block; flex: none;
+  width: var(--cw); aspect-ratio: 250 / 400; padding: 0; border: 0; background: none; color: inherit;
+  border-radius: 8% / 5%;
+  transition: transform 260ms var(--ease-out), filter 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.dt-slot.is-empty { box-shadow: inset 0 0 0 1.5px rgba(190, 210, 245, 0.16); background: rgba(5, 12, 30, 0.25); }
+.dt-slot > .dc { --cw: 100%; width: 100%; transition: transform 300ms var(--ease-out), filter 300ms ease; }
+.dt-slot > .dc .dc__face { transition: box-shadow 220ms ease; }
+
+/* feedforward: what can be played */
+.dt-slot.is-target, .dt-pile.is-target, .dt-discard.is-target { cursor: pointer; }
+.dt-slot.is-target > .dc .dc__face { box-shadow: 0 0 0 2px var(--hl, var(--gold)), 0 0 18px -2px var(--hl, var(--gold)); }
+.is-eye { --hl: var(--eye); }
+.is-swap { --hl: var(--swap); }
+.is-burn, .is-give { --hl: var(--flame); }
+.is-take, .is-drop, .is-draw { --hl: var(--gold); }
+.dt-slot__hint {
+  position: absolute; top: -7px; right: -7px; z-index: 3;
+  display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--hl, var(--gold)); color: #0b1530; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  transform: scale(0.82); opacity: 0.85; transition: transform 180ms var(--ease-out), opacity 180ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .dt-slot.is-target:hover { transform: translateY(-6%); }
+  .dt-slot.is-target:hover .dt-slot__hint { transform: scale(1.05); opacity: 1; }
+  .dt-pile.is-target:hover, .dt-discard.is-target:hover { transform: translateY(-4px); }
+}
+.dt-slot.is-armed, .dt-slot.is-preview { transform: translateY(-9%); z-index: 2; }
+.dt-slot.is-armed .dt-slot__hint { transform: scale(1.1); opacity: 1; }
+.dt-slot.is-armed > .dc .dc__face { box-shadow: 0 0 0 3px var(--hl, var(--gold)), 0 0 28px 0 var(--hl, var(--gold)); }
+/* the card that would come in, floating over the one that would leave */
+.dt-ghost { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0.88; transform: translate(14%, -16%) rotate(6deg); filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.5)); }
+.dt-ghost .dc { --cw: 100%; width: 100%; }
+@media (prefers-reduced-motion: no-preference) {
+  .dt-ghost { animation: dt-ghost-in 240ms var(--ease-out); }
+  @keyframes dt-ghost-in { from { opacity: 0; transform: translate(30%, -30%) rotate(14deg); } }
+  /* burning window: every card I hold could go — they breathe with the flame */
+  .dt-stage.is-window .dt-seat.is-me .dt-slot.is-burn > .dc .dc__face { animation: dt-breathe 1.1s ease-in-out infinite alternate; }
+  @keyframes dt-breathe { from { box-shadow: 0 0 0 1.5px var(--flame), 0 0 8px -2px var(--flame); } to { box-shadow: 0 0 0 2.5px var(--flame), 0 0 24px 0 var(--flame); } }
+}
+
+/* someone looks at this card: it lifts and tilts (its face only for the one looking) */
+.dt-slot.is-lifted { z-index: 3; }
+.dt-slot.is-lifted > .dc { transform: translateY(-22%) rotateX(16deg) scale(1.1); filter: drop-shadow(0 16px 18px rgba(0, 0, 0, 0.55)); }
+.dt-slot.is-lifted > .dc .dc__face { box-shadow: 0 0 0 2px var(--eye), 0 0 26px 0 var(--eye); }
+/* a wrong burn: shown to all, red, shaking */
+.dt-slot.is-wrong > .dc .dc__face { box-shadow: 0 0 0 3px var(--wrong), 0 0 26px 0 var(--wrong); }
+@media (prefers-reduced-motion: no-preference) {
+  .dt-slot.is-wrong > .dc { animation: dt-shake 480ms ease 380ms both; }
+  @keyframes dt-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-9%) rotate(-4deg); } 40% { transform: translateX(8%) rotate(3deg); } 60% { transform: translateX(-5%); } 80% { transform: translateX(3%); } }
+}
+.dt-slot.is-protected::after { content: ''; position: absolute; inset: 0; border-radius: 8% / 5%; background: linear-gradient(160deg, rgba(36, 86, 166, 0.25), rgba(36, 86, 166, 0.05)); box-shadow: inset 0 0 0 1.5px rgba(246, 249, 254, 0.5); pointer-events: none; }
+
+/* a drawn card waiting beside an opponent's hand */
+.dt-hold { position: absolute; left: calc(100% + var(--cw) * 0.28); top: 50%; width: var(--cw); aspect-ratio: 250 / 400; translate: 0 -50%; rotate: 9deg; }
+.dt-hold .dc { --cw: 100%; width: 100%; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5)); }
+@media (prefers-reduced-motion: no-preference) { .dt-hold .dc { animation: dt-bob 1.6s ease-in-out infinite alternate; } }
+@keyframes dt-bob { to { transform: translateY(-6%); } }
+
+/* ---- centre: pile, my drawn card, discard ---- */
+.dt-pile, .dt-discard { position: relative; display: block; flex: none; width: var(--cw); aspect-ratio: 250 / 400; padding: 0; border: 0; background: none; color: inherit; border-radius: 8% / 5%; transition: transform 200ms var(--ease-out); -webkit-tap-highlight-color: transparent; }
+.dt-pile > .dc, .dt-discard > .dc, .dt-pile__under .dc { --cw: 100%; position: absolute; inset: 0; width: 100%; }
+.dt-pile__under { position: absolute; inset: 0; }
+.dt-pile__under.is-1 { translate: -2px 3px; }
+.dt-pile__under.is-2 { translate: -4px 6px; }
+.dt-count { position: absolute; z-index: 2; right: -9px; top: -9px; min-width: 28px; padding: 1px 7px; border-radius: 999px; background: var(--plate); box-shadow: 0 0 0 1px var(--line); font-size: 11px; font-weight: 800; text-align: center; color: var(--ink-2); }
+.dt-pile.is-target > .dc .dc__face, .dt-discard.is-target > .dc .dc__face { box-shadow: 0 0 0 2px var(--hl), 0 0 22px -2px var(--hl); }
+.dt-discard.is-armed > .dc .dc__face { box-shadow: 0 0 0 3px var(--gold), 0 0 30px 0 var(--gold); }
+.dt-discard.is-armed { transform: translateY(-8px); }
+.dt-discard__well { position: absolute; inset: 0; border-radius: 8% / 5%; box-shadow: inset 0 0 0 1.5px rgba(190, 210, 245, 0.2); background: rgba(5, 12, 30, 0.3); }
+.dt-ring { position: absolute; left: -6px; top: -6px; width: calc(100% + 12px); height: calc(100% + 12px); overflow: visible; pointer-events: none; z-index: 2; }
+.dt-ring rect { fill: none; }
+.dt-ring__track { stroke: rgba(255, 123, 69, 0.18); stroke-width: 6; }
+.dt-ring__flame { stroke: var(--flame); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 100; filter: drop-shadow(0 0 5px var(--flame)); animation: dt-ring linear forwards; }
+@keyframes dt-ring { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 100; } }
+.dt-burst { position: absolute; inset: -20%; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(255, 190, 90, 0.75), rgba(255, 110, 50, 0.35) 45%, transparent 70%); }
+
+.dt-myhold { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.dt-myhold__card { display: block; width: var(--cw); aspect-ratio: 250 / 400; border-radius: 8% / 5%; }
+.dt-myhold__card { transition: box-shadow 300ms ease; box-shadow: inset 0 0 0 1.5px transparent; }
+.dt-stage.is-myturn .dt-myhold__card { box-shadow: inset 0 0 0 1.5px rgba(243, 199, 107, 0.28); }
+.dt-myhold__card.is-full { box-shadow: none; }
+.dt-myhold__card .dc { --cw: 100%; width: 100%; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.55)); }
+@media (prefers-reduced-motion: no-preference) { .dt-myhold__card .dc { animation: dt-bob 1.8s ease-in-out infinite alternate; } }
+.dt-power { position: absolute; top: calc(100% + 4px); display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; background: var(--plate); box-shadow: 0 0 0 1px color-mix(in oklab, var(--eye) 50%, transparent); color: var(--eye); font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+/* ---- dock ---- */
+.dt-status { display: flex; align-items: center; justify-content: center; height: 2.9em; overflow: hidden; line-height: 1.4; text-align: center; color: var(--ink-2); font-size: var(--text-sm); font-weight: 600; text-wrap: balance; }
+.dt-status strong { color: var(--ink); }
+.dt-status.is-turn strong { color: var(--gold); }
+.dt-status.is-burn strong { color: var(--flame); }
+.dt-status.is-eye { color: var(--eye); }
+.dt-status.is-swap { color: var(--swap); }
+.dt-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; min-height: 48px; }
+.dt-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 46px; padding: 0 18px; border: 0; border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit; font-size: var(--text-sm); font-weight: 750; cursor: pointer;
+  transition: transform var(--dur-press) ease, background 160ms ease;
+}
+.dt-btn:active { transform: scale(0.96); }
+.dt-btn:disabled { opacity: 0.5; cursor: default; }
+@media (hover: hover) { .dt-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.16); } }
+.dt-btn.is-ghost { background: transparent; color: var(--ink-2); }
+.dt-btn.is-gold { background: linear-gradient(180deg, #ffe09a, var(--gold) 45%, var(--gold-2)); color: #2a1a00; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 6px 16px -6px rgba(243, 199, 107, 0.7); }
+/* the "Dutch!" button is a piece of faience */
+.dt-btn.is-dutch { background: linear-gradient(180deg, #ffffff, #e2ebf8); color: var(--cobalt); font-family: var(--font-display); font-weight: 800; letter-spacing: 0.01em; box-shadow: inset 0 0 0 2px var(--cobalt), 0 6px 16px -6px rgba(0, 0, 0, 0.6); }
+.dt-btn.is-dutch.is-armed { background: var(--cobalt); color: #fff; box-shadow: inset 0 0 0 2px #fff, 0 0 0 4px rgba(36, 86, 166, 0.45); }
+@media (prefers-reduced-motion: no-preference) { .dt-btn.is-dutch.is-armed { animation: dt-pulse 900ms ease-in-out infinite alternate; } }
+@keyframes dt-pulse { to { box-shadow: inset 0 0 0 2px #fff, 0 0 0 9px rgba(36, 86, 166, 0.15); } }
+
+/* ---- effects layer ---- */
+.dt-fx { position: fixed; inset: 0; z-index: 80; pointer-events: none; }
+.dt-flight { position: fixed; left: 0; top: 0; z-index: 81; will-change: transform; }
+.dt-flight .dc { --cw: 100%; width: 100%; filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.45)); }
+.dt-flight.is-burn .dc { filter: drop-shadow(0 0 10px var(--flame)) drop-shadow(0 0 22px rgba(255, 123, 69, 0.7)); }
+.dt-flight.is-swap .dc { filter: drop-shadow(0 0 10px var(--swap)) drop-shadow(0 12px 16px rgba(0, 0, 0, 0.5)); }
+.dt-links { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 70; pointer-events: none; overflow: visible; }
+.dt-link { fill: none; stroke: var(--swap); stroke-width: 2.5; stroke-dasharray: 7 7; stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(185, 162, 255, 0.8)); }
+@media (prefers-reduced-motion: no-preference) { .dt-link { animation: dt-march 600ms linear infinite; } }
+@keyframes dt-march { to { stroke-dashoffset: -14; } }
+.dt-link__end { fill: var(--swap); }
+.dt-pop { position: fixed; translate: -50% -100%; z-index: 90; padding: 3px 10px; border-radius: 999px; background: var(--plate); box-shadow: 0 0 0 1px var(--line), 0 8px 18px -6px rgba(0, 0, 0, 0.7); font-size: var(--text-xs); font-weight: 800; white-space: nowrap; }
+.dt-pop.is-burn { color: #2a1200; background: linear-gradient(180deg, #ffc58a, var(--flame)); box-shadow: 0 0 18px -2px var(--flame); }
+.dt-pop.is-wrong { color: #fff; background: var(--wrong); }
+.dt-pop.is-eye { color: var(--eye); }
+.dt-pop.is-swap { color: var(--swap); }
+
+.dt-banner {
+  position: fixed; left: 50%; top: 42%; translate: -50% -50%; z-index: 95; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 34px 16px;
+  border-radius: 22px; background: linear-gradient(180deg, #ffffff, #e2ebf8); color: var(--cobalt);
+  box-shadow: inset 0 0 0 3px var(--cobalt), inset 0 0 0 7px #fff, inset 0 0 0 8.5px rgba(36, 86, 166, 0.5), 0 30px 70px -20px rgba(0, 0, 0, 0.8);
+  text-align: center; max-width: calc(100vw - 32px);
+}
+.dt-banner strong { font-family: var(--font-display); font-size: clamp(2.2rem, 7vw, 3.6rem); line-height: 1; letter-spacing: -0.02em; }
+.dt-banner span { font-size: var(--text-sm); font-weight: 650; color: #3b5a8f; }
+
+/* ---- phones ---- */
+@media (max-width: 640px) {
+  .dt-plate { gap: 5px; padding: 2px 9px 3px 2px; }
+  .dt-plate .avatar, .dt-bot { --avatar-size: 24px !important; width: 24px; height: 24px; }
+  .dt-plate__name { max-width: 64px; font-size: 12px; }
+  .dt-plate__score { font-size: 10.5px; }
+  .dt-seat.is-opp .dt-chip { display: none; }
+  .dt-slot__hint { width: 18px; height: 18px; top: -6px; right: -6px; }
+  .dt-btn { min-height: 44px; padding: 0 14px; }
+}
+
+/* ---- design review page ---- */
+.dt-review { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+.dt-review__bar { display: flex; flex-wrap: wrap; overflow-x: auto; align-items: center; gap: 6px 10px; padding: 10px 16px; background: rgba(4, 10, 26, 0.7); box-shadow: 0 1px 0 var(--line); }
+.dt-review__bar h1 { margin: 0 8px 0 0; font-size: var(--text-md); font-family: var(--font-display); }
+.dt-review__bar button { height: 30px; padding: 0 10px; border: 0; border-radius: 9px; background: rgba(255, 255, 255, 0.08); color: var(--ink-2); font: inherit; font-size: 12.5px; font-weight: 650; cursor: pointer; }
+.dt-review__bar button.is-on { background: var(--glaze); color: var(--cobalt); }
+.dt-review__group { display: inline-flex; gap: 4px; padding-right: 8px; border-right: 1px solid var(--line); }
+.dt-review__group:last-child { border-right: 0; }
+@media (max-width: 640px) {
+  .dt-review__bar { flex-wrap: nowrap; padding: 6px 10px; scrollbar-width: none; }
+  .dt-review__bar h1 { display: none; }
+  .dt-review__bar button { flex: none; height: 28px; white-space: nowrap; }
+  .dt-review__group { flex: none; }
+}
+
+/* =========================================================
+   Focus, power, order, captions, caller, tiles, the "Dutch"
+   confirmation, the scores, the pause.
+   ========================================================= */
+
+/* while I choose, what I cannot touch steps back */
+.dt-slot.is-dim > .dc { opacity: 0.4; filter: saturate(0.6) brightness(0.8); }
+
+/* ---- the caller of "Dutch": a faience ribbon, a framed and locked hand ---- */
+.dt-seat.is-caller .dt-plate { box-shadow: 0 0 0 2px var(--glaze), 0 0 0 4px var(--cobalt), 0 10px 24px -10px rgba(0, 0, 0, 0.7); overflow: visible; }
+.dt-ribbon {
+  position: absolute; left: 50%; bottom: calc(100% - 4px); z-index: 3; translate: -50% 0;
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 12px 3px 10px;
+  border-radius: 7px; background: linear-gradient(180deg, #ffffff, #e2ebf8); color: var(--cobalt);
+  box-shadow: inset 0 0 0 2px var(--cobalt), inset 0 0 0 4px #fff, inset 0 0 0 5px rgba(36, 86, 166, 0.4), 0 6px 14px -4px rgba(0, 0, 0, 0.6);
+  font-family: var(--font-display); font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+}
+.dt-grid.is-protected::before {
+  content: ''; position: absolute; inset: calc(var(--cw) * -0.12); border-radius: 12px; pointer-events: none;
+  border: 2px dashed rgba(246, 249, 254, 0.55); box-shadow: 0 0 0 3px rgba(36, 86, 166, 0.55), 0 0 26px rgba(36, 86, 166, 0.6);
+}
+.dt-slot.is-protected::after { content: ''; position: absolute; inset: 0; border-radius: 8% / 5%; background: linear-gradient(160deg, rgba(36, 86, 166, 0.32), rgba(36, 86, 166, 0.08)); box-shadow: none; pointer-events: none; }
+.dt-slot__lock { position: absolute; z-index: 2; left: 50%; bottom: 6%; translate: -50% 0; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--glaze); color: var(--cobalt); box-shadow: 0 0 0 1.5px var(--cobalt), 0 3px 8px rgba(0, 0, 0, 0.4); }
+
+/* ---- "ensuite" and what someone just did ---- */
+.dt-caption {
+  position: absolute; left: 50%; top: calc(100% + 6px); z-index: 6; translate: -50% 0;
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
+  border-radius: 999px; background: rgba(6, 14, 34, 0.92); color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line), 0 8px 18px -6px rgba(0, 0, 0, 0.8);
+  font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none;
+}
+.dt-caption.is-eye { color: var(--eye); box-shadow: 0 0 0 1px color-mix(in oklab, var(--eye) 45%, transparent), 0 8px 18px -6px rgba(0, 0, 0, 0.8); }
+.dt-caption.is-swap { color: var(--swap); box-shadow: 0 0 0 1px color-mix(in oklab, var(--swap) 45%, transparent), 0 8px 18px -6px rgba(0, 0, 0, 0.8); }
+.dt-caption.is-burn { background: linear-gradient(180deg, #ffc58a, var(--flame)); color: #2a1200; }
+.dt-caption.is-wrong { background: var(--wrong); color: #fff; }
+.dt-plate { overflow: visible; }
+.dt-timer { overflow: hidden; }
+
+/* floating words, a size up, with an icon */
+.dt-pop { display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px; font-size: 13px; border-radius: 12px; }
+
+.dt-steps { display: flex; gap: 6px; margin: 2px 0 0; padding: 0; list-style: none; }
+.dt-steps li { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px 3px 3px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); color: var(--ink-3); font-size: 11px; font-weight: 700; }
+.dt-steps b { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); font-size: 10.5px; }
+.dt-steps li.is-on { color: var(--ink); box-shadow: inset 0 0 0 1px var(--tone); }
+.dt-steps li.is-on b { background: var(--tone); color: #0b1530; }
+.dt-steps li.is-done b { background: color-mix(in oklab, var(--tone) 40%, transparent); color: var(--ink); }
+.dt-btn.is-small { min-height: 34px; padding: 0 12px; font-size: 12.5px; border-radius: 11px; }
+
+/* ---- my moves as tiles ---- */
+.dt-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.dt-stage.is-wide .dt-tiles { justify-content: flex-start; }
+.dt-tile {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 60px; padding: 8px 16px 8px 9px;
+  border: 0; border-radius: 16px; font: inherit; text-align: left; cursor: pointer; color: var(--ink);
+  background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px var(--line), 0 10px 22px -12px rgba(0, 0, 0, 0.8);
+  transition: transform var(--dur-press) ease, box-shadow 200ms ease, background 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.dt-tile:active:not(:disabled) { transform: scale(0.96); }
+.dt-tile:disabled { opacity: 0.5; cursor: default; }
+@media (hover: hover) and (pointer: fine) { .dt-tile:hover:not(:disabled) { transform: translateY(-2px); } }
+.dt-tile__icon { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 12px; background: rgba(0, 0, 0, 0.18); }
+.dt-tile__card { flex: none; --cw: 28px; }
+.dt-tile__card .dc { width: 28px; }
+.dt-tile__text { display: flex; flex-direction: column; line-height: 1.15; }
+.dt-tile__text b { font-family: var(--font-display); font-size: var(--text-md); font-weight: 800; }
+.dt-tile__text small { font-size: 11.5px; font-weight: 650; opacity: 0.75; }
+.dt-tile.is-draw { background: linear-gradient(180deg, #ffe3a3, var(--gold) 50%, var(--gold-2)); color: #2a1a00; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 10px 24px -10px rgba(243, 199, 107, 0.8); }
+.dt-tile.is-draw .dt-tile__icon { background: rgba(255, 255, 255, 0.35); }
+.dt-tile.is-take.is-armed { box-shadow: inset 0 0 0 2px var(--gold), 0 0 22px -4px var(--gold); }
+.dt-tile.is-dutch { background: linear-gradient(180deg, #ffffff, #dfe8f7); color: var(--cobalt); box-shadow: inset 0 0 0 2px var(--cobalt), inset 0 0 0 5px #fff, inset 0 0 0 6px rgba(36, 86, 166, 0.4), 0 10px 24px -12px rgba(0, 0, 0, 0.8); padding-left: 18px; }
+.dt-tile.is-dutch b { font-size: var(--text-lg); letter-spacing: -0.01em; }
+.dt-tile.is-dutch.is-armed { background: var(--cobalt); color: #fff; box-shadow: inset 0 0 0 2px #fff, 0 0 0 4px rgba(36, 86, 166, 0.5); }
+.dt-tile.is-power { box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--eye) 60%, transparent), 0 0 22px -8px var(--eye); }
+.dt-tile.is-power .dt-tile__icon { color: var(--eye); }
+.dt-pile.is-preview > .dc .dc__face, .dt-discard.is-preview > .dc .dc__face { box-shadow: 0 0 0 3px var(--gold), 0 0 28px 0 var(--gold); }
+.dt-pile.is-preview, .dt-discard.is-preview { transform: translateY(-6px); }
+
+/* ---- "Dutch?" — the confirmation, as a faience card ---- */
+.dt-dock { position: relative; }
+.dt-confirm {
+  position: absolute; left: 50%; bottom: calc(100% - 8px); z-index: 30; translate: -50% 0;
+  width: min(380px, calc(100vw - 24px)); padding: 16px 18px 14px; border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff, #e6eef9); color: #1d3360;
+  box-shadow: inset 0 0 0 2px var(--cobalt), inset 0 0 0 6px #fff, inset 0 0 0 7px rgba(36, 86, 166, 0.35), 0 30px 60px -16px rgba(0, 0, 0, 0.85);
+}
+.dt-stage.is-wide .dt-confirm { left: 0; translate: 0 0; }
+.dt-confirm strong { display: block; font-family: var(--font-display); font-size: var(--text-xl); color: var(--cobalt); margin-bottom: 6px; }
+.dt-confirm ul { margin: 0 0 12px; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; font-weight: 550; line-height: 1.35; }
+.dt-confirm b { color: var(--cobalt); }
+.dt-confirm__actions { display: flex; justify-content: flex-end; gap: 8px; }
+.dt-confirm .dt-btn.is-ghost { color: #3b5a8f; }
+.dt-btn.is-cobalt { background: var(--cobalt); color: #fff; font-family: var(--font-display); font-weight: 800; box-shadow: 0 8px 18px -8px rgba(36, 86, 166, 0.9); }
+@media (hover: hover) { .dt-btn.is-cobalt:hover:not(:disabled) { background: #2d64bd; } }
+
+/* ---- pause ---- */
+.dt-stage.is-paused .dt-timer span, .dt-stage.is-paused .dt-bar span, .dt-stage.is-paused .dt-ring__flame { animation-play-state: paused; }
+.dt-paused { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; background: rgba(4, 10, 26, 0.6); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+.dt-paused__card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 34px; border-radius: 26px; background: rgba(12, 24, 54, 0.96); box-shadow: 0 0 0 1px var(--line), 0 30px 70px -20px rgba(0, 0, 0, 0.85); text-align: center; color: var(--ink); }
+.dt-paused__icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: rgba(243, 199, 107, 0.15); color: var(--gold); }
+.dt-paused__card strong { font-family: var(--font-display); font-size: var(--text-2xl); }
+.dt-paused__text { color: var(--ink-2); margin-bottom: 8px; }
+
+@media (max-width: 640px) {
+  .dt-tile { min-height: 54px; padding: 6px 12px 6px 7px; gap: 8px; }
+  .dt-tile__icon { width: 34px; height: 34px; }
+  .dt-tile__text b { font-size: 14.5px; }
+  .dt-tile__text small { font-size: 10.5px; }
+  .dt-tiles { gap: 6px; }
+  .dt-steps li { font-size: 10px; padding-right: 7px; }
+  .dt-caption { font-size: 10.5px; padding: 3px 8px; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; }
+  .dt-ribbon { font-size: 11px; padding: 2px 8px; }
+}
+
+/* ---- order of play: who has played in this round of the table, who plays now ---- */
+.dt-rail { grid-area: rail; position: relative; z-index: 2; display: flex; justify-content: center; min-height: 32px; padding: 0 12px; max-width: 100%; }
+.dt-orderbar { display: flex; align-items: center; gap: 8px; max-width: 100%; min-width: 0; padding: 3px 8px 3px 12px; border-radius: 999px; background: rgba(6, 14, 34, 0.6); box-shadow: 0 0 0 1px var(--line); }
+.dt-orderbar__label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); white-space: nowrap; }
+.dt-orderbar.is-last .dt-orderbar__label { color: #9bb9ff; }
+.dt-orderbar__list { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.dt-orderbar__list::-webkit-scrollbar { display: none; }
+.dt-orderbar__arrow { color: var(--ink-3); font-weight: 800; }
+.dt-orderbar__item { display: flex; align-items: center; gap: 6px; padding: 2px 10px 2px 2px; border-radius: 999px; white-space: nowrap; transition: background-color 200ms ease, opacity 200ms ease, color 200ms ease; }
+.dt-orderbar__item.is-done { opacity: 0.5; }
+.dt-orderbar__item.is-now { background: var(--gold); color: #2a1a00; opacity: 1; }
+.dt-orderbar__item.is-me .dt-orderbar__name { font-weight: 800; }
+.dt-orderbar__avatar { position: relative; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); }
+.dt-orderbar__item.is-now .dt-orderbar__avatar { background: rgba(255, 255, 255, 0.45); }
+.dt-orderbar__check { position: absolute; right: -4px; bottom: -3px; width: 13px; height: 13px; border-radius: 50%; display: grid; place-items: center; background: var(--success); color: #fff; }
+.dt-orderbar__name { font-size: 12.5px; font-weight: 650; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+.dt-orderbar__caller { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 7px; background: var(--glaze); color: var(--cobalt); font-size: 11px; font-weight: 800; white-space: nowrap; }
+@media (max-width: 640px) {
+  .dt-orderbar { padding: 3px 6px; gap: 5px; }
+  .dt-orderbar__label { display: none; }
+  .dt-orderbar__item:not(.is-now):not(.is-me) .dt-orderbar__name { display: none; }
+  .dt-orderbar__item:not(.is-now):not(.is-me) { padding-right: 2px; }
+}
+
+/* ---- the recap of a round: TarotIO's layout, in DutchIO's colours ---- */
+.sheet:has(.dt-recap) {
+  --ink: #eef3fb; --ink-2: rgba(226, 234, 248, 0.68); --ink-3: rgba(226, 234, 248, 0.42);
+  --line: rgba(190, 210, 245, 0.14); --gold: #f3c76b; --gold-2: #d99a2b; --eye: #7fd4ff;
+  --cobalt: #2456a6; --glaze: #f6f9fe;
+  background: linear-gradient(180deg, #13254f, #0a1530); color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line), 0 40px 90px -30px rgba(0, 0, 0, 0.9);
+}
+.sheet:has(.dt-recap) .sheet__title { font-family: var(--font-display); }
+.sheet:has(.dt-recap) .sheet__footer { border-top: 1px solid var(--line); }
+.sheet:has(.dt-recap) .sheet__footer .dt-btn { min-height: 48px; }
+.dt-recap { display: flex; flex-direction: column; gap: 18px; }
+.dt-recap__break { display: flex; flex-direction: column; gap: 8px; }
+.dt-recap__head { margin: 0; color: var(--ink-2); }
+.dt-recap__head strong { color: var(--ink); font-family: var(--font-display); }
+.dt-recap__verdict { align-self: flex-start; margin: 0; padding: 4px 14px; border-radius: 10px; font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); background: linear-gradient(180deg, #ffffff, #e2ebf8); color: var(--cobalt); box-shadow: inset 0 0 0 2px var(--cobalt), inset 0 0 0 4px #fff, inset 0 0 0 5px rgba(36, 86, 166, 0.4); rotate: -2deg; }
+.dt-recap__verdict.is-lost { background: linear-gradient(180deg, #ffe3e5, #ffc2c7); color: #a3172a; box-shadow: inset 0 0 0 2px #c22a3c, inset 0 0 0 4px #ffe3e5; }
+.dt-recap__lines { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.dt-recap__lines div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.04); font-size: 13.5px; }
+.dt-recap__lines dt { color: var(--ink-2); }
+.dt-recap__lines dd { margin: 0; font-weight: 700; }
+.dt-recap__deltas { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.dt-recap__deltas li { display: grid; grid-template-columns: 1fr auto 76px; grid-template-areas: "name pts total" "bar bar bar"; align-items: center; gap: 2px 12px; padding: 8px 12px 9px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); }
+.dt-recap__deltas li.is-me { box-shadow: inset 0 0 0 1.5px rgba(243, 199, 107, 0.5); }
+.dt-recap__name { grid-area: name; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-recap__deltas strong { grid-area: pts; font-family: var(--font-display); font-size: var(--text-lg); }
+.dt-recap__deltas strong.is-zero { color: #5ee6a0; }
+.dt-recap__total { grid-area: total; text-align: right; color: var(--ink-2); font-size: 13px; font-weight: 700; }
+.dt-recap__bar { grid-area: bar; display: block; height: 4px; margin-top: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.dt-recap__bar span { display: block; height: 100%; width: calc(var(--r) * 100%); background: hsl(var(--hue) 70% 55%); }
+.dt-recap__hands { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.dt-hand { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 16px; background: rgba(255, 255, 255, 0.05); box-shadow: 0 0 0 1px var(--line); }
+.dt-hand.is-zero { box-shadow: 0 0 0 1px var(--line), inset 4px 0 0 #2fbf7a; }
+.dt-hand.is-caller { box-shadow: 0 0 0 2px var(--cobalt), 0 0 0 3px rgba(246, 249, 254, 0.4); }
+.dt-hand.is-caller.is-failed { box-shadow: 0 0 0 2px #c22a3c; }
+.dt-hand__title { display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-weight: 800; }
+.dt-hand__tag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 6px; background: var(--glaze); color: var(--cobalt); font-family: var(--font-ui); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.dt-hand__cards { display: flex; flex-wrap: wrap; gap: 3px; min-height: 42px; --cw: 26px; }
+.dt-hand__cards .dc { width: 26px; }
+.dt-hand__cards em { color: var(--ink-3); font-size: 12px; align-self: center; }
+.dt-hand__stats { margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.dt-hand__stats div { display: flex; flex-direction: column; }
+.dt-hand__stats dt { font-size: 10.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+.dt-hand__stats dd { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); }
+.dt-recap__ready { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.dt-recap__ready ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.dt-recap__ready li { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); font-size: 13px; color: var(--ink-2); }
+.dt-recap__ready li.is-ready { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--success); }
+.dt-recap__ready li.is-ready svg { color: var(--success); }
+.dt-recap__hint { color: var(--ink-3); font-size: 12px; }
+.dt-dots { display: inline-flex; gap: 3px; }
+.dt-dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); }
+@media (prefers-reduced-motion: no-preference) {
+  .dt-dots i { animation: dt-dot 1.2s ease-in-out infinite; }
+  .dt-dots i:nth-child(2) { animation-delay: 0.15s; }
+  .dt-dots i:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes dt-dot { 0%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
+}
+
+/* the main buttons of the dock ("C'est mémorisé", "Dutch !") share one standard size */
+.dt-btn.is-main, .dt-tile.is-dutch { width: 240px; max-width: 100%; min-height: 56px; justify-content: center; text-align: center; border-radius: 16px; }
+.dt-tile.is-dutch .dt-tile__text { align-items: center; }
+.dt-btn.is-main { font-size: var(--text-md); }
+
+/* ---- my power, explained in the dock (no overlay on the table) ---- */
+.dt-guide { --tone: var(--eye); display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; text-align: center; }
+.dt-guide.is-swap { --tone: var(--swap); }
+.dt-stage.is-wide .dt-guide { align-items: flex-start; text-align: left; }
+.dt-guide__eyebrow { display: inline-flex; align-items: center; gap: 5px; color: var(--tone); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.dt-guide__title { font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.15; }
+.dt-guide__text { color: var(--ink-2); font-size: 13px; font-weight: 600; line-height: 1.3; min-height: 1.3em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.dt-guide__text strong { color: var(--tone); }
+.dt-guide__row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+.dt-stage.is-tall .dt-guide__row { justify-content: center; }
+.dt-steps li.is-on { box-shadow: inset 0 0 0 1px var(--tone); }
+.dt-steps li.is-on b { background: var(--tone); }
+.dt-steps li.is-done b { background: color-mix(in oklab, var(--tone) 40%, transparent); }
+/* the discard carries the power that is waiting to be used */
+.dt-powerbadge {
+  position: absolute; z-index: 3; left: 50%; top: -14px; translate: -50% 0;
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--eye); color: #0b1530; box-shadow: 0 0 0 3px rgba(6, 14, 34, 0.9), 0 0 18px var(--eye);
+}
+.dt-powerbadge.is-swap { background: var(--swap); box-shadow: 0 0 0 3px rgba(6, 14, 34, 0.9), 0 0 18px var(--swap); }
+@media (max-width: 640px) {
+  .dt-guide__eyebrow { display: none; }
+  .dt-guide__title { font-size: var(--text-md); }
+  .dt-guide__text { font-size: 12px; }
+  .dt-guide__row { margin-top: 2px; }
+}
+
+.dt-mainwrap { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 240px; max-width: 100%; }
+.dt-mainwrap .dt-bar { width: 72%; }
+
+/* phones: my cards in one line, as large as the width allows (4 cards, or more with penalties) */
+.dt-seat.is-me.is-row { --cw: min(clamp(44px, 14cqh, 92px), calc((100cqw - 32px) / var(--cols-n, 4) - 9px)); }
