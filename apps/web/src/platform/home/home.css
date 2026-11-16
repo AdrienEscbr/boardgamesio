@@ -1,4 +1,6 @@
 .home {
+  /* The 3D band, 20% shorter than it used to be; the brand sits centred on it. */
+  --hero-h: calc(var(--safe-top) + 0.8 * (60px + clamp(9rem, 30svh, 18rem) + 1.5rem));
   position: relative;
   flex: 1;
   display: flex;
@@ -9,9 +11,7 @@
   overflow: hidden;
 }
 
-/* The 3D canvas ends just below where the title starts, so tiles never sit on the text. */
 .home__hero {
-  --hero-h: calc(var(--safe-top) + 60px + clamp(9rem, 30svh, 18rem) + 1.5rem);
   position: absolute;
   inset: 0 0 auto 0;
   height: var(--hero-h);
@@ -22,25 +22,43 @@
 .home__hero canvas { pointer-events: auto; }
 
 .home__topbar {
-  position: relative;
+  position: absolute;
   z-index: 2;
-  align-self: stretch;
+  top: calc(var(--safe-top) + var(--space-4));
+  right: calc(var(--safe-right) + var(--space-4));
   display: flex;
-  justify-content: flex-end;
   gap: var(--space-1);
 }
 
 .home__content {
   position: relative;
   z-index: 1;
-  width: min(440px, 100%);
-  margin-top: clamp(9rem, 30svh, 18rem);
+  width: min(560px, 100%);
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+  pointer-events: none; /* the 3D tiles under the brand stay clickable */
 }
+.home__content > * { pointer-events: auto; }
 
-.home__brand { text-align: center; }
+.home__brand {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(var(--hero-h) - var(--safe-top) - var(--space-4));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+/* Halo made of the page background, so the title stays readable over the tiles. */
+.home__brand::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 12% 4%;
+  background: radial-gradient(closest-side, var(--bg) 35%, color-mix(in oklab, var(--bg) 70%, transparent) 65%, transparent);
+}
 .home__title {
   font-size: var(--text-hero);
   font-weight: 800;
@@ -98,8 +116,8 @@
 }
 .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-.join { display: flex; gap: var(--space-2); }
-.join .btn { flex: none; }
+.join { display: flex; gap: 6px; }
+.join__submit.btn { flex: none; width: 56px; padding: 0; }
 
 .code-input {
   position: relative;
@@ -180,19 +198,110 @@
   text-align: center;
 }
 
-@media (max-width: 480px) {
-  .join { flex-direction: column; }
-  .join .btn { width: 100%; }
+/* ---------- Layout: one column (phone order), two columns from 1024px ---------- */
+.home__title { font-size: clamp(2.5rem, 10.5vw, 5rem); }
+.home__grid { display: flex; flex-direction: column; gap: var(--space-5); }
+.home__panel--identity { padding: var(--space-3) var(--space-4); }
+.home__open { display: flex; flex-direction: column; }
+
+@media (min-width: 1024px) {
+  .home__content { width: min(1200px, 100%); }
+  .home__grid {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    grid-template-areas: 'id open' 'code open' 'create create';
+    gap: var(--space-5);
+  }
+  .home__panel--identity { grid-area: id; }
+  .home__join { grid-area: code; }
+  .games { grid-area: create; }
+  /* As tall as the left column, never taller: the list scrolls instead. */
+  .home__open { grid-area: open; contain: size; }
+}
+
+/* ---------- Open games ---------- */
+.open-games { flex: 1; min-height: 0; gap: var(--space-3); }
+.open-games__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.open-games__filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.open-games__filters .chip { cursor: pointer; }
+.open-games__list {
+  --row-h: 56px;
+  display: grid;
+  grid-auto-rows: var(--row-h);
+  gap: var(--space-2);
+  max-height: calc(3 * var(--row-h) + 2 * var(--space-2));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.open-game {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: 'cover text seats join';
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  box-shadow: 0 0 0 1px var(--border) inset;
+}
+.open-game__cover { grid-area: cover; width: 40px; height: 26px; }
+.open-game__text { grid-area: text; display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.open-game__text strong, .open-game__text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.open-game__text span { font-size: var(--text-xs); color: var(--text-3); }
+.open-game__seats { grid-area: seats; color: var(--text-2); }
+.open-game__seats-label { display: none; }
+.open-game__join.btn { grid-area: join; width: 36px; --btn-h: 36px; padding: 0; }
+.open-games__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+  color: var(--text-2);
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .open-games__list {
+    --row-h: 112px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+  .open-game {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'head head' 'seats join';
+    padding: var(--space-3);
+  }
+  .open-game__cover, .open-game__text { grid-row: 1; }
+  .open-game__cover { grid-column: 1; }
+  .open-game__text { grid-column: 1 / -1; margin-left: calc(40px + var(--space-3)); }
+  .open-game { container-type: inline-size; }
+  .open-game__seats { white-space: nowrap; }
+  .open-game__seats-label { display: inline; }
+}
+@container (max-width: 170px) { .open-game__seats-label { display: none; } }
+
+/* ---------- Covers scaled into a fixed box ---------- */
+.fit-cover { position: relative; display: block; flex: none; overflow: clip; overflow-clip-margin: 4px; }
+.fit-cover__inner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: max-content;
 }
 
 /* ---------- Game catalogue ---------- */
-.home__content { width: min(560px, 100%); }
-.home__title { font-size: clamp(2.5rem, 10.5vw, 5rem); }
-@media (min-width: 640px) { .games__grid { grid-template-columns: 1fr 1fr; } }
-.home__panel--identity { padding: var(--space-3) var(--space-4); }
-.games { display: flex; flex-direction: column; gap: var(--space-3); }
+.games { display: flex; flex-direction: column; gap: var(--space-3); scroll-margin-top: var(--space-4); }
 .games__title { font-size: var(--text-xl); }
-.games__grid { display: grid; gap: var(--space-3); }
+.games__grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr)); }
 .game-card {
   display: flex;
   flex-direction: column;
@@ -200,6 +309,11 @@
   padding: var(--space-4);
 }
 .game-card.is-upcoming { opacity: 0.72; }
+.game-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.game-card__head > div { min-width: 0; }
+.game-card__thumb { width: 120px; height: 44px; }
+@media (min-width: 1024px) { .game-card__thumb { width: 72px; } }
+.game-card__author { font-size: var(--text-sm); color: var(--text-3); }
 .game-card__cover { display: flex; gap: 6px; }
 .game-card__tile { width: 38px; height: 42px; }
 @media (prefers-reduced-motion: no-preference) {
@@ -209,5 +323,7 @@
   .game-card:not(.is-upcoming):hover .game-card__tile { transform: translateY(-4px) rotate(calc((var(--i) - 1.5) * 3deg)); }
 }
 .game-card__name { font-size: var(--text-xl); display: flex; align-items: center; gap: var(--space-2); }
-.game-card__tagline { color: var(--text-2); margin-top: 2px; }
-.game-card__meta { display: flex; align-items: center; gap: 6px; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-3); }
+.game-card__tagline { color: var(--text-2); flex: 1; }
+.game-card__meta { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-3); }
+.game-card .btn { padding-inline: var(--space-3); }
+.game-card .btn svg { flex: none; }

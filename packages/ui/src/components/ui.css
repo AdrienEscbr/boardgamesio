@@ -143,6 +143,8 @@
 }
 .switch:checked { background: var(--success); }
 .switch:checked::after { transform: translateX(20px); }
+.switch-row:has(.switch:disabled), .switch-row:has(.switch:disabled) .switch { cursor: default; }
+.switch-row:has(.switch:disabled) { opacity: 0.45; }
 
 /* ---------- Avatar ---------- */
 .avatar {

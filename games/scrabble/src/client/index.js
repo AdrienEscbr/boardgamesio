@@ -9,6 +9,7 @@ import RulesSheet from './RulesSheet.jsx';
  */
 const scrabbleClient = {
   id: 'scrabble',
+  author: 'Adrien',
   name: 'ScrabbleIO',
   tagline: 'Le jeu de lettres, en français ou en anglais.',
   players: { min: 2, max: 4 },

@@ -477,3 +477,61 @@ test('origin check accepts the configured site and local dev servers only', () =
   assert.equal(isLocalNetworkOrigin('https://192.168.1.20.evil.com'), false);
   assert.equal(isLocalNetworkOrigin('https://evil.com'), false);
 });
+
+test('public lobbies with a free seat are listed live on the home page', async () => {
+  const watcher = await connect();
+  const pushes = [];
+  watcher.socket.on('rooms:open', (p) => pushes.push(p));
+  const listed = (pred) => new Promise((resolve) => {
+    const check = () => { const p = pushes.at(-1); if (p && pred(p.rooms)) { watcher.socket.off('rooms:open', check); resolve(p.rooms); return true; } return false; };
+    if (!check()) watcher.socket.on('rooms:open', check);
+  });
+  const first = await watcher.call('rooms:watch');
+  assert.equal(first.ok, true);
+  assert.ok(Array.isArray(first.rooms) && first.serverNow > 0);
+
+  const host = await connect();
+  const { room } = await host.call('room:create', { gameId: 'race', settings: { maxPlayers: 2 } });
+  assert.equal(room.public, true);
+  const [entry] = await listed((rs) => rs.some((r) => r.id === room.id));
+  assert.deepEqual(Object.keys(entry).sort(), ['createdAt', 'gameId', 'id', 'maxPlayers', 'players']);
+  assert.deepEqual({ id: entry.id, players: entry.players, maxPlayers: entry.maxPlayers }, { id: room.id, players: 1, maxPlayers: 2 });
+
+  // Private: unlisted, but still reachable with the code. Only the host decides.
+  const guest = await connect();
+  assert.equal((await guest.call('room:setVisibility', { roomId: room.id, public: false })).error, 'NOT_IN_ROOM');
+  assert.equal((await host.call('room:setVisibility', { roomId: room.id, public: false })).ok, true);
+  await listed((rs) => !rs.some((r) => r.id === room.id));
+  assert.equal((await host.call('room:setVisibility', { roomId: room.id, public: true })).ok, true);
+  await listed((rs) => rs.some((r) => r.id === room.id));
+
+  // A bot takes the last seat: full rooms are not listed.
+  const { botId } = await host.call('room:addBot', { roomId: room.id });
+  await listed((rs) => !rs.some((r) => r.id === room.id));
+  await host.call('room:removeBot', { roomId: room.id, botId });
+  await listed((rs) => rs.some((r) => r.id === room.id));
+
+  // A guest can join but not change the visibility.
+  await guest.call('room:join', { roomId: room.id });
+  assert.equal((await guest.call('room:setVisibility', { roomId: room.id, public: false })).error, 'NOT_HOST');
+  await listed((rs) => !rs.some((r) => r.id === room.id));
+  await guest.call('room:leave', { roomId: room.id });
+  await listed((rs) => rs.some((r) => r.id === room.id));
+
+  // Started: not listed, and the visibility is frozen.
+  await host.call('room:addBot', { roomId: room.id });
+  await host.call('room:updateSettings', { roomId: room.id, settings: { maxPlayers: 3 } });
+  await listed((rs) => rs.some((r) => r.id === room.id && r.maxPlayers === 3));
+  await host.call('room:start', { roomId: room.id });
+  await listed((rs) => !rs.some((r) => r.id === room.id));
+  assert.equal((await host.call('room:setVisibility', { roomId: room.id, public: false })).error, 'ROOM_IN_GAME');
+
+  // Closed when the host leaves a lobby.
+  const { room: other } = await host.call('room:create', { gameId: 'race' });
+  await listed((rs) => rs[0]?.id === other.id); // newest first
+  await host.call('room:leave', { roomId: other.id });
+  await listed((rs) => !rs.some((r) => r.id === other.id));
+
+  await watcher.call('rooms:unwatch');
+  watcher.close(); host.close(); guest.close();
+});

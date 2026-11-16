@@ -73,6 +73,15 @@ export class RoomManager {
     return out;
   }
 
+  /** Public lobbies with a free seat, newest first. No nicknames or settings: anyone can see this. */
+  openRooms() {
+    // ponytail: full scan on every change, index the open rooms if there are ever thousands of rooms
+    return [...this.rooms.values()]
+      .filter((r) => r.public && r.status === 'lobby' && r.members.length < r.settings.maxPlayers)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map((r) => ({ id: r.id, gameId: r.gameId, players: r.members.length, maxPlayers: r.settings.maxPlayers, createdAt: r.createdAt }));
+  }
+
   view(room, viewerId) {
     const plugin = this.plugin(room);
     const turn = room.game ? this._turnView(room) : null;
@@ -81,6 +90,7 @@ export class RoomManager {
       gameId: room.gameId,
       hostId: room.hostId,
       status: room.status,
+      public: room.public,
       settings: { ...room.settings },
       serverNow: this.now(),
       players: room.members.map((id) => ({
@@ -122,6 +132,7 @@ export class RoomManager {
       gameId,
       hostId: playerId,
       status: 'lobby',
+      public: true, // listed on the home page; a private room is only reachable with its code
       settings: plugin.sanitizeSettings(plugin.defaultSettings, settings, { memberCount: 1 }),
       members: [playerId],
       bots: new Map(), // id -> { nickname }
@@ -177,6 +188,14 @@ export class RoomManager {
     room.settings = this.plugin(room).sanitizeSettings(room.settings, patch, { memberCount: room.members.length });
     this._changed(room);
     return room;
+  }
+
+  setVisibility(roomId, playerId, isPublic) {
+    const room = this.get(roomId);
+    this._assertHost(room, playerId);
+    if (room.status === 'playing') throw new GameError('ROOM_IN_GAME');
+    room.public = !!isPublic;
+    this._changed(room);
   }
 
   addBot(roomId, playerId) {
@@ -431,6 +450,7 @@ export class RoomManager {
       if (s?.roomId === room.id) s.roomId = null;
     }
     this.rooms.delete(room.id);
+    this.notify(room); // nobody is in it any more, but the list of open rooms changed
   }
 
   _setCurrent(playerId, roomId) {

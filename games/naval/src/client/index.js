@@ -7,6 +7,7 @@ import Cover from './Cover.jsx';
 /** What the platform needs to present NavalIO. Heavy screens are lazy-loaded. */
 const navalClient = {
   id: 'naval',
+  author: 'Adrien',
   name: 'NavalIO',
   tagline: 'La bataille navale de 2 à 4 joueurs, chacun pour soi.',
   players: { min: 2, max: 4 },

@@ -7,11 +7,11 @@ import { errorMessage } from '@bgio/ui/lib/i18n.js';
 import { sound, haptic } from '@bgio/ui/lib/feedback.js';
 import { Avatar, Button, IconButton, Spinner } from '@bgio/ui/components/ui.jsx';
 import Icon from '@bgio/ui/components/Icon.jsx';
-import Tile from '@bgio/ui/components/Tile.jsx';
 import { toast } from '@bgio/ui/components/Toaster.jsx';
 import SettingsSheet from '@bgio/ui/components/SettingsSheet.jsx';
 import NicknameSheet from '@bgio/ui/components/NicknameSheet.jsx';
 import { GAMES, UPCOMING, gameById } from '../../games.js';
+import OpenGames, { FitCover } from './OpenGames.jsx';
 import './home.css';
 
 const Hero3D = lazy(() => import('./Hero3D.jsx'));
@@ -30,16 +30,6 @@ const rise = {
   show: { opacity: 1, y: 0, transition: { type: 'spring', bounce: 0, duration: 0.6 } },
 };
 
-function GameCover({ letters }) {
-  return (
-    <div className="game-card__cover" aria-hidden>
-      {letters.map((l, i) => (
-        <span key={i} className="game-card__tile" style={{ '--i': i }}><Tile letter={l} /></span>
-      ))}
-    </div>
-  );
-}
-
 export default function Home() {
   const navigate = useNavigate();
   const session = useApp((s) => s.session);
@@ -50,6 +40,7 @@ export default function Home() {
   const [sheet, setSheet] = useState(null); // 'settings' | 'nickname'
   const [slowServer, setSlowServer] = useState(false);
   const codeRef = useRef(null);
+  const gamesRef = useRef(null);
 
   useEffect(() => {
     useApp.getState().setRoom(null);
@@ -77,20 +68,25 @@ export default function Home() {
     }
   };
 
-  const join = async (e) => {
-    e?.preventDefault();
-    if (code.length !== CODE_LENGTH) { codeRef.current?.focus(); return; }
-    setBusy('join');
+  const joinRoom = async (roomId) => {
+    setBusy(roomId);
     try {
-      await call('room:join', { roomId: code });
+      await call('room:join', { roomId });
       sound('join');
-      navigate(`/room/${code}`);
+      navigate(`/room/${roomId}`);
     } catch (err) {
+      // The room filled up or started meanwhile: the open list corrects itself through its own push.
       sound('error');
       haptic('error');
       toast({ title: errorMessage(err.code, err.details), tone: 'error' });
       setBusy(null);
     }
+  };
+
+  const join = (e) => {
+    e?.preventDefault();
+    if (code.length !== CODE_LENGTH) { codeRef.current?.focus(); return; }
+    joinRoom(code);
   };
 
   const resume = activeGames[0];
@@ -133,77 +129,97 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        <motion.section variants={rise} className="home__panel card home__panel--identity">
-          <button type="button" className="identity" onClick={() => setSheet('nickname')} disabled={!session}>
-            <Avatar name={session?.nickname} size={44} />
-            <span className="identity__text">
-              <span className="eyebrow">Votre pseudo</span>
-              <span className="identity__name">{session?.nickname ?? '…'}</span>
-            </span>
-            <Icon name="edit" size={18} className="identity__edit" />
-          </button>
+        <div className="home__grid">
+          <motion.section variants={rise} className="home__panel card home__panel--identity">
+            <button type="button" className="identity" onClick={() => setSheet('nickname')} disabled={!session}>
+              <Avatar name={session?.nickname} size={44} />
+              <span className="identity__text">
+                <span className="eyebrow">Votre pseudo</span>
+                <span className="identity__name">{session?.nickname ?? '…'}</span>
+              </span>
+              <Icon name="edit" size={18} className="identity__edit" />
+            </button>
 
-        </motion.section>
+          </motion.section>
 
-        <motion.section variants={rise} className="games" aria-labelledby="games-title">
-          <h2 id="games-title" className="games__title">Créer une partie</h2>
-          <div className="games__grid">
-            {GAMES.map((g) => (
-              <article key={g.id} className="game-card card">
-                {g.Cover ? <g.Cover /> : <GameCover letters={g.coverLetters} />}
-                <div className="game-card__body">
-                  <h3 className="game-card__name">{g.name}</h3>
-                  <p className="game-card__tagline">{g.tagline}</p>
-                  <p className="game-card__meta"><Icon name="cards" size={14} /> {g.players.min} à {g.players.max} joueurs{g.supportsBots ? ' · robots' : ''}</p>
-                </div>
-                <Button variant="primary" className="btn--block" icon="plus" onClick={() => create(g.id)} loading={busy === g.id} disabled={!!busy}>
-                  Créer une partie
-                </Button>
-              </article>
-            ))}
-            {UPCOMING.map((g) => (
-              <article key={g.id} className="game-card card is-upcoming" aria-disabled="true">
-                <GameCover letters={g.coverLetters} />
-                <div className="game-card__body">
-                  <h3 className="game-card__name">{g.name} <span className="chip chip--accent">Bientôt</span></h3>
-                  <p className="game-card__tagline">{g.tagline}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </motion.section>
+          <motion.div variants={rise} className="home__open">
+            <OpenGames
+              connection={connection}
+              busy={busy}
+              onJoin={joinRoom}
+              onCreate={() => gamesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            />
+          </motion.div>
 
-        <motion.section variants={rise} className="home__panel card" aria-labelledby="join-title">
-          <h2 id="join-title" className="games__title">Rejoindre avec un code</h2>
+          <motion.section ref={gamesRef} variants={rise} className="games" aria-labelledby="games-title">
+            <h2 id="games-title" className="games__title">Créer une partie</h2>
+            <div className="games__grid">
+              {[...GAMES, ...UPCOMING].map((g) => {
+                const upcoming = !g.players;
+                return (
+                  <article key={g.id} className={`game-card card ${upcoming ? 'is-upcoming' : ''}`} aria-disabled={upcoming || undefined}>
+                    <header className="game-card__head">
+                      <div>
+                        <h3 className="game-card__name">{g.name} {upcoming && <span className="chip chip--accent">Bientôt</span>}</h3>
+                        {g.author && <p className="game-card__author">par {g.author}</p>}
+                      </div>
+                      <FitCover game={g} className="game-card__thumb" />
+                    </header>
+                    <p className="game-card__tagline">{g.tagline}</p>
+                    {!upcoming && (
+                      <>
+                        <p className="game-card__meta"><Icon name="cards" size={14} /> {g.players.min} à {g.players.max} joueurs{g.supportsBots ? ' · robots' : ''}</p>
+                        <Button variant="primary" className="btn--block" icon="plus" onClick={() => create(g.id)} loading={busy === g.id} disabled={!!busy}>
+                          Créer une partie
+                        </Button>
+                      </>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </motion.section>
 
-          <form className="join" onSubmit={join}>
-            <label className="code-input" onClick={() => codeRef.current?.focus()}>
-              <span className="sr-only">Code du salon</span>
-              <input
-                ref={codeRef}
-                className="code-input__field"
-                value={code}
-                onChange={(e) => setCode(extractCode(e.target.value))}
-                inputMode="text"
-                autoCapitalize="characters"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-                enterKeyHint="go"
-                maxLength={64}
-                aria-label="Code du salon (5 caractères)"
+          <motion.section variants={rise} className="home__panel card home__join" aria-labelledby="join-title">
+            <h2 id="join-title" className="games__title">Rejoindre avec un code</h2>
+
+            <form className="join" onSubmit={join}>
+              <label className="code-input" onClick={() => codeRef.current?.focus()}>
+                <span className="sr-only">Code du salon</span>
+                <input
+                  ref={codeRef}
+                  className="code-input__field"
+                  value={code}
+                  onChange={(e) => setCode(extractCode(e.target.value))}
+                  inputMode="text"
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="go"
+                  maxLength={64}
+                  aria-label="Code du salon (5 caractères)"
+                />
+                {Array.from({ length: CODE_LENGTH }, (_, i) => (
+                  <span key={i} className={`code-input__slot ${i === code.length ? 'is-caret' : ''} ${code[i] ? 'is-filled' : ''}`} aria-hidden>
+                    {code[i] ?? ''}
+                  </span>
+                ))}
+              </label>
+              <Button
+                type="submit"
+                variant="secondary"
+                size="lg"
+                icon="enter"
+                className="join__submit"
+                aria-label="Rejoindre le salon"
+                title="Rejoindre"
+                loading={busy === code}
+                disabled={!!busy || code.length !== CODE_LENGTH}
               />
-              {Array.from({ length: CODE_LENGTH }, (_, i) => (
-                <span key={i} className={`code-input__slot ${i === code.length ? 'is-caret' : ''} ${code[i] ? 'is-filled' : ''}`} aria-hidden>
-                  {code[i] ?? ''}
-                </span>
-              ))}
-            </label>
-            <Button type="submit" variant="secondary" size="lg" icon="enter" loading={busy === 'join'} disabled={!!busy || code.length !== CODE_LENGTH}>
-              Rejoindre
-            </Button>
-          </form>
-        </motion.section>
+            </form>
+          </motion.section>
+        </div>
 
 
         <AnimatePresence>
