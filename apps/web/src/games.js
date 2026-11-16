@@ -4,8 +4,9 @@ import tarot from '@bgio/tarot/client';
 import naval from '@bgio/naval/client';
 import p4 from '@bgio/p4/client';
 import poker from '@bgio/poker/client';
+import planchettes from '@bgio/planchettes/client';
 
-export const GAMES = [scrabble, tarot, naval, p4, poker];
+export const GAMES = [scrabble, tarot, naval, p4, poker, planchettes];
 
 /** Announced on the home page, not playable yet. */
 export const UPCOMING = [];

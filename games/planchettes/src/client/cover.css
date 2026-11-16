@@ -1,0 +1,9 @@
+/* Home-page thumbnail (loaded with the home page, not with the table). */
+.pl-cover { display: flex; flex-direction: column; justify-content: flex-end; gap: 1px; width: 34px; height: 42px; padding-left: 2px; } /* same height as the Scrabble tiles */
+.pl-cover__level { display: flex; gap: 1px; height: 9px; }
+.pl-cover__level i {
+  flex: 1; border-radius: 2px;
+  background: linear-gradient(180deg, #f0d19a, #e3bb7a 55%, #c99a55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+}
+.pl-cover__level.is-gap i:nth-child(2) { translate: 0 -11px; rotate: 14deg; } /* the block pulled out, on its way to the top */

@@ -1,0 +1,110 @@
+/* =========================================================
+   PlanchettesIO table — pine pieces on a teal play mat, in a dim room.
+   The 3D scene fills the stage; its background is the page colour (see world.js).
+   ========================================================= */
+.pl-table {
+  --ink: #eef6f5;
+  --ink-2: rgba(238, 246, 245, 0.68);
+  --glass: rgba(6, 20, 22, 0.6);
+  --pine: #e3bb7a;
+  --room: #10282b; /* same as the scene's fog */
+  min-height: 100dvh;
+  color: var(--ink);
+  background: var(--room);
+}
+
+.pl-game {
+  position: relative; height: 100dvh; min-height: 0;
+  display: grid; grid-template-rows: auto auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
+}
+
+/* ---- top bar ---- */
+.pl-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2) 0; min-width: 0; }
+.pl-bar__title { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: var(--space-2); white-space: nowrap; overflow: hidden; }
+.pl-bar__name { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; }
+.pl-bar__chip { padding: 2px 9px; border-radius: var(--radius-full); background: var(--glass); font-size: var(--text-xs); font-weight: 800; }
+.pl-bar__sub { color: var(--ink-2); font-size: var(--text-xs); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.pl-bar__side { display: flex; gap: 2px; }
+.pl-icon { color: var(--ink-2); }
+@media (hover: hover) and (pointer: fine) { .pl-icon:hover { background: rgba(255, 255, 255, 0.08); color: var(--ink); } }
+
+/* ---- players ---- */
+.pl-players { list-style: none; margin: 0; padding: var(--space-2) var(--space-2) var(--space-1); display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.pl-player {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden;
+  padding: 4px 12px 4px 4px; border-radius: var(--radius-full); background: var(--glass);
+  font-weight: 700; font-size: var(--text-sm);
+  transition: box-shadow 200ms ease;
+}
+.pl-player .avatar { box-shadow: none; }
+.pl-player.is-turn { box-shadow: 0 0 0 2px var(--pine), 0 0 22px -6px rgba(227, 187, 122, 0.9); }
+.pl-player.is-away { opacity: 0.6; }
+.pl-player__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 9em; }
+.pl-player__moves { color: var(--pine); }
+.pl-player__falls { display: inline-flex; gap: 3px; }
+.pl-player__falls i { width: 8px; height: 8px; border-radius: 2px; box-shadow: inset 0 0 0 1.5px rgba(238, 246, 245, 0.4); }
+.pl-player__falls i.is-fall { background: var(--danger); box-shadow: none; rotate: 18deg; } /* a block knocked over */
+.pl-timer { position: absolute; left: 12px; right: 12px; bottom: 2px; height: 2px; border-radius: 1px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.pl-timer span { display: block; height: 100%; background: var(--pine); transform-origin: 0 50%; animation-name: pl-timer; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes pl-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* ---- the table ---- */
+.pl-stage { position: relative; min-height: 0; }
+.pl-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+.pl-canvas.is-placing { cursor: crosshair; }
+.pl-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-2); }
+
+/* ---- dock: status, then the tools of my move. It floats over the bottom of the scene, which fades
+   into the room behind it; only its controls catch the pointer. ---- */
+.pl-dock {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: var(--space-2);
+  padding: var(--space-10) var(--space-3) calc(var(--space-3) + var(--safe-bottom));
+  background: linear-gradient(to top, var(--room) 40%, transparent);
+}
+.pl-dock .pl-tools, .pl-dock .btn { pointer-events: auto; }
+.pl-status { min-height: 21px; text-align: center; color: var(--ink-2); font-size: var(--text-sm); font-weight: 600; }
+.pl-status strong { color: var(--ink); }
+.pl-tools { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; max-width: 100%; padding: 5px; border-radius: var(--radius-lg); background: var(--glass); }
+.pl-tools__sep { width: 1px; align-self: stretch; margin: 4px 2px; background: rgba(255, 255, 255, 0.14); }
+.pl-tool {
+  height: 36px; padding: 0 12px; border: 0; border-radius: var(--radius-md); background: transparent;
+  color: var(--ink); font: inherit; font-size: var(--text-sm); font-weight: 700; white-space: nowrap; cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-fast) ease;
+}
+.pl-tool:active:not(:disabled) { transform: scale(0.96); }
+.pl-tool:disabled { opacity: 0.45; cursor: default; }
+.pl-tool[aria-pressed='true'] { background: var(--pine); color: #2a1a00; }
+.pl-tool:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+@media (hover: hover) { .pl-tool:not([aria-pressed='true']):not(:disabled):hover { background: rgba(255, 255, 255, 0.1); } }
+.pl-tool kbd { margin-left: 4px; padding: 1px 5px; border-radius: 4px; background: rgba(255, 255, 255, 0.14); font: 700 11px var(--font-ui); }
+@media (pointer: coarse) { .pl-tool kbd { display: none; } }
+
+/* ---- round banner ---- */
+.pl-banner {
+  position: fixed; left: 50%; top: 26%; translate: -50% -50%; z-index: 60; width: max-content; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: var(--space-4) var(--space-6); border-radius: var(--radius-xl);
+  background: rgba(8, 24, 26, 0.92); box-shadow: 0 0 0 2px var(--pine), 0 24px 60px -16px rgba(0, 0, 0, 0.75);
+  text-align: center; pointer-events: none;
+}
+.pl-banner strong { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 800; color: #ffe2ad; letter-spacing: -0.02em; }
+.pl-banner span { color: var(--ink-2); font-size: var(--text-sm); }
+@media (max-width: 599px) {
+  .pl-banner { width: calc(100vw - 32px); padding: var(--space-3) var(--space-4); }
+  .pl-banner strong { font-size: var(--text-xl); }
+  .pl-bar__name { display: none; } /* room for the height */
+}
+
+/* ---- host pause ---- */
+.pl-paused { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; background: rgba(6, 18, 20, 0.55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.pl-paused__card { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-6) var(--space-8); border-radius: var(--radius-xl); background: rgba(12, 32, 35, 0.94); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 30px 60px -20px rgba(0, 0, 0, 0.7); text-align: center; color: var(--ink); }
+.pl-paused__card strong { font-family: var(--font-display); font-size: var(--text-2xl); }
+.pl-paused__text { color: var(--ink-2); margin-bottom: var(--space-3); }
+
+@media (min-width: 900px) {
+  .pl-bar { padding: var(--space-2) var(--space-4) 0; }
+  .pl-players { gap: var(--space-3); }
+}

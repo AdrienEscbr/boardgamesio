@@ -7,6 +7,7 @@
   "dependencies": {
     "@bgio/naval": "*",
     "@bgio/p4": "*",
+    "@bgio/planchettes": "*",
     "@bgio/poker": "*",
     "@bgio/scrabble": "*",
     "@bgio/tarot": "*",

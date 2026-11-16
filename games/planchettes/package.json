@@ -1,0 +1,13 @@
+{
+  "name": "@bgio/planchettes",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./engine": "./src/engine/index.js",
+    "./server": "./src/server/index.js",
+    "./client": "./src/client/index.js",
+    "./client/*": "./src/client/*"
+  },
+  "dependencies": { "@dimforge/rapier3d-compat": "^0.14.0" }
+}
