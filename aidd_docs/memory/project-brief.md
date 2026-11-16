@@ -19,7 +19,7 @@ BoardGamesIO : plateforme de jeux de société en ligne, un serveur et un site c
 
 - Site web mobile-friendly (testable sur téléphone via le réseau local).
 - Identité anonyme : pseudo + jeton stocké dans le navigateur, pas d'inscription.
-- Jeux disponibles : ScrabbleIO, TarotIO, NavalIO, P4IO, PokerIO.
+- Jeux disponibles : ScrabbleIO, TarotIO, NavalIO, P4IO, PokerIO, PlanchettesIO, DutchIO.
 - Interface en français.
 
 ## Context
@@ -60,6 +60,8 @@ BoardGamesIO : plateforme de jeux de société en ligne, un serveur et un site c
 | NavalIO (bataille navale, chacun pour soi) | 2 à 4 | oui | Adrien |
 | P4IO (alignement de 4, plusieurs manches) | 2 à 3 | oui | Adrien |
 | PokerIO (Texas Hold'em) | 2 à 6 | oui | Flo |
+| PlanchettesIO (tour d'équilibre et construction en bois) | 1 à 4 | non | Flo |
+| DutchIO (jeu de mémoire) | 2 à 6 | oui | Adrien |
 
 ## User Journey maps
 

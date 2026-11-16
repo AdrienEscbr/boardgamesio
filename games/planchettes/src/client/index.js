@@ -7,6 +7,7 @@ import Cover from './Cover.jsx';
 /** What the platform needs to present PlanchettesIO. The 3D table is lazy-loaded. */
 const planchettesClient = {
   id: 'planchettes',
+  author: 'Flo',
   name: 'PlanchettesIO',
   tagline: 'Tour d’équilibre ou construction en bois : gare à la chute.',
   players: { min: 1, max: 4 },
