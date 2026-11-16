@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
 import { call, socket } from '@bgio/ui/lib/socket.js';
-import { Button } from '@bgio/ui/components/ui.jsx';
+import { Button, Spinner } from '@bgio/ui/components/ui.jsx';
 import Tile from '@bgio/ui/components/Tile.jsx';
 import { GAMES, gameById } from '../../games.js';
 
@@ -92,7 +92,9 @@ export default function OpenGames({ connection, busy, onJoin, onCreate }) {
           </button>
         ))}
       </div>
-      {rooms.length ? (
+      {!list ? (
+        <div className="open-games__empty"><Spinner size={18} /></div>
+      ) : rooms.length ? (
         <ul className="open-games__list">
           {rooms.map((r) => {
             const g = gameById(r.gameId);

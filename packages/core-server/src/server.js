@@ -38,7 +38,7 @@ export function createPlatformServer({
 
   // Home pages watching the open rooms; only told when the list actually changes.
   let lastOpenRooms = '[]';
-  const openRoomsPayload = () => ({ rooms: rooms.openRooms(), serverNow: Date.now() });
+  const openRoomsPayload = () => ({ rooms: rooms.openRooms(), serverNow: rooms.now() });
   const pushOpenRooms = () => {
     const payload = openRoomsPayload();
     const json = JSON.stringify(payload.rooms);

@@ -193,8 +193,9 @@ export class RoomManager {
   setVisibility(roomId, playerId, isPublic) {
     const room = this.get(roomId);
     this._assertHost(room, playerId);
+    if (typeof isPublic !== 'boolean') throw new GameError('INVALID_SETTINGS', { field: 'public' });
     if (room.status === 'playing') throw new GameError('ROOM_IN_GAME');
-    room.public = !!isPublic;
+    room.public = isPublic;
     this._changed(room);
   }
 

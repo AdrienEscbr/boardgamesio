@@ -107,14 +107,6 @@
 }
 .identity__edit { color: var(--text-3); }
 
-.divider {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  color: var(--text-3);
-  font-size: var(--text-sm);
-}
-.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
 .join { display: flex; gap: 6px; }
 .join__submit.btn { flex: none; width: 56px; padding: 0; }
@@ -215,8 +207,7 @@
   .home__panel--identity { grid-area: id; }
   .home__join { grid-area: code; }
   .games { grid-area: create; }
-  /* As tall as the left column, never taller: the list scrolls instead. */
-  .home__open { grid-area: open; contain: size; }
+  .home__open { grid-area: open; }
 }
 
 /* ---------- Open games ---------- */
@@ -270,8 +261,10 @@
   .open-games__list {
     --row-h: 112px;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* Sized by the left column, never by its rows: at least one row shows, the rest scrolls. */
+    contain: size;
     flex: 1;
-    min-height: 0;
+    min-height: var(--row-h);
     max-height: none;
   }
   .open-game {
@@ -286,7 +279,7 @@
   .open-game__seats { white-space: nowrap; }
   .open-game__seats-label { display: inline; }
 }
-@container (max-width: 170px) { .open-game__seats-label { display: none; } }
+@container (max-width: 150px) { .open-game__seats-label { display: none; } }
 
 /* ---------- Covers scaled into a fixed box ---------- */
 .fit-cover { position: relative; display: block; flex: none; overflow: clip; overflow-clip-margin: 4px; }

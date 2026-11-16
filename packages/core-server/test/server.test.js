@@ -500,6 +500,7 @@ test('public lobbies with a free seat are listed live on the home page', async (
   // Private: unlisted, but still reachable with the code. Only the host decides.
   const guest = await connect();
   assert.equal((await guest.call('room:setVisibility', { roomId: room.id, public: false })).error, 'NOT_IN_ROOM');
+  assert.equal((await host.call('room:setVisibility', { roomId: room.id, public: 'false' })).error, 'INVALID_SETTINGS');
   assert.equal((await host.call('room:setVisibility', { roomId: room.id, public: false })).ok, true);
   await listed((rs) => !rs.some((r) => r.id === room.id));
   assert.equal((await host.call('room:setVisibility', { roomId: room.id, public: true })).ok, true);

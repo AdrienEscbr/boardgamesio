@@ -175,7 +175,7 @@ export default function Lobby({ room, client }) {
           </div>
           <Switch
             label="Salon public, visible depuis l’accueil"
-            checked={room.public}
+            checked={room.public !== false}
             disabled={!isHost}
             onChange={(isPublic) => run('room:setVisibility', { public: isPublic })}
           />

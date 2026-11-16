@@ -36,7 +36,7 @@ export default function Home() {
   const connection = useApp((s) => s.connection);
   const [activeGames, setActiveGames] = useState([]);
   const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(null); // gameId being created, or 'join'
+  const [busy, setBusy] = useState(null); // gameId being created, or id of the room being joined
   const [sheet, setSheet] = useState(null); // 'settings' | 'nickname'
   const [slowServer, setSlowServer] = useState(false);
   const codeRef = useRef(null);
