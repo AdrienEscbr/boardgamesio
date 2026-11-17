@@ -40,7 +40,6 @@ export default function Home() {
   const [sheet, setSheet] = useState(null); // 'settings' | 'nickname'
   const [slowServer, setSlowServer] = useState(false);
   const codeRef = useRef(null);
-  const gamesRef = useRef(null);
 
   useEffect(() => {
     useApp.getState().setRoom(null);
@@ -147,11 +146,10 @@ export default function Home() {
               connection={connection}
               busy={busy}
               onJoin={joinRoom}
-              onCreate={() => gamesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             />
           </motion.div>
 
-          <motion.section ref={gamesRef} variants={rise} className="games" aria-labelledby="games-title">
+          <motion.section variants={rise} className="games" aria-labelledby="games-title">
             <h2 id="games-title" className="games__title">Créer une partie</h2>
             <div className="games__grid">
               {[...GAMES, ...UPCOMING].map((g) => {

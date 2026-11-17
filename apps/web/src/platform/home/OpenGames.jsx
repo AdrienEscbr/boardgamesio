@@ -48,7 +48,7 @@ function ago(ms) {
 }
 
 /** Public lobbies with a free seat, pushed live by the server (`rooms:open`). */
-export default function OpenGames({ connection, busy, onJoin, onCreate }) {
+export default function OpenGames({ connection, busy, onJoin }) {
   const [list, setList] = useState(null); // { rooms, offset }
   const [filter, setFilter] = useState(null); // gameId, or null for all
   const [, tick] = useReducer((n) => n + 1, 0);
@@ -125,7 +125,6 @@ export default function OpenGames({ connection, busy, onJoin, onCreate }) {
       ) : (
         <div className="open-games__empty">
           <p>Aucune partie ouverte pour l’instant</p>
-          <Button variant="ghost" size="sm" icon="plus" onClick={onCreate}>Créer une partie</Button>
         </div>
       )}
     </section>
