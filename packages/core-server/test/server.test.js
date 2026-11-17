@@ -230,6 +230,33 @@ test('bots fill seats and play on their own; they do not keep a room alive', asy
   host.close(); other.close();
 });
 
+test('the host can kick a player out of the lobby; they cannot come back', async () => {
+  const host = await connect();
+  const guest = await connect();
+  const stranger = await connect();
+  const { room } = await host.call('room:create', { gameId: 'race' });
+  await guest.call('room:join', { roomId: room.id });
+  const guestId = guest.session.playerId;
+  await host.nextState((s) => s.players.length === 2);
+
+  assert.equal((await guest.call('room:kick', { roomId: room.id, playerId: host.session.playerId })).error, 'NOT_HOST');
+  assert.equal((await host.call('room:kick', { roomId: room.id, playerId: host.session.playerId })).error, 'INVALID_ACTION');
+  const { botId } = await host.call('room:addBot', { roomId: room.id });
+  assert.equal((await host.call('room:kick', { roomId: room.id, playerId: botId })).error, 'INVALID_ACTION');
+  assert.equal((await host.call('room:kick', { roomId: room.id, playerId: stranger.session.playerId })).error, 'NOT_IN_ROOM');
+
+  const kicked = new Promise((resolve) => guest.socket.once('room:kicked', resolve));
+  assert.equal((await host.call('room:kick', { roomId: room.id, playerId: guestId })).ok, true);
+  assert.deepEqual(await kicked, { roomId: room.id });
+  await host.nextState((s) => !s.players.some((p) => p.id === guestId));
+  assert.equal((await guest.call('room:join', { roomId: room.id })).error, 'KICKED');
+
+  await stranger.call('room:join', { roomId: room.id });
+  await host.call('room:start', { roomId: room.id });
+  assert.equal((await host.call('room:kick', { roomId: room.id, playerId: stranger.session.playerId })).error, 'ROOM_IN_GAME');
+  host.close(); guest.close(); stranger.close();
+});
+
 test('a game nobody is watching is paused, and resumes with a fresh clock', async () => {
   const host = await connect();
   const { room } = await host.call('room:create', { gameId: 'race' });

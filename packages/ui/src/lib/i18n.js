@@ -10,6 +10,7 @@ const messages = {
   ROOM_IN_GAME: 'La partie a déjà commencé dans ce salon.',
   NOT_HOST: 'Seul l’hôte peut faire cela.',
   NOT_IN_ROOM: 'Vous n’êtes pas dans ce salon.',
+  KICKED: 'Vous avez été expulsé de ce salon.',
   NOT_ENOUGH_PLAYERS: (d) => (d?.min ? `Il faut au moins ${d.min} joueurs.` : 'Pas assez de joueurs.'),
   TOO_MANY_PLAYERS: (d) => (d?.max ? `${d.max} joueurs au maximum.` : 'Trop de joueurs.'),
   INVALID_SETTINGS: 'Réglage invalide.',

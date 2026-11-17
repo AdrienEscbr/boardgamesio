@@ -47,10 +47,10 @@ apps/
 Commandes avec accusé de réception `{ ok, error?, details? }` :
 `session:get`, `player:setNickname`, `room:create { gameId, settings }`, `room:join`, `room:leave`,
 `room:updateSettings`, `room:setVisibility { roomId, public }`, `room:addBot`, `room:removeBot { botId }`,
-`room:start`, `room:sync`, `game:action { roomId, action: { type, ... } }`,
+`room:kick { playerId }`, `room:start`, `room:sync`, `game:action { roomId, action: { type, ... } }`,
 `rooms:watch` (ack `{ rooms, serverNow }`) et `rooms:unwatch`.
 
-Le serveur pousse `room:state` à chaque changement : une vue personnalisée, avec `turn` (joueur attendu,
+Le serveur pousse `room:kicked { roomId }` au joueur expulsé et `room:state` à chaque changement : une vue personnalisée, avec `turn` (joueur attendu,
 échéance, pause) et `game` (la vue fournie par le jeu). Aux clients qui ont fait `rooms:watch`, il pousse
 `rooms:open { rooms, serverNow }` quand la liste des salons publics, en attente et non complets change
 (`{ id, gameId, players, maxPlayers, createdAt }`, du plus récent au plus ancien).
