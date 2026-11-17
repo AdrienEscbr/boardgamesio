@@ -7,6 +7,7 @@ import Cover from './Cover.jsx';
 /** What the platform needs to present PokerIO. Heavy screens are lazy-loaded. */
 const pokerClient = {
   id: 'poker',
+  author: 'Flo',
   name: 'PokerIO',
   tagline: 'Le Texas Hold’em, entre amis ou face aux robots.',
   players: { min: 2, max: 6 },

@@ -7,6 +7,7 @@ import { SessionStore, normalizeNickname } from './sessions.js';
 import { RoomManager } from './rooms.js';
 
 const DEFAULT_ORIGINS = ['https://adrienescbr.github.io'];
+const HOME_CHANNEL = 'home';
 const SESSION_IDLE_MS = 24 * 60 * 60_000;
 
 /**
@@ -35,6 +36,17 @@ export function createPlatformServer({
     allowRequest: (req, cb) => cb(null, isAllowed(req.headers.origin)),
   });
 
+  // Home pages watching the open rooms; only told when the list actually changes.
+  let lastOpenRooms = '[]';
+  const openRoomsPayload = () => ({ rooms: rooms.openRooms(), serverNow: rooms.now() });
+  const pushOpenRooms = () => {
+    const payload = openRoomsPayload();
+    const json = JSON.stringify(payload.rooms);
+    if (json === lastOpenRooms) return;
+    lastOpenRooms = json;
+    io.to(HOME_CHANNEL).emit('rooms:open', payload);
+  };
+
   const sessions = new SessionStore();
   const rooms = new RoomManager({
     sessions,
@@ -44,6 +56,7 @@ export function createPlatformServer({
       for (const id of room.members) {
         if (sessions.get(id)?.roomId === room.id) io.to(channel(id)).emit('room:state', rooms.view(room, id));
       }
+      pushOpenRooms();
     },
   });
 
@@ -98,6 +111,9 @@ export function createPlatformServer({
     on('room:join', ({ roomId }) => ({ room: rooms.view(rooms.join(roomId, playerId), playerId) }));
     on('room:leave', ({ roomId }) => { rooms.leave(roomId, playerId); });
     on('room:updateSettings', ({ roomId, settings }) => { rooms.updateSettings(roomId, playerId, settings); });
+    on('room:setVisibility', ({ roomId, public: isPublic }) => { rooms.setVisibility(roomId, playerId, isPublic); });
+    on('rooms:watch', () => { socket.join(HOME_CHANNEL); return openRoomsPayload(); });
+    on('rooms:unwatch', () => { socket.leave(HOME_CHANNEL); });
     on('room:addBot', ({ roomId }) => ({ botId: rooms.addBot(roomId, playerId) }));
     on('room:removeBot', ({ roomId, botId }) => { rooms.removeBot(roomId, playerId, botId); });
     on('room:start', ({ roomId }) => { rooms.start(roomId, playerId); });

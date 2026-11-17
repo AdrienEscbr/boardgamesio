@@ -7,6 +7,7 @@ import Cover from './Cover.jsx';
 /** What the platform needs to present DutchIO. Heavy screens are lazy-loaded. */
 const dutchClient = {
   id: 'dutch',
+  author: 'Adrien',
   name: 'DutchIO',
   tagline: 'Le jeu de mémoire où l’on finit avec le moins de points, de 2 à 6.',
   players: { min: 2, max: 6 },

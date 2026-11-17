@@ -5,7 +5,7 @@ import { useApp } from '@bgio/ui/lib/store.js';
 import { call } from '@bgio/ui/lib/socket.js';
 import { errorMessage, formatTurnSeconds } from '@bgio/ui/lib/i18n.js';
 import { haptic, sound } from '@bgio/ui/lib/feedback.js';
-import { Avatar, Button, IconButton, Segmented } from '@bgio/ui/components/ui.jsx';
+import { Avatar, Button, IconButton, Segmented, Switch } from '@bgio/ui/components/ui.jsx';
 import Icon from '@bgio/ui/components/Icon.jsx';
 import Tile from '@bgio/ui/components/Tile.jsx';
 import { toast } from '@bgio/ui/components/Toaster.jsx';
@@ -173,6 +173,12 @@ export default function Lobby({ room, client }) {
             <h2>Réglages</h2>
             {!isHost && <span className="hint">Choisis par l’hôte</span>}
           </div>
+          <Switch
+            label="Salon public, visible depuis l’accueil"
+            checked={room.public !== false}
+            disabled={!isHost}
+            onChange={(isPublic) => run('room:setVisibility', { public: isPublic })}
+          />
           {client.LobbySettings && <client.LobbySettings settings={room.settings} disabled={!isHost} update={update} />}
           <div className="setting">
             <span className="setting__label">{client.turnLabel ?? 'Temps par tour'}</span>

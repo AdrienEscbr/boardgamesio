@@ -7,6 +7,7 @@ import Cover from './Cover.jsx';
 /** What the platform needs to present TarotIO. Heavy screens are lazy-loaded. */
 const tarotClient = {
   id: 'tarot',
+  author: 'Adrien',
   name: 'TarotIO',
   tagline: 'Le Tarot à 3, 4 ou 5 joueurs, avec ou sans robots.',
   players: { min: 3, max: 5 },

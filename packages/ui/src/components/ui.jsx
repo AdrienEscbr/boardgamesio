@@ -61,12 +61,12 @@ export function Segmented({ value, options, onChange, disabled, label }) {
   );
 }
 
-export function Switch({ checked, onChange, label, icon }) {
+export function Switch({ checked, onChange, label, icon, disabled }) {
   return (
     <label className="switch-row">
       {icon && <Icon name={icon} size={18} className="switch-row__icon" />}
       <span className="switch-row__label">{label}</span>
-      <input type="checkbox" className="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <input type="checkbox" className="switch" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
     </label>
   );
 }

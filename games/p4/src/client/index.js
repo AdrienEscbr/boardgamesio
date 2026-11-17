@@ -7,6 +7,7 @@ import Cover from './Cover.jsx';
 /** What the platform needs to present P4IO. Heavy screens are lazy-loaded. */
 const p4Client = {
   id: 'p4',
+  author: 'Adrien',
   name: 'P4IO',
   tagline: 'Alignez quatre jetons, à 2 ou à 3, en plusieurs manches.',
   players: { min: 2, max: 3 },
