@@ -7,6 +7,7 @@ import Cover from './Cover.jsx';
 /** What the platform needs to present CactusIO. Heavy screens are lazy-loaded. */
 const cactusClient = {
   id: 'cactus',
+  author: 'Adrien',
   name: 'CactusIO',
   tagline: 'Mémoire, rapidité et coups de bluff : restez hors de la zone rouge, de 2 à 6.',
   players: { min: 2, max: 6 },
