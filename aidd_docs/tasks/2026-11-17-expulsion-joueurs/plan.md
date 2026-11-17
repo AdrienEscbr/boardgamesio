@@ -1,6 +1,6 @@
 ---
 objective: "L'hôte peut expulser un joueur hors partie en cours ; l'expulsé est prévenu, renvoyé à l'accueil et ne peut plus revenir dans ce salon."
-status: pending
+status: implemented
 ---
 
 # Plan: Expulsion d'un joueur par l'hôte
