@@ -28,7 +28,7 @@ scope: all
 | Préfixe | Usage |
 | ------- | ----- |
 | `BoardGamesIO :` | Socle (`packages/*`, `apps/*`) |
-| `ScrabbleIO :`, `TarotIO :`, `NavalIO :`, `P4IO :`, `PokerIO :` | Un jeu (`games/<jeu>`) |
+| `ScrabbleIO :`, `TarotIO :`, `NavalIO :`, `P4IO :`, `PokerIO :`, `MindIO :` | Un jeu (`games/<jeu>`) |
 
 ### Description rules
 

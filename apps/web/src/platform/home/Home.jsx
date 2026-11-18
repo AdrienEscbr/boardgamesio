@@ -166,7 +166,7 @@ export default function Home() {
                     <p className="game-card__tagline">{g.tagline}</p>
                     {!upcoming && (
                       <>
-                        <p className="game-card__meta"><Icon name="cards" size={14} /> {g.players.min} à {g.players.max} joueurs{g.supportsBots ? ' · robots' : ''}</p>
+                        <p className="game-card__meta"><Icon name="cards" size={14} /> {g.players.min === g.players.max ? g.players.min : `${g.players.min} à ${g.players.max}`} joueurs{g.supportsBots ? ' · robots' : ''}</p>
                         <Button variant="primary" className="btn--block" icon="plus" onClick={() => create(g.id)} loading={busy === g.id} disabled={!!busy}>
                           Créer une partie
                         </Button>

@@ -9,6 +9,7 @@ Plateforme de jeux de société en ligne : un serveur et un site communs, et un 
 | PokerIO | 2 à 6, robots possibles | Jouable |
 | PlanchettesIO | 1 à 4 | Jouable |
 | DutchIO | 2 à 6, robots possibles | Jouable |
+| MindIO (Mastermind : duel, classique, course) | 2, robots possibles | Jouable |
 
 ## Démarrer en local
 

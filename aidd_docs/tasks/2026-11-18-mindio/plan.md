@@ -1,6 +1,6 @@
 ---
 objective: "Ajouter MindIO, un Mastermind à 2 joueurs (robots possibles) avec trois modes de jeu et un format de code réglable dans le salon."
-status: in-progress
+status: implemented
 ---
 
 # Plan: MindIO (Mastermind)
