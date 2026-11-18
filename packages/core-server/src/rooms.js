@@ -136,6 +136,7 @@ export class RoomManager {
       settings: plugin.sanitizeSettings(plugin.defaultSettings, settings, { memberCount: 1 }),
       members: [playerId],
       bots: new Map(), // id -> { nickname }
+      kicked: new Set(), // players the host expelled; they cannot join again
       game: null,
       turn: null,
       paused: false,
@@ -152,6 +153,7 @@ export class RoomManager {
 
   join(roomId, playerId) {
     const room = this.get(roomId);
+    if (room.kicked.has(playerId)) throw new GameError('KICKED');
     if (room.members.includes(playerId)) {
       // Coming back: reload, reconnection, or return after leaving a running game.
       this._leaveCurrent(playerId, room.id);
@@ -222,6 +224,17 @@ export class RoomManager {
     room.bots.delete(botId);
     room.members = room.members.filter((id) => id !== botId);
     this._changed(room);
+  }
+
+  kick(roomId, playerId, targetId) {
+    const room = this.get(roomId);
+    this._assertHost(room, playerId);
+    if (room.status === 'playing') throw new GameError('ROOM_IN_GAME');
+    if (targetId === playerId || this.isBot(room, targetId)) throw new GameError('INVALID_ACTION');
+    if (!room.members.includes(targetId)) throw new GameError('NOT_IN_ROOM');
+    room.kicked.add(targetId);
+    this._removeMember(room, targetId);
+    return room;
   }
 
   setNickname(playerId, nickname) {

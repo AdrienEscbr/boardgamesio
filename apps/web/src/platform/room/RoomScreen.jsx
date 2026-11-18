@@ -6,6 +6,7 @@ import { call, socket } from '@bgio/ui/lib/socket.js';
 import { errorMessage } from '@bgio/ui/lib/i18n.js';
 import { Button, Spinner } from '@bgio/ui/components/ui.jsx';
 import Icon from '@bgio/ui/components/Icon.jsx';
+import { toast } from '@bgio/ui/components/Toaster.jsx';
 import { gameById } from '../../games.js';
 import Lobby from './Lobby.jsx';
 import './room.css';
@@ -47,14 +48,21 @@ export default function RoomScreen() {
     join();
     // After a reconnection the server may have restarted: rejoin to find out.
     socket.on('connect', join);
+    const kicked = ({ roomId: id }) => {
+      if (id !== roomId) return;
+      toast({ title: errorMessage('KICKED'), tone: 'error' });
+      navigate('/');
+    };
+    socket.on('room:kicked', kicked);
     return () => {
       alive = false;
       socket.off('connect', join);
+      socket.off('room:kicked', kicked);
       // Leaving the page keeps a running game's seat: the server only marks us away.
       scheduleLeave(roomId);
       useApp.getState().setRoom(null);
     };
-  }, [roomId]);
+  }, [roomId, navigate]);
 
   useEffect(() => { if (room?.status !== 'finished') setViewBoard(false); }, [room?.status]);
 

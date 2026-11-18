@@ -25,7 +25,7 @@ Serveur Express + Socket.IO unique hébergeant tous les jeux.
   - Token inconnu/absent : `SessionStore.resolve` crée une session (`id` UUID public, `token` secret, pseudo aléatoire)
   - `token` renvoyé uniquement au propriétaire (event `session`)
 - **Authorization**: contrôles dans `RoomManager`
-  - Actions d'hôte (`updateSettings`, `setVisibility`, `addBot`, `removeBot`, `start`, `pause`, `resume`) : `_assertHost` -> `NOT_IN_ROOM` / `NOT_HOST`
+  - Actions d'hôte (`updateSettings`, `setVisibility`, `addBot`, `removeBot`, `kick`, `start`, `pause`, `resume`) : `_assertHost` -> `NOT_IN_ROOM` / `NOT_HOST`
   - `game:action` : membre de la partie requis ; légalité du coup vérifiée par le plugin
 - **Origine (CORS + WebSocket)**: `CLIENT_ORIGIN` (liste CSV, réduite à l'origin) ou défaut `https://adrienescbr.github.io` ; origines localhost/LAN privées toujours acceptées (`isLocalNetworkOrigin`) ; pas d'en-tête Origin accepté
 - **Session Management**: état en mémoire (`SessionStore`, `RoomManager`), perdu au redémarrage
@@ -62,6 +62,7 @@ Toutes passent par le helper `on(event, handler)` : payload objet (sinon `{}`), 
 | `rooms:unwatch` | - | - |
 | `room:addBot` | `{ roomId }` | `{ botId }` |
 | `room:removeBot` | `{ roomId, botId }` | - |
+| `room:kick` | `{ roomId, playerId }` | - (hors partie en cours ; humain autre que l'hôte, banni du salon) |
 | `room:start` | `{ roomId }` | - (lance aussi la revanche) |
 | `room:pause` | `{ roomId }` | - |
 | `room:resume` | `{ roomId }` | - |
@@ -75,6 +76,7 @@ Toutes passent par le helper `on(event, handler)` : payload objet (sinon `{}`), 
 
 - `session` (à la connexion) : `{ playerId, nickname, roomId, activeGames: [{ id, gameId }], token }`
 - `rooms:open` : `{ rooms: RoomManager.openRooms(), serverNow }` au canal `home`, seulement quand la liste change (salons `public`, `lobby`, non complets ; sans pseudo ni réglage)
+- `room:kicked` : `{ roomId }` au canal `player:<id>` du joueur expulsé
 - `room:state` : `RoomManager.view(room, viewerId)`, envoyé à chaque changement aux membres dont `session.roomId === room.id` (canal `player:<playerId>`)
 
 ## Request/Response Formats
@@ -94,7 +96,7 @@ Toutes passent par le helper `on(event, handler)` : payload objet (sinon `{}`), 
 ### Codes d'erreur (plateforme)
 
 - `INVALID_NICKNAME`, `NO_SESSION`
-- `UNKNOWN_GAME`, `ROOM_NOT_FOUND`, `ROOM_IN_GAME`, `ROOM_FULL`
+- `UNKNOWN_GAME`, `ROOM_NOT_FOUND`, `ROOM_IN_GAME`, `ROOM_FULL`, `KICKED`
 - `NOT_IN_ROOM`, `NOT_HOST`, `BOTS_UNSUPPORTED`, `NOT_A_BOT`
 - `NOT_ENOUGH_PLAYERS` (`details: { min }`), `TOO_MANY_PLAYERS` (`details: { max }`)
 - `NO_GAME`, `NOT_IN_GAME`, `INVALID_ACTION`, `GAME_PAUSED`

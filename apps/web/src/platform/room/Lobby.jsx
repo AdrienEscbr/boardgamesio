@@ -137,13 +137,13 @@ export default function Lobby({ room, client }) {
                           {!p.connected && <span className="chip">Hors ligne</span>}
                         </span>
                       </button>
-                      {p.isBot && isHost && (
+                      {isHost && p.id !== me && (
                         <IconButton
                           icon="close"
                           size={16}
                           className="slot__remove"
-                          label={`Retirer ${p.nickname}`}
-                          onClick={() => run('room:removeBot', { botId: p.id })}
+                          label={`${p.isBot ? 'Retirer' : 'Expulser'} ${p.nickname}`}
+                          onClick={() => (p.isBot ? run('room:removeBot', { botId: p.id }) : run('room:kick', { playerId: p.id }))}
                         />
                       )}
                     </div>

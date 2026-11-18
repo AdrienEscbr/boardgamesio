@@ -116,6 +116,10 @@ export function createPlatformServer({
     on('rooms:unwatch', () => { socket.leave(HOME_CHANNEL); });
     on('room:addBot', ({ roomId }) => ({ botId: rooms.addBot(roomId, playerId) }));
     on('room:removeBot', ({ roomId, botId }) => { rooms.removeBot(roomId, playerId, botId); });
+    on('room:kick', ({ roomId, playerId: targetId }) => {
+      const room = rooms.kick(roomId, playerId, targetId);
+      io.to(channel(targetId)).emit('room:kicked', { roomId: room.id });
+    });
     on('room:start', ({ roomId }) => { rooms.start(roomId, playerId); });
     on('room:pause', ({ roomId }) => { rooms.pause(roomId, playerId); });
     on('room:resume', ({ roomId }) => { rooms.resume(roomId, playerId); });
