@@ -17,7 +17,7 @@ scope: frontend
 
 - `#/` : accueil (`platform/home/Home.jsx`) — créer un salon, rejoindre par code, reprendre une partie.
 - `#/room/:code` : salon (`platform/room/RoomScreen.jsx`), code 5 caractères mis en majuscules ; vue `lobby` → `game` → `results` selon `room.status`.
-- `#/dev/cartes`, `#/dev/naval`, `#/dev/p4` : pages de revue design non liées dans l'UI.
+- `#/dev/cartes`, `#/dev/naval`, `#/dev/p4`, `#/dev/mind` : pages de revue design non liées dans l'UI.
 - `*` : redirige vers `/`.
 
 ## Chargement paresseux

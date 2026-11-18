@@ -20,6 +20,7 @@ scope: all
 - À vérifier : `view(game, viewerId)` ne révèle aucune information cachée.
 - Évaluation des robots (hors `npm test`) : scripts dans `games/*/scripts`.
   - `node games/p4/scripts/arena.js [parties] [classic|large] [joueurs]`
+  - `node games/mind/scripts/arena.js [codes]` (essais moyens par niveau et format, puis courses entre niveaux)
   - `node games/naval/scripts/arena.js [parties]`
   - `node games/tarot/scripts/arena.js [parties]`, `node games/tarot/scripts/simulate.js [joueurs] [donnes] [seed]`
 
