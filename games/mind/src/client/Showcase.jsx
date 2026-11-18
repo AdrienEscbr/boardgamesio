@@ -208,7 +208,7 @@ export default function Showcase() {
           {COLOR_NAMES.map((name, i) => <figure key={name}><Peg color={i} /><figcaption>{i + 1} · {name}</figcaption></figure>)}
         </div>
         <div className="mi-legend mi-legend--pins">
-          <figure><span className="mi-legend__pin"><KeyPin kind="black" /></span><figcaption>Bien placé</figcaption></figure>
+          <figure><span className="mi-legend__pin"><KeyPin kind="red" /></span><figcaption>Bien placé</figcaption></figure>
           <figure><span className="mi-legend__pin"><KeyPin kind="white" /></span><figcaption>Mal placé</figcaption></figure>
           <figure><Peg color={null} /><figcaption>Couleur cachée (Course)</figcaption></figure>
         </div>

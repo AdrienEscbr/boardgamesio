@@ -4,10 +4,10 @@ import Peg, { KeyPin, codeLabel, feedbackLabel } from './Peg.jsx';
 const PIN_DELAY = 0.18; // between two key pins, in seconds
 export const pinsDuration = (pegs) => (0.25 + pegs * PIN_DELAY) * 1000;
 
-/** Brass key plate: black pins first, then white ones, then empty holes. */
+/** Brass key plate: red pins (right place) first, then white ones, then empty holes. */
 function KeyPlate({ pegs, row, waiting, animate }) {
   const kinds = row
-    ? [...Array(row.black).fill('black'), ...Array(row.white).fill('white'), ...Array(pegs - row.black - row.white).fill(null)]
+    ? [...Array(row.black).fill('red'), ...Array(row.white).fill('white'), ...Array(pegs - row.black - row.white).fill(null)]
     : Array(pegs).fill(null);
   return (
     <span className={`mi-keys mi-keys--${pegs} ${waiting ? 'is-waiting' : ''}`} aria-hidden>

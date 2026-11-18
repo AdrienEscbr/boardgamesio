@@ -15,7 +15,7 @@ export default function Peg({ color, className = '', style }) {
   );
 }
 
-/** A key pin: black = right colour, right place; white = right colour, wrong place. */
+/** A key pin: red = right colour, right place; white = right colour, wrong place. */
 export function KeyPin({ kind }) {
   return <span className={`mi-pin mi-pin--${kind}`} aria-hidden />;
 }

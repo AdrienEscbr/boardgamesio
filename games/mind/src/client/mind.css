@@ -69,7 +69,7 @@
 
 /* key pins */
 .mi-pin { display: block; width: 100%; height: 100%; border-radius: 50%; }
-.mi-pin--black { background: radial-gradient(circle at 35% 30%, #6a6a6a 0 10%, #1b1b1b 45%, #000 100%); box-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.7), inset 0 0 0 0.5px rgba(255, 255, 255, 0.15); }
+.mi-pin--red { background: radial-gradient(circle at 35% 30%, #ffc2b0 0 12%, #e8321e 45%, #7a0a05 100%); box-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.7), 0 0 4px rgba(255, 70, 40, 0.35); }
 .mi-pin--white { background: radial-gradient(circle at 35% 30%, #fff 0 18%, #f1ebde 50%, #b8ae9d 100%); box-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.6); }
 
 /* ---------------- a hole in the bakelite ---------------- */

@@ -14,7 +14,7 @@ Auteur affiché : Adrien. Jeu `games/mind`, paquet `@bgio/mind`, préfixe de com
 | Joueurs | 2, robots possibles (au plus un, l'hôte est humain) |
 | Modes (réglage du salon) | **Duel** : chacun compose un code pour l'autre, puis les deux décodent en même temps. **Classique** : un codeur, un décodeur, rôles inversés à chaque manche. **Course** : le serveur tire un seul code, les deux le cherchent en même temps |
 | Format (réglage du salon) | Classique : 4 pions, 6 couleurs, 10 essais. Expert : 5 pions, 8 couleurs, 12 essais. Doublons permis ou non |
-| Indices | Pion noir = bonne couleur bien placée, pion blanc = bonne couleur mal placée |
+| Indices | Pion rouge = bonne couleur bien placée (choix d'Adrien), pion blanc = bonne couleur mal placée |
 
 ## Choix de détail (à corriger si besoin)
 
