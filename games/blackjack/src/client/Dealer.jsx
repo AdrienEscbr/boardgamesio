@@ -37,7 +37,7 @@ export default function Dealer({ dealer, round, delayOf = () => 0, verdict, thin
               ))}
               {shown && (
                 <TotalBadge
-                  text={dealer.blackjack ? 'BJ' : dealer.revealed ? totalLabel(dealer) : String(dealer.total)}
+                  text={dealer.blackjack ? 'BJ' : dealer.revealed ? totalLabel(dealer, dealer.total >= 17) : String(dealer.total)}
                   // A blackjack seen at the deal: the total waits for the hole card to turn over.
                   delay={(dealer.revealed ? delayOf(1) + 300 : delayOf(0)) + 500}
                   className={`bj-total--dealer ${dealer.total > 21 ? 'is-bust' : dealer.blackjack ? 'is-bj' : ''}`}

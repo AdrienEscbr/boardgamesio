@@ -4,9 +4,9 @@ import { ChipStack } from './Chip.jsx';
 import { OUTCOME_LABELS, signed } from './i18n.js';
 
 /** The total as players say it: "7 / 17" while an ace can still count 11. */
-export function totalLabel({ total, soft, cards }) {
+export function totalLabel({ total, soft, cards }, done = false) {
   if (!cards?.length) return '';
-  if (soft && total < 21 && cards.length > 1) return `${total - 10} / ${total}`;
+  if (soft && total < 21 && cards.length > 1 && !done) return `${total - 10} / ${total}`;
   return String(total);
 }
 
@@ -64,7 +64,7 @@ export default function Hand({ hand, active = false, settled = false, delayOf = 
         ))}
         {hand.cards.length > 0 && (
           <TotalBadge
-            text={hand.blackjack ? 'BJ' : totalLabel(hand)}
+            text={hand.blackjack ? 'BJ' : totalLabel(hand, hand.done)}
             delay={delayOf(1) + 800}
             className={hand.total > 21 ? 'is-bust' : hand.blackjack ? 'is-bj' : hand.total === 21 ? 'is-21' : ''}
           />
@@ -74,8 +74,8 @@ export default function Hand({ hand, active = false, settled = false, delayOf = 
         {/* Paid: a gilded label over the bottom of the cards (a busted hand keeps its stamp). */}
         {outcome && outcome !== 'bust' && (
           <span key={`${outcome}-${gain}`} className={`bj-result bj-result--${outcome}`} style={{ '--d': `${revealMs}ms` }}>
-            <span className="bj-result__word">{OUTCOME_LABELS[outcome]}</span>
-            {gain !== 0 && <b>{signed(gain)}</b>}
+            <span className="bj-result__word">{outcome === 'blackjack' ? 'Blackjack' : OUTCOME_LABELS[outcome]}</span>
+            <b className="bj-result__amount">{outcome === 'push' ? 'mise rendue' : signed(gain)}</b>
           </span>
         )}
       </div>
