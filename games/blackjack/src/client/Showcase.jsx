@@ -29,7 +29,15 @@ export default function Showcase() {
 
   function make(n, d) {
     const bots = BOTS.slice(0, n - 1);
-    return plugin.createGame({ playerIds: [ME, ...bots], botIds: bots, settings: { ...plugin.defaultSettings, decks: d, rounds: 10 }, rng: Math.random });
+    const g = plugin.createGame({ playerIds: [ME, ...bots], botIds: bots, settings: { ...plugin.defaultSettings, decks: d, rounds: 10 }, rng: Math.random });
+    // ?bj: I am dealt a blackjack in the first round (ace of spades, king of hearts).
+    if (typeof location !== 'undefined' && /[?&]bj/.test(location.hash)) {
+      const rig = [48, 45];
+      g.shoe = g.shoe.filter((c) => !rig.includes(c));
+      g.shoe.splice(g.shoe.length - n, 0, rig[1]);
+      g.shoe.push(rig[0]);
+    }
+    return g;
   }
   const restart = (n = players, d = decks) => { setGame(make(n, d)); setTurn(null); setPaused(false); };
 

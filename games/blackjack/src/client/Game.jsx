@@ -146,6 +146,12 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   }, []);
 
   // ---- reacting to the table ----------------------------------------------------
+  const [banner, setBanner] = useState(null);
+  useEffect(() => {
+    if (!banner) return undefined;
+    const t = setTimeout(() => setBanner(null), 1700);
+    return () => clearTimeout(t);
+  }, [banner]);
   const prev = useRef(v);
   useEffect(() => {
     const before = prev.current;
@@ -154,10 +160,8 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     const timers = [];
     const later = (ms, fn) => timers.push(setTimeout(fn, ms));
     const newRound = before.roundNumber !== v.roundNumber;
-    if (newRound && v.reshuffled) {
-      sound('shuffle');
-      toast({ title: 'Nouveau sabot', description: 'Les cartes ont été mélangées.' });
-    }
+    if (newRound && !readOnly) setBanner({ round: v.roundNumber, last: v.roundNumber >= v.totalRounds, shuffled: v.reshuffled });
+    if (newRound) later(250, () => sound(v.reshuffled ? 'shuffle' : 'back'));
     // Cards out of the shoe: a flick for each, on its beat during the deal.
     const count = (x) => x.dealer.cards.length + x.players.reduce((s, p) => s + p.hands.reduce((t, h) => t + h.cards.length, 0), 0);
     const fresh = newRound ? count(v) : count(v) - count(before);
@@ -175,12 +179,24 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       const bj = meP.hands.some((h) => h.outcome === 'blackjack');
       const wait = v.dealer.cards.length ? 500 : 0;
       later(wait, () => {
-        if (bj) { sound('bingo'); haptic('success'); } else if (meP.net > 0) { sound('success'); haptic('success'); } else if (meP.net < 0) { sound('error'); haptic('error'); } else sound('back');
+        if (bj) { sound('success'); } else if (meP.net > 0) { sound('success'); haptic('success'); } else if (meP.net < 0) { sound('error'); haptic('error'); } else sound('back');
       });
     }
-    // My hand busts.
-    const myBust = (x) => x.players.find((p) => p.id === me)?.hands.filter((h) => h.outcome === 'bust').length ?? 0;
-    if (!newRound && myBust(v) > myBust(before)) { later(350, () => { sound('error'); haptic('error'); }); }
+    // A hand busts: the stamp (and a buzz when it is mine). A blackjack: a fanfare.
+    const hands = (x, pred) => x.players.flatMap((p) => p.hands.filter(pred).map(() => p.id));
+    const busts = (x) => hands(x, (h) => h.total > 21);
+    const bjs = (x) => hands(x, (h) => h.blackjack);
+    if (!newRound && busts(v).length > busts(before).length) {
+      const mine = busts(v).filter((id) => id === me).length > busts(before).filter((id) => id === me).length;
+      later(650, () => { sound('error'); if (mine) haptic('error'); });
+    }
+    if (bjs(v).length > (newRound ? 0 : bjs(before).length)) {
+      const mine = bjs(v).includes(me) && !(newRound ? [] : bjs(before)).includes(me);
+      const wait = Math.max(0, deal.current.end - (performance.now() - deal.current.at)) + 700;
+      later(wait, () => { sound(mine ? 'bingo' : 'success'); if (mine) haptic('success'); });
+    }
+    if (v.dealer.total > 21 && !(before.dealer.total > 21) && !newRound) later(650, () => sound('burn'));
+    if (v.dealer.blackjack && !before.dealer.blackjack) later(600, () => sound('cactus'));
     return () => timers.forEach(clearTimeout);
   }, [v]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -255,11 +271,29 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       </header>
 
       <main className="bj-stage">
+        <AnimatePresence>
+          {banner && (
+            <motion.div
+              key={`banner-${banner.round}`}
+              className="bj-banner"
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 1.08, transition: { duration: 0.35 } }}
+              transition={{ type: 'spring', bounce: 0.35, duration: 0.6 }}
+              aria-hidden
+            >
+              <span className="bj-banner__rule" />
+              <strong>{banner.last ? 'Dernière manche' : `Manche ${banner.round}`}</strong>
+              <small>{banner.shuffled && banner.round > 1 ? 'Nouveau sabot · cartes mélangées' : `sur ${v.totalRounds}`}</small>
+              <span className="bj-banner__rule" />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <Felt
           top={(
             <>
               <Shoe left={v.shoeLeft} size={v.shoeSize} />
-              <Dealer dealer={d} delayOf={(k) => delayOf('dealer', 0, k)} verdict={dealerVerdict} thinking={v.phase === 'dealer'} />
+              <Dealer dealer={d} round={v.roundNumber} delayOf={(k) => delayOf('dealer', 0, k)} verdict={dealerVerdict} thinking={v.phase === 'dealer'} />
             </>
           )}
         >
@@ -379,7 +413,7 @@ export function arcPositions(players, me) {
   const n = players.length;
   const at = (id, deg) => {
     const t = (deg * Math.PI) / 180;
-    pos[id] = { x: 50 + 44 * Math.sin(t), y: 16 + 79 * Math.cos(t) };
+    pos[id] = { x: 50 + 45 * Math.sin(t), y: 16 + 79 * Math.cos(t) };
   };
   const mine = players.findIndex((p) => p.id === me);
   if (mine < 0) {
@@ -392,9 +426,10 @@ export function arcPositions(players, me) {
   const after = Array.from({ length: n - 1 }, (_, k) => players[(mine + 1 + k) % n].id);
   const left = after.slice(0, Math.ceil(after.length / 2));
   const right = after.slice(left.length).reverse();
-  const step = Math.min(28, 70 / Math.max(1, left.length));
-  left.forEach((id, i) => at(id, -(i + 1) * step));
-  right.forEach((id, i) => at(id, (i + 1) * step));
+  // The nearest seats keep clear of my cards; the farthest reach the side of the table.
+  const angles = (k) => ({ 1: [42], 2: [40, 62], 3: [38, 56, 74] }[k] ?? []);
+  angles(left.length).forEach((a, i) => left[i] && at(left[i], -a));
+  angles(right.length).forEach((a, i) => right[i] && at(right[i], a));
   return pos;
 }
 

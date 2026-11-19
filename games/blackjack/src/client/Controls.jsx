@@ -35,20 +35,20 @@ export function BetTray({ draft, stack, minBet, step, lastBet, busy, onAdd, onSe
           </motion.button>
         ))}
       </div>
-      <div className="bj-tray__mid">
+      <div className="bj-tray__bar">
         <div className="bj-tray__quick">
           {quick.map((q) => (
             <button key={q.label} type="button" className={`bj-link ${draft === q.amount ? 'is-on' : ''}`} disabled={busy} onClick={() => onSet(q.amount)}>{q.label}</button>
           ))}
           <button type="button" className="bj-link bj-link--dim" disabled={busy || !draft} onClick={onClear}>Effacer</button>
+          <span className="bj-tray__hint">{draft > 0 ? `reste ${fmt(stack - draft)}` : `tapis ${fmt(stack)}`}</span>
         </div>
-        <span className="bj-tray__hint">{draft > 0 ? `Il vous restera ${fmt(stack - draft)}` : `Tapis : ${fmt(stack)}`}</span>
-      </div>
-      <div className="bj-tray__go">
-        <button type="button" className="bj-btn bj-btn--quiet" disabled={busy} onClick={onPass}>Passer</button>
-        <button type="button" className="bj-btn bj-btn--gold" disabled={busy || !ok} onClick={onConfirm}>
-          {draft ? <>Miser <b>{fmt(draft)}</b></> : `Min. ${fmt(minBet)}`}
-        </button>
+        <div className="bj-tray__go">
+          <button type="button" className="bj-btn bj-btn--quiet" disabled={busy} onClick={onPass}>Passer</button>
+          <button type="button" className="bj-btn bj-btn--gold" disabled={busy || !ok} onClick={onConfirm}>
+            {draft ? <>Miser <b>{fmt(draft)}</b></> : `Min. ${fmt(minBet)}`}
+          </button>
+        </div>
       </div>
     </div>
   );

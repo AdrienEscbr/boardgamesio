@@ -22,15 +22,38 @@ export function TotalBadge({ text, delay = 0, className = '' }) {
 }
 
 /**
+ * A blackjack celebrated on the felt: a gold glow and rays burst behind the cards and
+ * "Blackjack" pops over them, once the cards have turned over (CSS animations).
+ */
+export function Burst({ delay = 0 }) {
+  const [wait] = useState(delay);
+  return (
+    <span className="bj-burst" style={{ '--d': `${wait}ms` }} aria-hidden>
+      <span className="bj-burst__glow" />
+      <span className="bj-burst__rays" />
+      {Array.from({ length: 8 }, (_, i) => <i key={i} className="bj-burst__spark" style={{ '--a': `${i * 45 + 20}deg` }} />)}
+      <span className="bj-burst__word">Blackjack</span>
+    </span>
+  );
+}
+
+/** Over 21: a red rubber stamp slams onto the cards. */
+export function Stamp({ text = 'Sauté', delay = 0 }) {
+  const [wait] = useState(delay);
+  return <span className="bj-stamp" style={{ '--d': `${wait}ms` }} aria-hidden>{text}</span>;
+}
+
+/**
  * One hand on the felt: its cards fanned, its total, its bet; once paid, the outcome.
  * `delayOf(i)` gives the deal delay (ms) of card i when it mounts.
  */
 export default function Hand({ hand, active = false, settled = false, delayOf = () => 0, showBet = true, label }) {
-  const outcome = settled ? hand.outcome : hand.outcome === 'bust' ? 'bust' : null;
+  const outcome = settled ? hand.outcome : null;
+  const busted = hand.total > 21;
   const gain = hand.payout - hand.bet;
   return (
     <div
-      className={`bj-hand ${active ? 'is-active' : ''} ${outcome ? `is-${outcome}` : ''} ${hand.doubled ? 'is-doubled' : ''}`}
+      className={`bj-hand ${active ? 'is-active' : ''} ${outcome ? `is-${outcome}` : ''} ${busted ? 'is-busted' : ''} ${hand.doubled ? 'is-doubled' : ''}`}
       aria-label={label}
     >
       <div className="bj-hand__cards">
@@ -46,6 +69,8 @@ export default function Hand({ hand, active = false, settled = false, delayOf = 
             className={hand.total > 21 ? 'is-bust' : hand.blackjack ? 'is-bj' : hand.total === 21 ? 'is-21' : ''}
           />
         )}
+        {hand.blackjack && <Burst delay={delayOf(1) + 700} />}
+        {busted && <Stamp delay={delayOf(hand.cards.length - 1) + 650} />}
       </div>
       {showBet && hand.bet > 0 && <ChipStack amount={hand.bet} className="bj-hand__bet" />}
       <AnimatePresence>

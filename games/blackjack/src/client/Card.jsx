@@ -90,12 +90,14 @@ function Card({ card, faceUp = true, from, delay = 0, className = '' }) {
     const dx = a.left + a.width / 2 - (b.left + b.width / 2);
     const dy = a.top + a.height / 2 - (b.top + b.height / 2);
     el.animate(
+      // Slid off the top of the pile, a slight arc and a spin, then laid on the felt.
       [
-        { transform: `translate(${dx}px, ${dy}px) rotate(-24deg) scale(0.7)`, opacity: 0 },
-        { opacity: 1, offset: 0.15 },
+        { transform: `translate(${dx}px, ${dy}px) rotate(8deg) scale(0.62)`, opacity: 0, boxShadow: 'none' },
+        { transform: `translate(${dx * 0.92}px, ${dy * 0.92 - 6}px) rotate(4deg) scale(0.66)`, opacity: 1, offset: 0.12 },
+        { transform: `translate(${dx * 0.4}px, ${dy * 0.4 - 18}px) rotate(-10deg) scale(1.06)`, offset: 0.6 },
         { transform: 'none', opacity: 1 },
       ],
-      { duration: 460, delay, easing: 'cubic-bezier(0.2, 0.8, 0.25, 1)', fill: 'backwards' },
+      { duration: 560, delay, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)', fill: 'backwards' },
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

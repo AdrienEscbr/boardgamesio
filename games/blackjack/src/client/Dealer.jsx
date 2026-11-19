@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import Card, { CardBack } from './Card.jsx';
-import { TotalBadge, totalLabel } from './Hand.jsx';
+import { Burst, Stamp, TotalBadge, totalLabel } from './Hand.jsx';
+import { SWEEP } from './Seat.jsx';
 
 /**
  * The pile of cards, top right of the felt: cards fly out of its top card. Its thickness
@@ -19,26 +20,33 @@ export function Shoe({ left, size }) {
 }
 
 /** The dealer's cards (the hole card face down until it turns over) and the total. */
-export default function Dealer({ dealer, delayOf = () => 0, verdict, thinking = false }) {
+export default function Dealer({ dealer, round, delayOf = () => 0, verdict, thinking = false }) {
   const shown = dealer.cards.filter((c) => c != null).length > 0;
   return (
     <div className={`bj-dealer ${dealer.total > 21 ? 'is-bust' : ''} ${dealer.blackjack ? 'is-bj' : ''}`} aria-label="La banque">
       <div className="bj-dealer__cards">
-        {dealer.cards.map((c, i) => (
-          // The hole card keeps its slot (key) when it turns over.
-          <span key={i === 1 ? 'hole' : c} className="bj-hand__slot" style={{ '--i': i }}>
-            <Card card={c} faceUp={c != null} from="bj-shoe" delay={delayOf(i)} />
-          </span>
-        ))}
         {!dealer.cards.length && <span className="bj-dealer__empty" />}
-        {shown && (
-          <TotalBadge
-            key={dealer.cards.length ? 'total' : 'none'}
-            text={dealer.blackjack ? 'BJ' : dealer.revealed ? totalLabel(dealer) : String(dealer.total)}
-            delay={delayOf(0) + 500}
-            className={`bj-total--dealer ${dealer.total > 21 ? 'is-bust' : dealer.blackjack ? 'is-bj' : ''}`}
-          />
-        )}
+        <AnimatePresence mode="popLayout" initial={false}>
+          {dealer.cards.length > 0 && (
+            <motion.div key={`cards-${round}`} className="bj-dealer__hand" exit={{ ...SWEEP, y: -40 }}>
+              {dealer.cards.map((c, i) => (
+                // The hole card keeps its slot (key) when it turns over.
+                <span key={i === 1 ? 'hole' : c} className="bj-hand__slot" style={{ '--i': i }}>
+                  <Card card={c} faceUp={c != null} from="bj-shoe" delay={delayOf(i)} />
+                </span>
+              ))}
+              {shown && (
+                <TotalBadge
+                  text={dealer.blackjack ? 'BJ' : dealer.revealed ? totalLabel(dealer) : String(dealer.total)}
+                  delay={delayOf(0) + 500}
+                  className={`bj-total--dealer ${dealer.total > 21 ? 'is-bust' : dealer.blackjack ? 'is-bj' : ''}`}
+                />
+              )}
+              {dealer.blackjack && <Burst delay={600} />}
+              {dealer.total > 21 && <Stamp delay={650} />}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       <AnimatePresence mode="wait">
         {(verdict || thinking) && (
