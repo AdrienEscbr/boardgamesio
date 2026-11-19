@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import Card from './Card.jsx';
 import { ChipStack } from './Chip.jsx';
 import { OUTCOME_LABELS, signed } from './i18n.js';
@@ -72,23 +71,15 @@ export default function Hand({ hand, active = false, settled = false, delayOf = 
         )}
         {hand.blackjack && <Burst delay={delayOf(1) + 850} />}
         {busted && <Stamp delay={delayOf(hand.cards.length - 1) + 650} />}
+        {/* Paid: a gilded label over the bottom of the cards (a busted hand keeps its stamp). */}
+        {outcome && outcome !== 'bust' && (
+          <span key={`${outcome}-${gain}`} className={`bj-result bj-result--${outcome}`} style={{ '--d': `${revealMs}ms` }}>
+            <span className="bj-result__word">{OUTCOME_LABELS[outcome]}</span>
+            {gain !== 0 && <b>{signed(gain)}</b>}
+          </span>
+        )}
       </div>
       {showBet && hand.bet > 0 && <ChipStack amount={hand.bet} className="bj-hand__bet" vertical layoutId={betId} />}
-      <AnimatePresence>
-        {outcome && (
-          <motion.span
-            key={outcome}
-            className={`bj-outcome bj-outcome--${outcome}`}
-            initial={{ scale: 0.4, opacity: 0, y: 6 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ type: 'spring', bounce: 0.5, duration: 0.5, delay: revealMs / 1000 }}
-          >
-            {OUTCOME_LABELS[outcome]}
-            {settled && gain !== 0 && <b>{signed(gain)}</b>}
-          </motion.span>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

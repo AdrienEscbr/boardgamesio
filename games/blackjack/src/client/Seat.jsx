@@ -62,17 +62,11 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
         <span className="bj-plate__who">
           <span className="bj-plate__name">{name}</span>
           {/* What the player is doing replaces the stack for a moment. */}
-          <AnimatePresence mode="wait" initial={false}>
-            {state ? (
-              <motion.span key={`s-${state}`} className="bj-plate__state" initial={{ y: 5, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -5, opacity: 0, transition: { duration: 0.1 } }}>
-                {state}
-              </motion.span>
-            ) : (
-              <motion.span key="stack" className="bj-plate__stack" aria-label={`${fmt(p.stack)} jetons`} initial={{ y: 5, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -5, opacity: 0, transition: { duration: 0.1 } }}>
-                {fmt(p.stack)}
-              </motion.span>
-            )}
-          </AnimatePresence>
+          {state ? (
+            <span key={`s-${state}`} className="bj-plate__state">{state}</span>
+          ) : (
+            <span key="stack" className="bj-plate__stack" aria-label={`${fmt(p.stack)} jetons`}>{fmt(p.stack)}</span>
+          )}
         </span>
       </div>
     </div>

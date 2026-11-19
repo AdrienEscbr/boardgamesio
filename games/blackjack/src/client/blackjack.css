@@ -87,13 +87,12 @@
 
 /* ---- hands ---- */
 .bj-hand {
-  position: relative; display: grid; grid-template-areas: 'bet cards' 'out out'; grid-template-columns: auto auto;
+  position: relative; display: grid; grid-template-areas: 'bet cards'; grid-template-columns: auto auto;
   align-items: end; justify-items: center; column-gap: 8px; row-gap: 4px; --cw: var(--cw-me);
 }
 .bj-hand__cards { grid-area: cards; }
 .bj-hand__bet { grid-area: bet; }
-.bj-hand > .bj-outcome { grid-area: out; }
-.bj-seat.is-compact .bj-hand { grid-template-areas: 'cards' 'bet' 'out'; grid-template-columns: auto; }
+.bj-seat.is-compact .bj-hand { grid-template-areas: 'cards' 'bet'; grid-template-columns: auto; }
 .bj-hand__cards { position: relative; display: flex; align-items: flex-end; padding: calc(var(--cw) * 0.08 * 3) calc(var(--cw) * 0.1) 0 0; }
 .bj-hand__slot { position: relative; translate: 0 calc(var(--i) * var(--cw) * -0.08); }
 .bj-hand__slot + .bj-hand__slot { margin-left: calc(var(--cw) * -0.6); }
@@ -129,16 +128,25 @@
 
 .bj-hand__bet { --chip: clamp(16px, calc(var(--cw) * 0.34), 30px); }
 
-.bj-outcome {
-  display: inline-flex; align-items: baseline; gap: 5px; padding: 2px 9px; border-radius: var(--radius-full);
-  font-weight: 800; font-size: clamp(10px, calc(var(--cw) * 0.17), 14px); white-space: nowrap;
-  background: rgba(6, 10, 24, 0.8); color: var(--ink-2);
+/* the result, laid over the bottom of the cards: gilded rules, small caps */
+.bj-result {
+  position: absolute; left: 50%; bottom: 10%; z-index: 4; translate: -50% 0; pointer-events: none;
+  display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 12px; white-space: nowrap;
+  background: linear-gradient(90deg, transparent, rgba(6, 10, 24, 0.92) 14%, rgba(6, 10, 24, 0.92) 86%, transparent);
+  border-block: 1px solid rgba(226, 191, 110, 0.7);
+  color: var(--ink); font-size: clamp(9px, calc(var(--cw) * 0.15), 13px); font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+  animation: bj-result 520ms var(--ease-out) var(--d, 0ms) both;
 }
-.bj-outcome b { font-variant-numeric: tabular-nums; }
-.bj-outcome--win { background: rgba(30, 110, 70, 0.9); color: #eafff0; }
-.bj-outcome--blackjack { background: linear-gradient(180deg, var(--gold-hi), var(--gold) 50%, var(--gold-lo)); color: #2a1a00; box-shadow: 0 0 16px rgba(255, 210, 120, 0.7); }
-.bj-outcome--lose, .bj-outcome--bust { background: rgba(120, 24, 30, 0.9); color: #ffe6e3; }
-.bj-outcome--push { background: rgba(200, 200, 210, 0.2); color: var(--ink); }
+.bj-result b { font-family: var(--font-display); letter-spacing: 0.02em; font-size: 1.15em; font-variant-numeric: tabular-nums; }
+.bj-result--win b { color: #8fe3ac; }
+.bj-result--win .bj-result__word { color: var(--gold-hi); }
+.bj-result--lose { border-color: rgba(243, 236, 220, 0.25); color: var(--ink-2); }
+.bj-result--lose b { color: #ff9c93; }
+.bj-result--push { border-color: rgba(243, 236, 220, 0.35); }
+.bj-result--blackjack { background: linear-gradient(90deg, transparent, rgba(40, 26, 4, 0.94) 14%, rgba(40, 26, 4, 0.94) 86%, transparent); border-color: var(--gold-hi); color: var(--gold-hi); box-shadow: 0 0 18px -4px rgba(255, 210, 120, 0.7); }
+.bj-result--blackjack b { color: var(--gold-hi); }
+@keyframes bj-result { from { opacity: 0; translate: -50% 8px; letter-spacing: 0.4em; } }
+@media (prefers-reduced-motion: reduce) { .bj-result { animation-duration: 1ms; } }
 
 /* ---- the dealer and the shoe ---- */
 .bj-dealer { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: calc(var(--cw-d) * 1.6 + 26px); --cw: var(--cw-d); }
@@ -260,6 +268,9 @@
 .bj-dock::before { content: ''; position: absolute; left: 10%; right: 10%; top: 8px; height: 1px; background: linear-gradient(90deg, transparent, rgba(226, 191, 110, 0.35), transparent); }
 .bj-dock > * { grid-area: 1 / 1; }
 .bj-dock__panel { width: min(760px, 100%); }
+.bj-dock__in { animation: bj-dock-in 260ms var(--ease-out) var(--d, 0ms) both; }
+@keyframes bj-dock-in { from { opacity: 0; translate: 0 8px; } }
+@media (prefers-reduced-motion: reduce) { .bj-dock__in { animation-duration: 1ms; } }
 .bj-timer { position: absolute; left: 22%; right: 22%; top: 7px; height: 2px; border-radius: 1px; background: rgba(255, 255, 255, 0.1); overflow: hidden; z-index: 1; }
 .bj-timer span { display: block; height: 100%; background: var(--gold); transform-origin: 0 50%; animation-name: bj-timer; animation-timing-function: linear; animation-fill-mode: forwards; }
 @keyframes bj-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
@@ -361,7 +372,7 @@
   .bj-seat { position: absolute; left: var(--x, 50%); top: var(--y, 95%); translate: -50% -100%; z-index: 1; }
   .bj-seat.is-me { z-index: 2; }
   /* the others' bets beside their cards, as mine: the seats stay low */
-  .bj-seat.is-compact .bj-hand { grid-template-areas: 'bet cards' 'out out'; grid-template-columns: auto auto; column-gap: 5px; }
+  .bj-seat.is-compact .bj-hand { grid-template-areas: 'bet cards'; grid-template-columns: auto auto; column-gap: 5px; }
   .bj-others.is-4, .bj-others.is-5 { --cw-o: clamp(28px, min(4.6cqw, 8cqh), 52px); }
 }
 
@@ -398,6 +409,12 @@
 }
 .bj-banner strong { font-family: var(--font-display); font-weight: 800; font-size: clamp(22px, 4vw, 34px); letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-hi); white-space: nowrap; }
 .bj-banner small { color: var(--ink-2); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.bj-banner { animation: bj-banner 1.7s var(--ease-out) both; }
+@keyframes bj-banner { 0% { opacity: 0; scale: 0.82; } 18% { opacity: 1; scale: 1; } 78% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.06; } }
+.bj-dealer__verdict { animation: bj-verdict 320ms var(--ease-out) var(--d, 0ms) both; }
+@keyframes bj-verdict { from { opacity: 0; translate: 0 -6px; } }
+@media (prefers-reduced-motion: reduce) { .bj-banner { animation-name: bj-fade; } .bj-dealer__verdict { animation-duration: 1ms; } }
+@keyframes bj-fade { 0%, 100% { opacity: 0; } 15%, 85% { opacity: 1; } }
 .bj-banner__rule { width: 120px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
 
 @media (prefers-reduced-motion: reduce) {

@@ -276,24 +276,15 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       </header>
 
       <main className="bj-stage">
-        <AnimatePresence>
-          {banner && (
-            <motion.div
-              key={`banner-${banner.round}`}
-              className="bj-banner"
-              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 1.08, transition: { duration: 0.35 } }}
-              transition={{ type: 'spring', bounce: 0.35, duration: 0.6 }}
-              aria-hidden
-            >
-              <span className="bj-banner__rule" />
-              <strong>{banner.last ? 'Dernière manche' : `Manche ${banner.round}`}</strong>
-              <small>{banner.shuffled && banner.round > 1 ? 'Nouveau sabot · cartes mélangées' : `sur ${v.totalRounds}`}</small>
-              <span className="bj-banner__rule" />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* A new round: the banner lives 1.7 s, its whole life is one CSS animation. */}
+        {banner && (
+          <div key={`banner-${banner.round}`} className="bj-banner" aria-hidden>
+            <span className="bj-banner__rule" />
+            <strong>{banner.last ? 'Dernière manche' : `Manche ${banner.round}`}</strong>
+            <small>{banner.shuffled && banner.round > 1 ? 'Nouveau sabot · cartes mélangées' : `sur ${v.totalRounds}`}</small>
+            <span className="bj-banner__rule" />
+          </div>
+        )}
         <Felt
           top={(
             <>
@@ -319,9 +310,9 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
 
       <footer className="bj-dock">
         {clock && playing && !hostPaused && (myTurn || myBetTurn) && <TurnTimer key={`${clock.key}-${clock.endsAt}`} turn={clock} />}
-        <AnimatePresence mode="wait" initial={false}>
-          {myBetTurn ? (
-            <motion.div key={`bet-${v.roundNumber}`} className="bj-dock__panel" initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -6, opacity: 0, transition: { duration: 0.1 } }}>
+        {/* The content swaps at once and fades in (CSS): nothing waits on an exit animation. */}
+        {myBetTurn ? (
+            <div key={`bet-${v.roundNumber}`} className="bj-dock__panel bj-dock__in">
               <BetTray
                 draft={draft}
                 stack={meP.stack}
@@ -335,27 +326,24 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
                 onConfirm={confirmBet}
                 onPass={pass}
               />
-            </motion.div>
+            </div>
           ) : myTurn && myHand ? (
-            <motion.div key="play" className="bj-dock__panel" initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -6, opacity: 0, transition: { duration: 0.1 } }}>
+            <div key="play" className="bj-dock__panel bj-dock__in">
               <ActionBar hand={myHand} upCard={d.cards[0]} legal={v.legal} stack={meP.stack} advice={advice} busy={busy} onAct={play} />
-            </motion.div>
+            </div>
           ) : (
-            <motion.div
+            <div
               key={settled ? `over-${v.roundNumber}` : status}
-              className={`bj-verdict ${settled ? 'is-over' : 'is-quiet'}`}
-              initial={{ y: 8, opacity: 0 }}
-              animate={{ y: 0, opacity: 1, transition: { delay: settled && d.cards.length ? revealMs / 1000 : 0 } }}
-              exit={{ y: -6, opacity: 0, transition: { duration: 0.1 } }}
+              className={`bj-verdict bj-dock__in ${settled ? 'is-over' : 'is-quiet'}`}
+              style={{ '--d': `${settled && d.cards.length ? revealMs : 0}ms` }}
               role="status"
               aria-live="polite"
             >
               <strong>{status}</strong>
               {settled && playing && <span className="bj-verdict__next">{lastRound ? 'Fin de partie…' : 'Manche suivante…'}</span>}
               {settled && playing && turn?.endsAt && <TurnTimer key={`next-${turn.key}`} turn={turn} className="bj-timer bj-timer--verdict" />}
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
       </footer>
 
       <AnimatePresence>

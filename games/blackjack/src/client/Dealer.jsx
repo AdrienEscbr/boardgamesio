@@ -49,19 +49,15 @@ export default function Dealer({ dealer, round, delayOf = () => 0, verdict, thin
           )}
         </AnimatePresence>
       </div>
-      <AnimatePresence mode="wait">
-        {(verdict || thinking) && (
-          <motion.span
-            key={verdict ?? 'thinking'}
-            className={`bj-dealer__verdict ${thinking && !verdict ? 'is-thinking' : ''}`}
-            initial={{ y: -6, opacity: 0 }}
-            animate={{ y: 0, opacity: 1, transition: { delay: verdict ? revealMs / 1000 : 0 } }}
-            exit={{ opacity: 0, transition: { duration: 0.1 } }}
-          >
-            {verdict ?? 'La banque joue…'}
-          </motion.span>
-        )}
-      </AnimatePresence>
+      {(verdict || thinking) && (
+        <span
+          key={verdict ?? 'thinking'}
+          className={`bj-dealer__verdict ${thinking && !verdict ? 'is-thinking' : ''}`}
+          style={{ '--d': `${verdict ? revealMs : 0}ms` }}
+        >
+          {verdict ?? 'La banque joue…'}
+        </span>
+      )}
     </div>
   );
 }
