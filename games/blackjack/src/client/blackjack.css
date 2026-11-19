@@ -232,7 +232,8 @@
 .bj-chip--100 { --body: #1f3a78; --edge: #f6efe0; --text: #fff4ea; }
 .bj-chip--500 { --body: #17161b; --edge: var(--gold); --text: var(--gold-hi); }
 
-.bj-stack { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
+.bj-stack { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; }
+.bj-stack.is-vertical { gap: 8px; }
 .bj-stack__piles { display: flex; justify-content: center; align-items: flex-end; gap: 2px; }
 .bj-spot .bj-stack__piles { gap: 0; }
 /* beside the cards: the piles stand one above the other, the big chips at the bottom */
