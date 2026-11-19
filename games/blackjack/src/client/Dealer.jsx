@@ -1,14 +1,19 @@
 import { AnimatePresence, motion } from 'motion/react';
-import Card from './Card.jsx';
+import Card, { CardBack } from './Card.jsx';
 import { TotalBadge, totalLabel } from './Hand.jsx';
 
-/** The shoe, top right of the felt: cards come out of it; its gauge shows what is left. */
+/**
+ * The pile of cards, top right of the felt: cards fly out of its top card. Its thickness
+ * (the card edges under the top card) shows what is left in the shoe.
+ */
 export function Shoe({ left, size }) {
   const share = size ? left / size : 1;
+  const depth = Math.max(1, Math.round(share * 6));
   return (
-    <div className="bj-shoe" aria-label={`Sabot : ${left} cartes`}>
-      <div id="bj-shoe" className="bj-shoe__mouth" />
-      <span className="bj-shoe__gauge" aria-hidden><span style={{ transform: `scaleY(${share})` }} /></span>
+    <div className="bj-shoe" aria-label={`Sabot : ${left} cartes`} style={{ '--depth': depth }}>
+      {Array.from({ length: depth }, (_, i) => <span key={i} className="bj-shoe__edge" style={{ '--k': depth - i }} />)}
+      <span id="bj-shoe" className="bj-shoe__top"><CardBack /></span>
+      <span className="bj-shoe__count">{left}</span>
     </div>
   );
 }

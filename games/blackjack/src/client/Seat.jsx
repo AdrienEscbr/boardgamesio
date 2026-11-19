@@ -8,7 +8,7 @@ import { fmt, signed } from './i18n.js';
  * A player's place at the table: name and stack on a brass plate, the betting box in front,
  * the hands in it. `draft` is my bet being composed (shown as ghost chips).
  */
-export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, state, children }) {
+export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, state, pos, children }) {
   const settled = v.phase === 'settle' || v.phase === 'over';
   const activeHand = v.phase === 'play' && v.turn?.playerId === p.id ? v.turn.hand : -1;
   const betting = v.phase === 'bet';
@@ -16,7 +16,7 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
   return (
     <div
       className={`bj-seat ${isMe ? 'is-me' : ''} ${compact ? 'is-compact' : ''} ${activeHand >= 0 ? 'is-active' : ''} ${p.out ? 'is-out' : ''} ${p.connected === false && !p.isBot ? 'is-away' : ''}`}
-      style={{ '--seat': p.seat }}
+      style={{ '--seat': p.seat, ...(pos && { '--x': `${pos.x}%`, '--y': `${pos.y}%` }) }}
     >
       <div className="bj-seat__box">
         {p.hands.length > 0 ? (
@@ -62,7 +62,7 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
           </AnimatePresence>
         </span>
         <AnimatePresence>
-          {settled && p.hands.length > 0 && (
+          {settled && p.hands.length > 0 && !compact && (
             <motion.span
               key={`net-${v.roundNumber}`}
               className={`bj-net ${p.net > 0 ? 'is-up' : p.net < 0 ? 'is-down' : ''}`}

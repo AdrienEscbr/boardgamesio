@@ -12,42 +12,44 @@ export function BetTray({ draft, stack, minBet, step, lastBet, busy, onAdd, onSe
   const max = stack - (stack % step);
   const ok = draft >= minBet && draft <= max;
   const again = lastBet && lastBet <= max && lastBet >= minBet ? lastBet : null;
+  const quick = [
+    { label: 'Min', amount: minBet, show: minBet <= max },
+    { label: again != null ? `Même · ${fmt(again)}` : null, amount: again, show: again != null && again !== minBet },
+    { label: '×2', amount: draft * 2, show: draft > 0 && draft * 2 <= max },
+    { label: 'Tapis', amount: max, show: max >= minBet },
+  ].filter((q) => q.show && q.label);
   return (
     <div className="bj-tray" role="group" aria-label="Votre mise">
       <div className="bj-tray__chips">
-        {CHIP_VALUES.slice().reverse().map((value) => {
-          const off = busy || draft + value > max;
-          return (
-            <motion.button
-              key={value}
-              type="button"
-              className="bj-tray__chip"
-              disabled={off}
-              onClick={() => onAdd(value)}
-              whileTap={{ scale: 0.9, y: 2 }}
-              aria-label={`Ajouter ${value}`}
-            >
-              <Chip value={value} />
-            </motion.button>
-          );
-        })}
+        {CHIP_VALUES.slice().reverse().map((value) => (
+          <motion.button
+            key={value}
+            type="button"
+            className="bj-tray__chip"
+            disabled={busy || draft + value > max}
+            onClick={() => onAdd(value)}
+            whileTap={{ scale: 0.88, y: 2 }}
+            aria-label={`Ajouter ${value}`}
+          >
+            <Chip value={value} />
+          </motion.button>
+        ))}
       </div>
-      <div className="bj-tray__quick">
-        <button type="button" className="bj-pill" disabled={busy || minBet > max} onClick={() => onSet(minBet)}>Min</button>
-        {again != null && <button type="button" className="bj-pill" disabled={busy} onClick={() => onSet(again)}>Même mise · {fmt(again)}</button>}
-        {again != null && again * 2 <= max && <button type="button" className="bj-pill" disabled={busy} onClick={() => onSet(again * 2)}>×2</button>}
-        <button type="button" className="bj-pill" disabled={busy || max < minBet} onClick={() => onSet(max)}>Tapis</button>
-        <button type="button" className="bj-pill bj-pill--ghost" disabled={busy || !draft} onClick={onClear}>Effacer</button>
+      <div className="bj-tray__mid">
+        <div className="bj-tray__quick">
+          {quick.map((q) => (
+            <button key={q.label} type="button" className={`bj-link ${draft === q.amount ? 'is-on' : ''}`} disabled={busy} onClick={() => onSet(q.amount)}>{q.label}</button>
+          ))}
+          <button type="button" className="bj-link bj-link--dim" disabled={busy || !draft} onClick={onClear}>Effacer</button>
+        </div>
+        <span className="bj-tray__hint">{draft > 0 ? `Il vous restera ${fmt(stack - draft)}` : `Tapis : ${fmt(stack)}`}</span>
       </div>
       <div className="bj-tray__go">
-        <button type="button" className="bj-btn bj-btn--ghost" disabled={busy} onClick={onPass}>Passer</button>
+        <button type="button" className="bj-btn bj-btn--quiet" disabled={busy} onClick={onPass}>Passer</button>
         <button type="button" className="bj-btn bj-btn--gold" disabled={busy || !ok} onClick={onConfirm}>
-          {draft ? `Miser ${fmt(draft)}` : `Mise de ${fmt(minBet)} au moins`}
+          {draft ? <>Miser <b>{fmt(draft)}</b></> : `Min. ${fmt(minBet)}`}
         </button>
       </div>
-      <span className="bj-tray__hint">
-        {draft > 0 ? `Il vous restera ${fmt(stack - draft)}.` : `Votre tapis : ${fmt(stack)}.`}
-      </span>
     </div>
   );
 }
@@ -94,8 +96,7 @@ export function ActionBar({ hand, upCard, legal, stack, advice, busy, onAct }) {
           aria-keyshortcuts={key.toUpperCase()}
         >
           <span className="bj-action__label">{label}<kbd>{key.toUpperCase()}</kbd></span>
-          <span className="bj-action__note">{notes[type]}</span>
-          {best === type && <span className="bj-action__tip">conseil</span>}
+          <span className="bj-action__note">{best === type ? <i className="bj-action__tip">conseil · </i> : null}{notes[type]}</span>
         </motion.button>
       ))}
     </div>

@@ -234,6 +234,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   else status = roundVerdict(meP);
 
   const clock = turn?.endsAt && turn.durationMs >= 2000 ? turn : null;
+  const arc = arcPositions(players, me);
   const lastRound = v.roundNumber >= v.totalRounds;
 
   return (
@@ -265,13 +266,13 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           {others.length > 0 && (
             <div className={`bj-others is-${others.length}`}>
               {others.map((p) => (
-                <Seat key={p.id} p={p} v={v} isMe={false} compact delayOf={delayOf} state={seatState(p)} />
+                <Seat key={p.id} p={p} v={v} isMe={false} compact delayOf={delayOf} state={seatState(p)} pos={arc[p.id]} />
               ))}
             </div>
           )}
           {meP && (
             <div className="bj-mine">
-              <Seat p={meP} v={v} isMe draft={myBetTurn ? draft : 0} delayOf={delayOf} state={seatState(meP)} />
+              <Seat p={meP} v={v} isMe draft={myBetTurn ? draft : 0} delayOf={delayOf} state={seatState(meP)} pos={arc[meP.id]} />
             </div>
           )}
         </Felt>
@@ -281,7 +282,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         {clock && playing && !hostPaused && (myTurn || myBetTurn) && <TurnTimer key={`${clock.key}-${clock.endsAt}`} turn={clock} />}
         <AnimatePresence mode="wait" initial={false}>
           {myBetTurn ? (
-            <motion.div key={`bet-${v.roundNumber}`} className="bj-dock__panel" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 16, opacity: 0, transition: { duration: 0.12 } }}>
+            <motion.div key={`bet-${v.roundNumber}`} className="bj-dock__panel" initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -6, opacity: 0, transition: { duration: 0.1 } }}>
               <BetTray
                 draft={draft}
                 stack={meP.stack}
@@ -297,16 +298,16 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
               />
             </motion.div>
           ) : myTurn && myHand ? (
-            <motion.div key="play" className="bj-dock__panel" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 16, opacity: 0, transition: { duration: 0.12 } }}>
+            <motion.div key="play" className="bj-dock__panel" initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -6, opacity: 0, transition: { duration: 0.1 } }}>
               <ActionBar hand={myHand} upCard={d.cards[0]} legal={v.legal} stack={meP.stack} advice={advice} busy={busy} onAct={play} />
             </motion.div>
           ) : (
             <motion.div
               key={settled ? `over-${v.roundNumber}` : status}
               className={`bj-verdict ${settled ? 'is-over' : 'is-quiet'}`}
-              initial={{ y: 14, opacity: 0 }}
+              initial={{ y: 8, opacity: 0 }}
               animate={{ y: 0, opacity: 1, transition: { delay: settled && d.cards.length ? 0.5 : 0 } }}
-              exit={{ y: 8, opacity: 0, transition: { duration: 0.12 } }}
+              exit={{ y: -6, opacity: 0, transition: { duration: 0.1 } }}
               role="status"
               aria-live="polite"
             >
@@ -365,6 +366,36 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       </Sheet>
     </div>
   );
+}
+
+/**
+ * Seats along the rounded rim of the table (used on wide screens): me at the bottom, the
+ * others on both sides, in table order. Play goes from the dealer's left (my right) to his
+ * right, so the player after me sits on my left. Positions in % of the felt: the bottom of
+ * each seat's name plate.
+ */
+export function arcPositions(players, me) {
+  const pos = {};
+  const n = players.length;
+  const at = (id, deg) => {
+    const t = (deg * Math.PI) / 180;
+    pos[id] = { x: 50 + 44 * Math.sin(t), y: 16 + 79 * Math.cos(t) };
+  };
+  const mine = players.findIndex((p) => p.id === me);
+  if (mine < 0) {
+    // A spectator: everyone spread evenly along the rim.
+    const step = n > 1 ? Math.min(30, 140 / (n - 1)) : 0;
+    players.forEach((p, i) => at(p.id, -(i - (n - 1) / 2) * step));
+    return pos;
+  }
+  at(me, 0);
+  const after = Array.from({ length: n - 1 }, (_, k) => players[(mine + 1 + k) % n].id);
+  const left = after.slice(0, Math.ceil(after.length / 2));
+  const right = after.slice(left.length).reverse();
+  const step = Math.min(28, 70 / Math.max(1, left.length));
+  left.forEach((id, i) => at(id, -(i + 1) * step));
+  right.forEach((id, i) => at(id, (i + 1) * step));
+  return pos;
 }
 
 /** My result for the round just paid. */
