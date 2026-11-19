@@ -294,6 +294,7 @@ function finish(game) {
   game.status = 'finished';
   game.phase = 'over';
   game.turn = null;
+  game.seq += 1;
   const order = [...game.players].sort((a, b) => b.stack - a.stack);
   const ranking = [];
   order.forEach((p, i) => {

@@ -94,6 +94,8 @@ const SOUNDS = {
   burn: (ac) => { noise(ac, { freq: 2600, type: 'bandpass', dur: 0.2, gain: 0.06, q: 0.6 }); tone(ac, { freq: 660, slideTo: 990, at: 0.04, dur: 0.16, gain: 0.03 }); },
   cactus: (ac) => { [392, 523, 784].forEach((f, i) => tone(ac, { freq: f, at: i * 0.1, dur: 0.5, gain: 0.07, type: 'triangle' })); tone(ac, { freq: 1568, at: 0.3, dur: 0.5, gain: 0.03 }); },
   dutch: (ac) => [784, 1175, 1568].forEach((f, i) => tone(ac, { freq: f, at: i * 0.09, dur: 0.6, gain: 0.07, type: 'triangle' })),
+  // Blackjack: a clay chip set down on the felt.
+  chip: (ac, at = 0) => { click(ac, { at, freq: 3600, gain: 0.14, dur: 0.02 }); click(ac, { at: at + 0.045, freq: 2900, gain: 0.08, dur: 0.018 }); tone(ac, { at, freq: 2100, slideTo: 1800, dur: 0.05, gain: 0.025 }); },
 };
 
 export function sound(name, at) {

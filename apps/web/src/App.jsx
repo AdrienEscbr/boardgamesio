@@ -11,6 +11,7 @@ const NavalShowcase = lazy(() => import('@bgio/naval/client/Showcase.jsx'));
 const P4Showcase = lazy(() => import('@bgio/p4/client/Showcase.jsx'));
 const DutchShowcase = lazy(() => import('@bgio/dutch/client/Showcase.jsx'));
 const CactusShowcase = lazy(() => import('@bgio/cactus/client/Showcase.jsx'));
+const BlackjackShowcase = lazy(() => import('@bgio/blackjack/client/Showcase.jsx'));
 
 // HashRouter: GitHub Pages has no SPA fallback, so deep links (/#/room/ABCDE) must live in the hash.
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="dev/p4" element={<Suspense fallback={null}><P4Showcase /></Suspense>} />
           <Route path="dev/dutch" element={<Suspense fallback={null}><DutchShowcase /></Suspense>} />
           <Route path="dev/cactus" element={<Suspense fallback={null}><CactusShowcase /></Suspense>} />
+          <Route path="dev/blackjack" element={<Suspense fallback={null}><BlackjackShowcase /></Suspense>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HashRouter>

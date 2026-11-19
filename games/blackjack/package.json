@@ -8,5 +8,8 @@
     "./server": "./src/server/index.js",
     "./client": "./src/client/index.js",
     "./client/*": "./src/client/*"
+  },
+  "dependencies": {
+    "@bgio/tarot": "*"
   }
 }
