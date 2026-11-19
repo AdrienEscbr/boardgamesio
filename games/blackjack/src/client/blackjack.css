@@ -237,7 +237,9 @@
 .bj-spot .bj-stack__piles { gap: 0; }
 /* beside the cards: the piles stand one above the other, the big chips at the bottom */
 .bj-stack.is-vertical .bj-stack__piles { flex-direction: column-reverse; align-items: center; gap: 0; }
-.bj-stack.is-vertical .bj-stack__pile + .bj-stack__pile { margin-bottom: calc(var(--chip, 30px) * -0.45); }
+/* no overlap: the top chip of every pile, and its value, stay in sight */
+.bj-stack.is-vertical .bj-stack__pile + .bj-stack__pile { margin-bottom: 3px; }
+.bj-stack.is-vertical .bj-chip__value { font-size: calc(var(--chip, 30px) * 0.34); }
 .bj-spot .bj-stack__pile + .bj-stack__pile { margin-left: calc(var(--chip, 30px) * -0.18); }
 .bj-stack__pile { position: relative; display: block; flex: none; width: var(--chip, 30px); height: calc(var(--chip, 30px) + (var(--n) - 1) * var(--chip, 30px) * 0.12); }
 .bj-stack__chip { position: absolute; left: 0; bottom: calc(var(--i) * var(--chip, 30px) * 0.12); display: block; }
