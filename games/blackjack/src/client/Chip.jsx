@@ -28,14 +28,20 @@ const MAX_PER_COLUMN = 6;
  * amount (the tallest piles are capped). New chips drop in on top; `ghost` draws a bet still
  * being composed.
  */
-export function ChipStack({ amount, ghost = false, label = true, className = '' }) {
+export function ChipStack({ amount, ghost = false, label = true, vertical = false, layoutId, className = '' }) {
   const chips = chipsOf(amount);
   const columns = CHIP_VALUES.map((v) => ({ v, n: Math.min(MAX_PER_COLUMN, chips.filter((c) => c === v).length) })).filter((c) => c.n);
   return (
-    <span className={`bj-stack ${ghost ? 'is-ghost' : ''} ${className}`}>
+    // With a layoutId, the same bet glides from the betting box to its place beside the cards.
+    <motion.span
+      className={`bj-stack ${ghost ? 'is-ghost' : ''} ${vertical ? 'is-vertical' : ''} ${className}`}
+      layoutId={layoutId}
+      layout={layoutId ? true : undefined}
+      transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+    >
       <span className="bj-stack__piles">
         {columns.map(({ v, n }) => (
-          <span key={v} className="bj-stack__pile" style={{ '--n': n }}>
+          <motion.span key={v} className="bj-stack__pile" style={{ '--n': n }} layout={layoutId ? 'position' : undefined} transition={{ type: 'spring', stiffness: 260, damping: 30 }}>
             <AnimatePresence initial={false}>
               {Array.from({ length: n }, (_, i) => (
                 <motion.span
@@ -51,10 +57,10 @@ export function ChipStack({ amount, ghost = false, label = true, className = '' 
                 </motion.span>
               ))}
             </AnimatePresence>
-          </span>
+          </motion.span>
         ))}
       </span>
-      {label && amount > 0 && <span className="bj-stack__amount">{fmt(amount)}</span>}
-    </span>
+      {label && amount > 0 && <motion.span className="bj-stack__amount" layout={layoutId ? 'position' : undefined}>{fmt(amount)}</motion.span>}
+    </motion.span>
   );
 }

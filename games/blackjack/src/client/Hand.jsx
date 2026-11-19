@@ -47,7 +47,7 @@ export function Stamp({ text = 'Sauté', delay = 0 }) {
  * One hand on the felt: its cards fanned, its total, its bet; once paid, the outcome.
  * `delayOf(i)` gives the deal delay (ms) of card i when it mounts.
  */
-export default function Hand({ hand, active = false, settled = false, delayOf = () => 0, showBet = true, label }) {
+export default function Hand({ hand, active = false, settled = false, delayOf = () => 0, showBet = true, label, betId }) {
   const outcome = settled ? hand.outcome : null;
   const busted = hand.total > 21;
   const gain = hand.payout - hand.bet;
@@ -72,7 +72,7 @@ export default function Hand({ hand, active = false, settled = false, delayOf = 
         {hand.blackjack && <Burst delay={delayOf(1) + 700} />}
         {busted && <Stamp delay={delayOf(hand.cards.length - 1) + 650} />}
       </div>
-      {showBet && hand.bet > 0 && <ChipStack amount={hand.bet} className="bj-hand__bet" />}
+      {showBet && hand.bet > 0 && <ChipStack amount={hand.bet} className="bj-hand__bet" vertical layoutId={betId} />}
       <AnimatePresence>
         {outcome && (
           <motion.span

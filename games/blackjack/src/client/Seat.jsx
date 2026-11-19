@@ -33,6 +33,7 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
                   active={i === activeHand}
                   settled={settled}
                   delayOf={(k) => delayOf?.(p.id, i, k) ?? 0}
+                  betId={i === 0 ? `bet-${p.id}` : undefined}
                   label={`${name}${p.hands.length > 1 ? `, main ${i + 1}` : ''}`}
                 />
               ))}
@@ -43,10 +44,10 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
               className={`bj-spot ${betting && !p.betPlaced && !p.out ? 'is-waiting' : ''}`}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1, transition: { delay: 0.3 } }}
-              exit={{ opacity: 0, transition: { duration: 0.1 } }}
+              exit={{ opacity: 0, transition: { duration: 0 } }}
             >
               {betting && isMe && !p.betPlaced && draft > 0 && <ChipStack amount={draft} ghost />}
-              {betting && p.betPlaced && p.bet > 0 && <ChipStack amount={p.bet} />}
+              {betting && p.betPlaced && p.bet > 0 && <ChipStack amount={p.bet} layoutId={`bet-${p.id}`} />}
               {betting && p.betPlaced && p.bet == null && <span className="bj-spot__secret" aria-label="Mise posée">?</span>}
               {betting && p.betPlaced && p.bet === 0 && !p.out && <span className="bj-spot__pass">passe</span>}
               {p.out && <span className="bj-spot__pass">sans jetons</span>}
