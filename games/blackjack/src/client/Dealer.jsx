@@ -20,7 +20,7 @@ export function Shoe({ left, size }) {
 }
 
 /** The dealer's cards (the hole card face down until it turns over) and the total. */
-export default function Dealer({ dealer, round, delayOf = () => 0, verdict, thinking = false }) {
+export default function Dealer({ dealer, round, delayOf = () => 0, verdict, thinking = false, revealMs = 0 }) {
   const shown = dealer.cards.filter((c) => c != null).length > 0;
   return (
     <div className={`bj-dealer ${dealer.total > 21 ? 'is-bust' : ''} ${dealer.blackjack ? 'is-bj' : ''}`} aria-label="La banque">
@@ -38,11 +38,12 @@ export default function Dealer({ dealer, round, delayOf = () => 0, verdict, thin
               {shown && (
                 <TotalBadge
                   text={dealer.blackjack ? 'BJ' : dealer.revealed ? totalLabel(dealer) : String(dealer.total)}
-                  delay={delayOf(0) + 500}
+                  // A blackjack seen at the deal: the total waits for the hole card to turn over.
+                  delay={(dealer.revealed ? delayOf(1) + 300 : delayOf(0)) + 500}
                   className={`bj-total--dealer ${dealer.total > 21 ? 'is-bust' : dealer.blackjack ? 'is-bj' : ''}`}
                 />
               )}
-              {dealer.blackjack && <Burst delay={600} />}
+              {dealer.blackjack && <Burst delay={delayOf(1) + 850} />}
               {dealer.total > 21 && <Stamp delay={650} />}
             </motion.div>
           )}
@@ -54,7 +55,7 @@ export default function Dealer({ dealer, round, delayOf = () => 0, verdict, thin
             key={verdict ?? 'thinking'}
             className={`bj-dealer__verdict ${thinking && !verdict ? 'is-thinking' : ''}`}
             initial={{ y: -6, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            animate={{ y: 0, opacity: 1, transition: { delay: verdict ? revealMs / 1000 : 0 } }}
             exit={{ opacity: 0, transition: { duration: 0.1 } }}
           >
             {verdict ?? 'La banque joue…'}

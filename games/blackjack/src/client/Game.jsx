@@ -177,7 +177,8 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     // Paid: my result.
     if (settled && before.phase !== 'settle' && before.phase !== 'over' && meP?.hands.length) {
       const bj = meP.hands.some((h) => h.outcome === 'blackjack');
-      const wait = v.dealer.cards.length ? 500 : 0;
+      const left = Math.max(0, deal.current.end - (performance.now() - deal.current.at));
+      const wait = !v.dealer.cards.length ? 0 : left > 0 ? left + 900 : 500;
       later(wait, () => {
         if (bj) { sound('success'); } else if (meP.net > 0) { sound('success'); haptic('success'); } else if (meP.net < 0) { sound('error'); haptic('error'); } else sound('back');
       });
@@ -192,11 +193,11 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     }
     if (bjs(v).length > (newRound ? 0 : bjs(before).length)) {
       const mine = bjs(v).includes(me) && !(newRound ? [] : bjs(before)).includes(me);
-      const wait = Math.max(0, deal.current.end - (performance.now() - deal.current.at)) + 700;
+      const wait = Math.max(0, deal.current.end - (performance.now() - deal.current.at)) + 850;
       later(wait, () => { sound(mine ? 'bingo' : 'success'); if (mine) haptic('success'); });
     }
     if (v.dealer.total > 21 && !(before.dealer.total > 21) && !newRound) later(650, () => sound('burn'));
-    if (v.dealer.blackjack && !before.dealer.blackjack) later(600, () => sound('cactus'));
+    if (v.dealer.blackjack && !before.dealer.blackjack) later(Math.max(0, deal.current.end - (performance.now() - deal.current.at)) + 850, () => sound('cactus'));
     return () => timers.forEach(clearTimeout);
   }, [v]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -230,6 +231,10 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     return null;
   };
   const d = v.dealer;
+  // A round settled straight from the deal (the dealer's blackjack): results wait for the
+  // last card to land and turn over; otherwise for the dealer's last card to turn.
+  const dealLeft = Math.max(0, deal.current.end - (performance.now() - deal.current.at));
+  const revealMs = dealLeft > 0 ? dealLeft + 900 : 500;
   let dealerVerdict = null;
   if (settled && d.cards.length) dealerVerdict = d.blackjack ? 'Blackjack de la banque' : d.total > 21 ? `La banque saute à ${d.total} !` : `La banque fait ${d.total}`;
 
@@ -293,20 +298,20 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           top={(
             <>
               <Shoe left={v.shoeLeft} size={v.shoeSize} />
-              <Dealer dealer={d} round={v.roundNumber} delayOf={(k) => delayOf('dealer', 0, k)} verdict={dealerVerdict} thinking={v.phase === 'dealer'} />
+              <Dealer dealer={d} round={v.roundNumber} delayOf={(k) => delayOf('dealer', 0, k)} verdict={dealerVerdict} thinking={v.phase === 'dealer'} revealMs={revealMs} />
             </>
           )}
         >
           {others.length > 0 && (
             <div className={`bj-others is-${others.length}`}>
               {others.map((p) => (
-                <Seat key={p.id} p={p} v={v} isMe={false} compact delayOf={delayOf} state={seatState(p)} pos={arc[p.id]} />
+                <Seat key={p.id} p={p} v={v} isMe={false} compact delayOf={delayOf} state={seatState(p)} pos={arc[p.id]} revealMs={revealMs} />
               ))}
             </div>
           )}
           {meP && (
             <div className="bj-mine">
-              <Seat p={meP} v={v} isMe draft={myBetTurn ? draft : 0} delayOf={delayOf} state={seatState(meP)} pos={arc[meP.id]} />
+              <Seat p={meP} v={v} isMe draft={myBetTurn ? draft : 0} delayOf={delayOf} state={seatState(meP)} pos={arc[meP.id]} revealMs={revealMs} />
             </div>
           )}
         </Felt>
@@ -340,7 +345,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
               key={settled ? `over-${v.roundNumber}` : status}
               className={`bj-verdict ${settled ? 'is-over' : 'is-quiet'}`}
               initial={{ y: 8, opacity: 0 }}
-              animate={{ y: 0, opacity: 1, transition: { delay: settled && d.cards.length ? 0.5 : 0 } }}
+              animate={{ y: 0, opacity: 1, transition: { delay: settled && d.cards.length ? revealMs / 1000 : 0 } }}
               exit={{ y: -6, opacity: 0, transition: { duration: 0.1 } }}
               role="status"
               aria-live="polite"

@@ -47,7 +47,7 @@ export function Stamp({ text = 'Sauté', delay = 0 }) {
  * One hand on the felt: its cards fanned, its total, its bet; once paid, the outcome.
  * `delayOf(i)` gives the deal delay (ms) of card i when it mounts.
  */
-export default function Hand({ hand, active = false, settled = false, delayOf = () => 0, showBet = true, label, betId }) {
+export default function Hand({ hand, active = false, settled = false, delayOf = () => 0, showBet = true, label, betId, revealMs = 0 }) {
   const outcome = settled ? hand.outcome : null;
   const busted = hand.total > 21;
   const gain = hand.payout - hand.bet;
@@ -55,6 +55,7 @@ export default function Hand({ hand, active = false, settled = false, delayOf = 
     <div
       className={`bj-hand ${active ? 'is-active' : ''} ${outcome ? `is-${outcome}` : ''} ${busted ? 'is-busted' : ''} ${hand.doubled ? 'is-doubled' : ''}`}
       aria-label={label}
+      style={{ '--reveal': `${revealMs}ms` }}
     >
       <div className="bj-hand__cards">
         {hand.cards.map((c, i) => (
@@ -65,11 +66,11 @@ export default function Hand({ hand, active = false, settled = false, delayOf = 
         {hand.cards.length > 0 && (
           <TotalBadge
             text={hand.blackjack ? 'BJ' : totalLabel(hand)}
-            delay={delayOf(1) + 500}
+            delay={delayOf(1) + 800}
             className={hand.total > 21 ? 'is-bust' : hand.blackjack ? 'is-bj' : hand.total === 21 ? 'is-21' : ''}
           />
         )}
-        {hand.blackjack && <Burst delay={delayOf(1) + 700} />}
+        {hand.blackjack && <Burst delay={delayOf(1) + 850} />}
         {busted && <Stamp delay={delayOf(hand.cards.length - 1) + 650} />}
       </div>
       {showBet && hand.bet > 0 && <ChipStack amount={hand.bet} className="bj-hand__bet" vertical layoutId={betId} />}
@@ -81,7 +82,7 @@ export default function Hand({ hand, active = false, settled = false, delayOf = 
             initial={{ scale: 0.4, opacity: 0, y: 6 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ type: 'spring', bounce: 0.5, duration: 0.5 }}
+            transition={{ type: 'spring', bounce: 0.5, duration: 0.5, delay: revealMs / 1000 }}
           >
             {OUTCOME_LABELS[outcome]}
             {settled && gain !== 0 && <b>{signed(gain)}</b>}

@@ -11,7 +11,7 @@ export const SWEEP = { opacity: 0, y: -90, scale: 0.7, rotate: -6, transition: {
  * A player's place at the table: name and stack on a brass plate, the betting box in front,
  * the hands in it. `draft` is my bet being composed (shown as ghost chips).
  */
-export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, state, pos }) {
+export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, state, pos, revealMs = 0 }) {
   const settled = v.phase === 'settle' || v.phase === 'over';
   const activeHand = v.phase === 'play' && v.turn?.playerId === p.id ? v.turn.hand : -1;
   const betting = v.phase === 'bet';
@@ -34,6 +34,7 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
                   settled={settled}
                   delayOf={(k) => delayOf?.(p.id, i, k) ?? 0}
                   betId={i === 0 ? `bet-${p.id}` : undefined}
+                  revealMs={revealMs}
                   label={`${name}${p.hands.length > 1 ? `, main ${i + 1}` : ''}`}
                 />
               ))}

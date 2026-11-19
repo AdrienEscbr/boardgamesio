@@ -109,6 +109,7 @@
 @keyframes bj-breathe { to { translate: 0 -3px; } }
 @keyframes bj-shake { 20%, 60% { translate: -4px 0; } 40%, 80% { translate: 4px 0; } }
 .bj-hand.is-busted .bj-card, .bj-hand.is-lose .bj-card { filter: saturate(0.4) brightness(0.72); transition: filter 400ms ease 650ms; }
+.bj-hand.is-lose:not(.is-busted) .bj-card { transition-delay: var(--reveal, 0ms); }
 
 .bj-total {
   position: absolute; top: 0; right: calc(var(--cw) * -0.18); z-index: 2;
