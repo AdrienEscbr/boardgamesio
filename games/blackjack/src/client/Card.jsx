@@ -85,6 +85,10 @@ function Card({ card, faceUp = true, from, delay = 0, className = '' }) {
     const el = ref.current;
     const source = from && document.getElementById(from);
     if (!el || !source || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // Effects may run twice on mount (React's StrictMode in development): a flight already
+    // under way would place the card on the pile and make the measured trip zero. Measure
+    // the card where it really lies, and keep a single flight.
+    el.getAnimations().forEach((x) => x.cancel());
     const a = source.getBoundingClientRect();
     const b = el.getBoundingClientRect();
     let dx = a.left + a.width / 2 - (b.left + b.width / 2);
