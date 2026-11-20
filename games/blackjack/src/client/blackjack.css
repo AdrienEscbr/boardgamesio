@@ -284,7 +284,7 @@
 }
 .bj-dock::before { content: ''; position: absolute; left: 10%; right: 10%; top: 8px; height: 1px; background: linear-gradient(90deg, transparent, rgba(226, 191, 110, 0.35), transparent); }
 .bj-dock > * { grid-area: 1 / 1; }
-.bj-dock__panel { width: min(760px, 100%); }
+.bj-dock__panel { width: min(960px, 100%); }
 .bj-dock__in { animation: bj-dock-in 260ms var(--ease-out) var(--d, 0ms) both; }
 @keyframes bj-dock-in { from { opacity: 0; translate: 0 8px; } }
 @media (prefers-reduced-motion: reduce) { .bj-dock__in { animation-duration: 1ms; } }
@@ -341,8 +341,9 @@
 }
 
 /* my four moves: lacquered plaques with cut corners and a gilded rim */
-.bj-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; width: min(880px, 100%); margin: 0 auto; padding-top: 12px; }
-.bj-action-cell { position: relative; }
+.bj-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; width: min(960px, 100%); margin: 0 auto; padding-top: 12px; }
+/* sizes follow the width of each plaque, so the words always fit */
+.bj-action-cell { position: relative; container-type: inline-size; }
 .bj-action-cell > .bj-action { width: 100%; }
 .bj-action {
   --cut: 11px;
@@ -353,7 +354,7 @@
   transition: opacity 160ms ease, filter 200ms ease, translate 160ms var(--ease-out);
 }
 .bj-action__face {
-  position: relative; display: flex; align-items: center; gap: 16px; height: 100%; padding: 0 22px; overflow: hidden;
+  position: relative; display: flex; align-items: center; gap: clamp(8px, 6cqi, 16px); height: 100%; padding: 0 clamp(10px, 8cqi, 22px); overflow: hidden;
   clip-path: inherit;
   background:
     radial-gradient(120% 90% at 30% 0%, rgba(255, 255, 255, 0.09), transparent 60%),
@@ -373,11 +374,11 @@
   background: linear-gradient(100deg, transparent, rgba(255, 236, 190, 0.18), transparent);
   translate: 0 0; transition: translate 600ms var(--ease-out);
 }
-.bj-action__glyph { flex: none; width: 28px; height: 28px; fill: none; stroke: var(--gold); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(226, 191, 110, 0.35)); }
-.bj-action__text { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; text-align: left; }
-.bj-action__label { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-hi); line-height: 1.1; }
-.bj-action__note { color: var(--ink-2); font-size: 12px; font-weight: 500; font-style: italic; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.bj-action kbd { position: absolute; top: 10px; right: 16px; display: none; font: 700 9px/1 var(--font-ui); color: rgba(226, 191, 110, 0.55); letter-spacing: 0.06em; }
+.bj-action__glyph { flex: none; width: clamp(20px, 13cqi, 28px); height: clamp(20px, 13cqi, 28px); fill: none; stroke: var(--gold); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(226, 191, 110, 0.35)); }
+.bj-action__text { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; text-align: left; }
+.bj-action__label { font-family: var(--font-display); font-size: clamp(13px, 9cqi, 18px); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-hi); line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bj-action__note { color: var(--ink-2); font-size: clamp(10px, 6.4cqi, 12px); font-weight: 500; font-style: italic; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.bj-action kbd { flex: none; align-self: flex-start; margin: 12px -8px 0 auto; display: none; font: 700 9px/1 var(--font-ui); color: rgba(226, 191, 110, 0.55); letter-spacing: 0.06em; }
 .bj-action__tip {
   position: absolute; left: 50%; bottom: calc(100% + 1px); z-index: 1; translate: -50% 0; padding: 2px 12px 3px; border-radius: 4px 4px 0 0;
   background: linear-gradient(180deg, var(--gold-hi), var(--gold)); color: #2a1a00; font-size: 9px; font-weight: 800; letter-spacing: 0.24em; text-transform: uppercase;
@@ -400,6 +401,7 @@
   .bj-actions { gap: 8px; }
   .bj-action { --cut: 8px; height: 70px; }
   .bj-action__face { flex-direction: column; justify-content: center; gap: 4px; padding: 0 4px; }
+  .bj-action__text { flex: none; max-width: 100%; }
   .bj-action__glyph { width: 20px; height: 20px; }
   .bj-action__text { align-items: center; text-align: center; }
   .bj-action__label { font-size: var(--text-xs); letter-spacing: 0.08em; }
