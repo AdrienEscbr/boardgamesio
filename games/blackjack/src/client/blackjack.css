@@ -379,6 +379,12 @@
 }
 .bj-spot__hint { color: rgba(226, 191, 110, 0.55); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; line-height: 1.3; padding: 0 8px; }
 .bj-side { position: absolute; top: 50%; translate: 0 -50%; z-index: 2; }
+/* on the felt the plaques stay put under the pointer: only their face lights up */
+@media (hover: hover) and (pointer: fine) {
+  .bj-plaque.bj-side:hover:not(:disabled) { translate: 0 -50%; }
+  .bj-plaque.bj-side .bj-plaque__face { transition: filter 150ms ease; }
+  .bj-plaque.bj-side:hover:not(:disabled) .bj-plaque__face { filter: brightness(1.35); }
+}
 .bj-side--right { left: calc(50% + var(--cw-me) * 0.55 + 16px); }
 .bj-side--left { right: calc(50% + var(--cw-me) * 0.55 + 16px); }
 .bj-plaque--table { height: 50px; min-width: 104px; --cut: 8px; }
