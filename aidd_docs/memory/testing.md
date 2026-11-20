@@ -22,6 +22,7 @@ scope: all
   - `node games/p4/scripts/arena.js [parties] [classic|large] [joueurs]`
   - `node games/mind/scripts/arena.js [codes]` (essais moyens par niveau et format, puis courses entre niveaux)
   - `node games/naval/scripts/arena.js [parties]`
+  - `node games/uinio/scripts/arena.js [parties] [niveaux] [cumul=0|1] [pioche-jusqu-a-jouer=0|1]`
   - `node games/blackjack/scripts/arena.js [mains] [jeux]` (rendement de la stratégie de base, des règles du croupier et du hasard)
   - `node games/tarot/scripts/arena.js [parties]`, `node games/tarot/scripts/simulate.js [joueurs] [donnes] [seed]`
 
