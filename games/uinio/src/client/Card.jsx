@@ -31,7 +31,7 @@ export function Mark({ color, s = 12, fill = CREAM }) {
 }
 
 /** The symbol of an action card, drawn in `fill`, centred on 0,0 (about 70 wide). */
-function Symbol({ kind, fill, small = false }) {
+export function Symbol({ kind, fill, small = false }) {
   const k = small ? 0.32 : 1;
   if (kind === 'S') {
     return (
@@ -79,20 +79,24 @@ const cornerText = (card) => {
   return /[0-9]/.test(kind) ? kind : null;
 };
 
-/** The four lobes in the four enamels: the wild's cartouche. */
-function WildFoil({ uid, scale = 1 }) {
+/**
+ * The four lobes in the four enamels: the wild's cartouche. Once laid, `only` (the colour
+ * asked) glazes all four lobes in that one enamel.
+ */
+function WildFoil({ uid, scale = 1, only }) {
+  const lobe = (c) => (only ?? c);
   return (
     <g transform={`scale(${scale})`}>
       <clipPath id={`${uid}-foil`}><path d={FOIL} /></clipPath>
       <g clipPath={`url(#${uid}-foil)`}>
-        <rect x="-70" y="-70" width="70" height="70" fill={COLOR_HEX.r} />
-        <rect x="0" y="-70" width="70" height="70" fill={COLOR_HEX.b} />
-        <rect x="0" y="0" width="70" height="70" fill={COLOR_HEX.g} />
-        <rect x="-70" y="0" width="70" height="70" fill={COLOR_HEX.y} />
-        <g transform="translate(-32 -32)"><Mark color="r" s={14} /></g>
-        <g transform="translate(32 -32)"><Mark color="b" s={14} /></g>
-        <g transform="translate(32 32)"><Mark color="g" s={14} /></g>
-        <g transform="translate(-32 32)"><Mark color="y" s={14} /></g>
+        <rect x="-70" y="-70" width="70" height="70" fill={COLOR_HEX[lobe('r')]} />
+        <rect x="0" y="-70" width="70" height="70" fill={COLOR_HEX[lobe('b')]} />
+        <rect x="0" y="0" width="70" height="70" fill={COLOR_HEX[lobe('g')]} />
+        <rect x="-70" y="0" width="70" height="70" fill={COLOR_HEX[lobe('y')]} />
+        <g transform="translate(-32 -32)"><Mark color={lobe('r')} s={14} /></g>
+        <g transform="translate(32 -32)"><Mark color={lobe('b')} s={14} /></g>
+        <g transform="translate(32 32)"><Mark color={lobe('g')} s={14} /></g>
+        <g transform="translate(-32 32)"><Mark color={lobe('y')} s={14} /></g>
       </g>
       <path d={FOIL} fill="none" stroke={CREAM} strokeWidth="5" />
     </g>
@@ -136,7 +140,7 @@ function Plaque({ uid, fill, children }) {
   );
 }
 
-function Face({ card }) {
+function Face({ card, asked }) {
   const uid = useId().replace(/:/g, '');
   const color = colorOf(card);
   const kind = kindOf(card);
@@ -162,7 +166,7 @@ function Face({ card }) {
         <g transform={`translate(${W / 2} ${H / 2})`}>
           {wild ? (
             <>
-              <WildFoil uid={uid} scale={kind === 'F' ? 1.05 : 1.12} />
+              <WildFoil uid={uid} scale={kind === 'F' ? 1.05 : 1.12} only={asked} />
               {kind === 'F' && <Label text="+4" size={46} fill={CREAM} stroke={INK} />}
             </>
           ) : (
@@ -212,11 +216,15 @@ export function cardName(card) {
   return `${KIND_NAMES[kind] ?? kind} ${COLOR_NAMES[colorOf(card)]}`;
 }
 
-/** A card, face up (`card`) or its back (`card` null). Sized by `--cw` on a parent. */
-function Card({ card, className = '', ...rest }) {
+/**
+ * A card, face up (`card`) or its back (`card` null). Sized by `--cw` on a parent.
+ * `asked`: on a wild already laid, the colour it asked for.
+ */
+function Card({ card, asked, className = '', ...rest }) {
+  const wildAsked = asked && card && isWild(card) ? asked : undefined;
   return (
-    <span className={`un-card ${className}`} role={card ? 'img' : undefined} aria-label={card ? cardName(card) : undefined} {...rest}>
-      {card ? <CardFace card={card} /> : <CardBack />}
+    <span className={`un-card ${className}`} role={card ? 'img' : undefined} aria-label={card ? `${cardName(card)}${wildAsked ? ` (${COLOR_NAMES[wildAsked]})` : ''}` : undefined} {...rest}>
+      {card ? <CardFace card={card} asked={wildAsked} /> : <CardBack />}
     </span>
   );
 }

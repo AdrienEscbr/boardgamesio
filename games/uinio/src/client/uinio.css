@@ -60,19 +60,23 @@
 
 /* ---- the other players: coasters along the counter ---- */
 .un-seats {
-  display: flex; justify-content: center; gap: var(--space-2); padding: var(--space-3) var(--space-2) 16px;
+  --seat-w: clamp(84px, 23vw, 132px);
+  display: flex; justify-content: center; justify-content: safe center;
+  /* the room left over is shared out between the seats, within reason */
+  gap: clamp(var(--space-2), (100% - var(--n) * var(--seat-w)) / (var(--n) + 1), 72px);
+  padding: var(--space-3) var(--space-2) 16px;
   overflow-x: auto; scrollbar-width: none; z-index: 2;
 }
 .un-seats::-webkit-scrollbar { display: none; }
 .un-seat {
-  position: relative; flex: 0 0 auto; width: clamp(84px, 23vw, 132px);
+  position: relative; flex: 0 0 auto; width: var(--seat-w);
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 6px 6px 8px; border-radius: 16px;
   background: linear-gradient(180deg, rgba(20, 24, 30, 0.42), rgba(20, 24, 30, 0.26));
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   transition: background 240ms ease, box-shadow 240ms ease, translate 240ms var(--ease-spring);
 }
-.un-seats.is-5 .un-seat, .un-seats.is-6 .un-seat, .un-seats.is-7 .un-seat { width: clamp(76px, 20vw, 120px); }
+.un-seats.is-5, .un-seats.is-6, .un-seats.is-7 { --seat-w: clamp(76px, 20vw, 120px); }
 .un-seat.is-turn { background: linear-gradient(180deg, rgba(255, 226, 170, 0.28), rgba(255, 226, 170, 0.1)); box-shadow: inset 0 0 0 1.5px var(--brass), 0 0 22px -4px rgba(255, 210, 130, 0.65); translate: 0 2px; }
 .un-seat.is-away { opacity: 0.55; }
 .un-seat__top { display: flex; align-items: center; gap: 6px; min-width: 0; width: 100%; }
@@ -110,19 +114,30 @@
 }
 @keyframes un-throb { to { scale: 1.08; } }
 
-/* what a player just did */
-.un-bubble {
-  position: absolute; top: 34px; left: 50%; translate: -50% 0; z-index: 5; white-space: nowrap; pointer-events: none;
+/* what a player just did: mine over my plate, the others' hung under their seat */
+.un-bubble, .un-sbubble {
+  position: absolute; bottom: 100%; left: 50%; translate: -50% 0; margin-bottom: 6px; z-index: 5; white-space: nowrap; pointer-events: none;
   padding: 4px 10px; border-radius: 12px; font-weight: 800; font-size: var(--text-sm);
   background: var(--cream); color: var(--enamel-ink); box-shadow: 0 6px 14px -4px rgba(0, 0, 0, 0.55);
 }
-.un-bubble.is-call { background: var(--brick); color: var(--cream); font-family: var(--font-display); font-size: var(--text-base); letter-spacing: 0.04em; box-shadow: inset 0 0 0 2px var(--cream), 0 6px 16px -4px rgba(0, 0, 0, 0.6); }
-.un-bubble.is-warn { background: #2b2f38; color: #ffd6b0; }
-.un-bubble.is-r { background: #c2432c; color: var(--cream); }
-.un-bubble.is-y { background: #e09a17; color: #2a1a00; }
-.un-bubble.is-g { background: #1f7a52; color: var(--cream); }
-.un-bubble.is-b { background: #2a52a0; color: var(--cream); }
-.un-bubble--me { top: auto; bottom: 100%; margin-bottom: 6px; }
+.un-bubble.is-call, .un-sbubble.is-call { background: var(--brick); color: var(--cream); font-family: var(--font-display); font-size: var(--text-base); letter-spacing: 0.04em; box-shadow: inset 0 0 0 2px var(--cream), 0 6px 16px -4px rgba(0, 0, 0, 0.6); }
+.un-bubble.is-warn, .un-sbubble.is-warn { background: #2b2f38; color: #ffd6b0; }
+.un-bubble.is-r, .un-sbubble.is-r { background: #c2432c; color: var(--cream); }
+.un-bubble.is-y, .un-sbubble.is-y { background: #e09a17; color: #2a1a00; }
+.un-bubble.is-g, .un-sbubble.is-g { background: #1f7a52; color: var(--cream); }
+.un-bubble.is-b, .un-sbubble.is-b { background: #2a52a0; color: var(--cream); }
+.un-sbubble { position: fixed; bottom: auto; margin: 0; z-index: 45; }
+.un-sbubble::before {
+  content: ''; position: absolute; bottom: 100%; left: calc(50% + var(--tail, 0px)); margin-left: -6px;
+  border: 6px solid transparent; border-bottom-color: inherit; border-top: 0;
+}
+.un-sbubble { border-color: var(--cream); }
+.un-sbubble.is-call { border-color: var(--brick); }
+.un-sbubble.is-warn { border-color: #2b2f38; }
+.un-sbubble.is-r { border-color: #c2432c; }
+.un-sbubble.is-y { border-color: #e09a17; }
+.un-sbubble.is-g { border-color: #1f7a52; }
+.un-sbubble.is-b { border-color: #2a52a0; }
 
 /* ---- the brass tray: pile, discard, the way play goes ---- */
 .un-stage { container-type: size; min-height: 0; display: grid; place-items: center; padding: var(--space-2); }
@@ -163,8 +178,6 @@
 .un-laid { position: absolute; inset: 0; }
 .un-laid:not(.is-top) .un-card { filter: brightness(0.92); }
 .un-laid__in { display: block; }
-.un-discard__ghost { position: absolute; inset: 0; opacity: 0.55; translate: 6px -8px; rotate: 6deg; pointer-events: none; }
-.un-discard__ghost .un-card { box-shadow: 0 0 0 2px var(--cream), 0 10px 24px rgba(0, 0, 0, 0.5); }
 .un-stack {
   position: absolute; top: -14px; right: -16px; z-index: 3; padding: 2px 9px; border-radius: var(--radius-full);
   background: var(--brick); color: var(--cream); font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg);
@@ -172,13 +185,6 @@
 }
 @media (prefers-reduced-motion: no-preference) { .un-stack { animation: un-pop 420ms var(--ease-spring); } }
 @keyframes un-pop { from { scale: 0.2; opacity: 0; } }
-
-.un-asked {
-  position: absolute; bottom: 9%; left: 50%; translate: -50% 0; display: inline-flex; align-items: center; gap: 5px;
-  padding: 2px 10px 2px 4px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: 800; color: var(--cream);
-  background: var(--c); box-shadow: inset 0 0 0 1.5px var(--cream), 0 2px 5px rgba(0, 0, 0, 0.4); transition: background 400ms ease;
-}
-.un-asked svg { width: 16px; height: 16px; }
 
 /* a new round */
 .un-banner {
@@ -253,23 +259,76 @@
 .un-timer--seat span { background: var(--brass-hi); }
 @keyframes un-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
-/* choosing a colour for a wild */
-.un-picker { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
-.un-picker__title { font-weight: 800; }
-.un-picker__row { display: flex; gap: var(--space-2); }
-.un-swatch {
-  display: flex; flex-direction: column; align-items: center; gap: 2px; width: clamp(64px, 19vw, 86px); padding: 8px 4px 6px;
-  border-radius: 14px; border: 0; cursor: pointer; font: inherit; color: var(--cream);
-  background: radial-gradient(circle at 35% 25%, color-mix(in srgb, var(--c) 70%, white), var(--c) 55%, color-mix(in srgb, var(--c) 70%, black));
-  box-shadow: inset 0 0 0 2px var(--cream), 0 4px 10px -2px rgba(0, 0, 0, 0.5);
-  transition: scale var(--dur-press) ease, translate 160ms ease;
+/* choosing a colour for a wild: over the tray, the hand never moves */
+.un-wheel {
+  --cw: clamp(58px, min(20cqw, 26cqh), 96px);
+  position: absolute; inset: 0; z-index: 8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2);
 }
-.un-swatch svg { width: 22px; height: 22px; }
-.un-swatch span { font-weight: 800; font-size: var(--text-sm); }
-.un-swatch small { font-size: 11px; opacity: 0.85; font-variant-numeric: tabular-nums; }
-.un-swatch.is-best { translate: 0 -4px; box-shadow: inset 0 0 0 2px var(--cream), 0 0 0 3px rgba(255, 240, 200, 0.7), 0 8px 16px -4px rgba(0, 0, 0, 0.55); }
-.un-swatch:active { scale: 0.95; }
-@media (hover: hover) and (pointer: fine) { .un-swatch:hover { translate: 0 -4px; } }
+.un-wheel__scrim {
+  position: fixed; inset: 0; border: 0; padding: 0; cursor: default;
+  background: radial-gradient(60% 50% at 50% 45%, rgba(12, 14, 18, 0.6), rgba(12, 14, 18, 0.4));
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.un-wheel > :not(.un-wheel__scrim) { position: relative; }
+.un-wheel__title { font-weight: 800; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); text-align: center; }
+.un-wheel__grid {
+  display: grid; grid-template-columns: auto auto auto; grid-template-rows: auto auto; align-items: center; justify-items: center;
+  gap: calc(var(--cw) * 0.12) calc(var(--cw) * 0.16);
+}
+.un-wheel__card { grid-area: 1 / 2 / 3 / 3; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.5)); }
+.un-wheel__card .un-card { box-shadow: 0 0 0 2px var(--cream); }
+.un-petal {
+  width: calc(var(--cw) * 0.95); aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  border-radius: 28%; border: 0; padding: 4px; cursor: pointer; font: inherit; color: var(--cream);
+  background: radial-gradient(circle at 35% 25%, color-mix(in srgb, var(--c) 65%, white), var(--c) 55%, color-mix(in srgb, var(--c) 70%, black));
+  box-shadow: inset 0 0 0 3px var(--cream), inset 0 -4px 0 3px rgba(0, 0, 0, 0.12), 0 6px 14px -4px rgba(0, 0, 0, 0.6);
+  transition: scale var(--dur-press) ease, box-shadow 160ms ease;
+}
+.un-petal svg { width: 40%; height: auto; }
+.un-petal span { font-weight: 800; font-size: var(--text-sm); }
+.un-petal small { font-size: 10px; opacity: 0.85; font-variant-numeric: tabular-nums; }
+.un-petal.is-best { box-shadow: inset 0 0 0 3px var(--cream), 0 0 0 3px rgba(255, 240, 200, 0.75), 0 0 22px 2px rgba(255, 226, 160, 0.55), 0 6px 14px -4px rgba(0, 0, 0, 0.6); }
+.un-petal:active { scale: 0.94; }
+.un-petal:focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .un-petal:hover { scale: 1.06; } }
+.un-wheel__cancel { color: var(--ink); }
+
+/* a medallion over the tray: a turn lost, cards to draw, the way play goes… */
+.un-stamp-at { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; pointer-events: none; }
+.un-stamp { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.un-stamp__disc {
+  --d: clamp(96px, min(34cqw, 40cqh), 150px);
+  min-width: var(--d); height: var(--d); padding: 0 calc(var(--d) * 0.18); border-radius: calc(var(--d) / 2);
+  display: grid; place-items: center; color: var(--cream);
+  background: radial-gradient(circle at 36% 26%, #e0654c, var(--brick) 58%, #7e2616);
+  box-shadow: inset 0 0 0 calc(var(--d) * 0.05) var(--cream), inset 0 0 0 calc(var(--d) * 0.08) rgba(0, 0, 0, 0.15), 0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 60px rgba(255, 200, 150, 0.25);
+}
+.un-stamp__disc svg { width: 58%; height: 58%; }
+.un-stamp__disc strong { font-family: var(--font-display); font-weight: 800; font-size: calc(var(--d) * 0.36); letter-spacing: 0.02em; white-space: nowrap; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.2); }
+.un-stamp.is-call .un-stamp__disc strong { font-size: calc(var(--d) * 0.27); }
+.un-stamp.is-turn .un-stamp__disc { color: var(--enamel-ink); background: radial-gradient(circle at 36% 26%, #fffaf0, var(--cream) 55%, #d9c7a4); box-shadow: inset 0 0 0 calc(var(--d) * 0.05) var(--brass), 0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 60px rgba(255, 220, 160, 0.35); }
+.un-stamp.is-color .un-stamp__disc { background: radial-gradient(circle at 36% 26%, color-mix(in srgb, var(--c) 60%, white), var(--c) 55%, color-mix(in srgb, var(--c) 65%, black)); }
+.un-stamp.is-color .un-stamp__disc svg { width: 46%; height: 46%; }
+.un-stamp__caption {
+  max-width: min(90vw, 340px); padding: 5px 14px; border-radius: var(--radius-full); text-align: center; text-wrap: balance;
+  background: rgba(16, 19, 24, 0.82); color: var(--ink); font-weight: 800; font-size: var(--text-sm); box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.6);
+}
+
+/* a colour asked: a wave of enamel over the counter */
+.un-ripple {
+  position: fixed; z-index: 1; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; pointer-events: none;
+  border: 10px solid var(--c); box-shadow: 0 0 30px var(--c), inset 0 0 30px var(--c);
+  animation: un-ripple 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes un-ripple { from { scale: 0.4; opacity: 0.85; } to { scale: 9; opacity: 0; border-width: 2px; } }
+
+/* hit: the edges of my screen flush red (only I see it) */
+.un-hurt {
+  position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  box-shadow: inset 0 0 90px 18px rgba(194, 67, 44, 0.75);
+  animation: un-hurt 0.9s ease-out forwards;
+}
+@keyframes un-hurt { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
 
 /* cards flying to a seat */
 .un-flight { position: fixed; z-index: 50; pointer-events: none; width: var(--cw); translate: none; }
@@ -314,12 +373,12 @@
 
 /* small phones: tighter seats */
 @media (max-width: 400px) {
-  .un-seat { width: 80px; padding: 5px 4px 7px; }
+  .un-seats { --seat-w: 80px; }
+  .un-seat { padding: 5px 4px 7px; }
   .un-coaster { width: 22px; height: 22px; font-size: 12px; }
   .un-seat__name { font-size: var(--text-xs); }
 }
 /* wide screens: the counter breathes */
 @media (min-width: 900px) {
-  .un-seats { gap: var(--space-4); padding-top: var(--space-3); }
   .un-dock { padding-bottom: calc(var(--safe-bottom) + 16px); }
 }

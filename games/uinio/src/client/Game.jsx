@@ -10,7 +10,7 @@ import Icon from '@bgio/ui/components/Icon.jsx';
 import { toast, useToastPlacement } from '@bgio/ui/components/Toaster.jsx';
 import SettingsSheet from '@bgio/ui/components/SettingsSheet.jsx';
 import { COLORS, cardPoints, colorOf, isWild, kindOf } from '../engine/cards.js';
-import Card, { CREAM, Mark, cardName } from './Card.jsx';
+import Card, { CREAM, Mark, Symbol, cardName } from './Card.jsx';
 import RulesSheet from './RulesSheet.jsx';
 import { COLOR_HEX, COLOR_LABELS, COLOR_NAMES, KIND_NAMES, plural } from './i18n.js';
 import './uinio.css';
@@ -24,6 +24,11 @@ const hash = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const centre = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
 const rectOf = (id) => document.getElementById(id)?.getBoundingClientRect() ?? null;
+/** A short jolt sideways (a seat or my hand taking a hit). */
+const shakeEl = (el, px) => {
+  if (!el || reduced()) return;
+  el.animate([{ transform: 'none' }, { transform: `translateX(${-px}px) rotate(-1deg)` }, { transform: `translateX(${px}px) rotate(1deg)` }, { transform: `translateX(${-px / 2}px)` }, { transform: 'none' }], { duration: 420, easing: 'ease-out' });
+};
 
 /** Time left, as a draining bar (CSS animation, no re-render). */
 function TurnTimer({ turn, className = 'un-timer' }) {
@@ -83,32 +88,31 @@ function Flight({ flight, onDone }) {
 }
 
 /** The discard pile: the last cards laid, tilted; the top one flies in from whoever played it. */
-function Discard({ cards, from, animate, asked, stack, ghost, onClick, canDrop }) {
+function Discard({ cards, from, animate, asked, wilds, stack, onClick, canDrop }) {
   return (
     <button type="button" id="un-discard" className={`un-discard ${canDrop ? 'is-target' : ''}`} onClick={onClick} disabled={!onClick} aria-label="Défausse" style={{ '--asked': COLOR_HEX[asked] ?? CREAM }}>
       <span className="un-discard__halo" aria-hidden />
       {cards.map((c, i) => (
-        <Laid key={c} card={c} top={i === cards.length - 1} from={i === cards.length - 1 && animate ? from : null} />
+        <Laid key={c} card={c} asked={wilds[c]} top={i === cards.length - 1} from={i === cards.length - 1 && animate ? from : null} />
       ))}
-      {ghost && <span className="un-discard__ghost" aria-hidden><Card card={ghost} /></span>}
       {stack && <span key={stack.count} className="un-stack" aria-label={`${stack.count} cartes à piocher`}>+{stack.count}</span>}
     </button>
   );
 }
 
-function Laid({ card, top, from }) {
+function Laid({ card, asked, top, from }) {
   const ref = useRef(null);
   const h = hash(card);
   useLayoutEffect(() => { if (from) flyIn(ref.current, from, { spin: (h % 2 ? 1 : -1) * 16 }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <span className={`un-laid ${top ? 'is-top' : ''}`} style={{ rotate: `${(h % 29) - 14}deg`, translate: `${(h % 7) - 3}px ${(h % 5) - 2}px` }}>
-      <span ref={ref} className="un-laid__in"><Card card={card} /></span>
+      <span ref={ref} className="un-laid__in"><Card card={card} asked={asked} /></span>
     </span>
   );
 }
 
 /** My hand, in a fan that fits the width: playable cards stand up on my turn. */
-function Hand({ cards, playable, myTurn, fresh, selected, onPick, onHover, rects, drawn }) {
+function Hand({ cards, playable, myTurn, fresh, selected, onPick, rects, drawn }) {
   const box = useRef(null);
   const [width, setWidth] = useState(360);
   useLayoutEffect(() => {
@@ -147,7 +151,6 @@ function Hand({ cards, playable, myTurn, fresh, selected, onPick, onHover, rects
             fresh={fresh.get(c)}
             style={{ left: start + i * step, rotate: `${off * tilt}deg`, translate: `0 ${Math.abs(off) ** 2 * (tilt * 0.45)}px`, zIndex: i + 1 }}
             onPick={onPick}
-            onHover={onHover}
           />
         );
       })}
@@ -155,7 +158,7 @@ function Hand({ cards, playable, myTurn, fresh, selected, onPick, onHover, rects
   );
 }
 
-function HandCard({ card, ok, dim, isDrawn, selected, fresh, style, onPick, onHover }) {
+function HandCard({ card, ok, dim, isDrawn, selected, fresh, style, onPick }) {
   const ref = useRef(null);
   useLayoutEffect(() => {
     if (fresh) flyIn(ref.current, rectOf('un-pile'), { delay: fresh.delay, duration: 520, spin: -12 });
@@ -168,8 +171,6 @@ function HandCard({ card, ok, dim, isDrawn, selected, fresh, style, onPick, onHo
       aria-label={`${cardName(card)}${ok ? '' : dim ? ' (ne peut pas être posée)' : ''}`}
       aria-disabled={!ok || undefined}
       onClick={(e) => onPick(card, e.currentTarget)}
-      onPointerEnter={(e) => e.pointerType === 'mouse' && onHover(ok ? card : null)}
-      onPointerLeave={() => onHover(null)}
     >
       <span ref={ref} className="un-hcard__in" data-card={card}><Card card={card} /></span>
     </button>
@@ -177,7 +178,7 @@ function HandCard({ card, ok, dim, isDrawn, selected, fresh, style, onPick, onHo
 }
 
 /** Another player, round the table: a coaster, a fan of backs, the score, what they just did. */
-function Seat({ p, isTurn, isNext, bubble, exposed, onCatch, turn, playing }) {
+function Seat({ p, isTurn, isNext, exposed, onCatch, turn, playing }) {
   const shown = Math.min(p.count, 9);
   return (
     <div id={`un-seat-${p.id}`} className={`un-seat ${isTurn ? 'is-turn' : ''} ${p.connected === false ? 'is-away' : ''}`}>
@@ -200,35 +201,169 @@ function Seat({ p, isTurn, isNext, bubble, exposed, onCatch, turn, playing }) {
         : <span className="un-tag is-exposed">sans annonce</span>)}
       {isTurn && playing && <TurnTimer key={`${turn?.key}-${turn?.endsAt}`} turn={turn} className="un-timer un-timer--seat" />}
       {isNext && !isTurn && <span className="un-seat__next" aria-hidden />}
-      <AnimatePresence>
-        {bubble && (
-          <motion.span key={bubble.key} className={`un-bubble is-${bubble.tone ?? 'info'}`} initial={{ opacity: 0, y: 6, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6 }} transition={{ type: 'spring', bounce: 0.45, duration: 0.4 }}>
-            {bubble.text}
-          </motion.span>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
 
-/** Choosing the colour of a wild: the four enamels, with how many of each I hold. */
-function ColorPicker({ card, hand, onPick, onCancel }) {
+/**
+ * What a player just did, in a bubble hung under their seat (never over it). It lives
+ * outside the scrolling row of seats, so nothing clips it.
+ */
+function SeatBubble({ id, bubble, low }) {
+  const [at] = useState(() => {
+    const r = rectOf(`un-seat-${id}`);
+    if (!r) return null;
+    const x = centre(r).x;
+    const left = Math.min(Math.max(x, 70), window.innerWidth - 70);
+    return { left, top: r.bottom + (low ? 26 : 8), tail: x - left };
+  });
+  if (!at) return null;
+  return (
+    <motion.span
+      className={`un-sbubble is-${bubble.tone ?? 'info'}`}
+      style={{ left: at.left, top: at.top, '--tail': `${at.tail}px` }}
+      initial={{ opacity: 0, y: -8, scale: 0.7 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -4, scale: 0.9 }}
+      transition={{ type: 'spring', bounce: 0.45, duration: 0.4 }}
+    >
+      {bubble.text}
+    </motion.span>
+  );
+}
+
+/**
+ * A ceramic medallion stamped over the tray for the moves that matter. A lost turn and cards
+ * to draw are only stamped for the player they hit; the way play goes, a colour asked, a call
+ * and a catch are for the whole table.
+ */
+function Stamp({ s }) {
+  const r = reduced();
+  return (
+    <div className="un-stamp-at" role="status">
+      <motion.div
+        className={`un-stamp is-${s.tone}`}
+        initial={r ? { opacity: 0 } : { opacity: 0, scale: s.slam ? 1.9 : 0.4, rotate: s.spin ? -200 : -10 }}
+        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+        exit={r ? { opacity: 0 } : { opacity: 0, scale: 1.08, y: -12, transition: { duration: 0.25 } }}
+        transition={{ type: 'spring', bounce: s.slam ? 0.5 : 0.35, duration: s.spin ? 0.8 : 0.5 }}
+      >
+        <span className="un-stamp__disc" style={{ '--c': COLOR_HEX[s.color] }}>
+          {s.symbol ? (
+            <svg viewBox="-50 -50 100 100" aria-hidden><Symbol kind={s.symbol} fill={s.tone === 'turn' ? '#1b2130' : CREAM} /></svg>
+          ) : s.color ? (
+            <svg viewBox="-12 -12 24 24" aria-hidden><Mark color={s.color} s={13} /></svg>
+          ) : (
+            <strong>{s.text}</strong>
+          )}
+        </span>
+        {s.caption && <span className="un-stamp__caption">{s.caption}</span>}
+      </motion.div>
+    </div>
+  );
+}
+
+/** A colour asked: a wave of that enamel spreads over the counter from the discard. */
+function Ripple({ color }) {
+  const [at] = useState(() => {
+    const r = rectOf('un-discard');
+    return r ? centre(r) : null;
+  });
+  if (!at || reduced()) return null;
+  return <span className="un-ripple" style={{ left: at.x, top: at.y, '--c': COLOR_HEX[color] }} aria-hidden />;
+}
+
+/** The ring of arrows round the tray: one stroke each that fades in, ending in an open chevron. */
+const RING = (() => {
+  const r = 88;
+  const span = (26 * Math.PI) / 180;
+  const pt = (a) => [r * Math.sin(a), -r * Math.cos(a)];
+  const [x0, y0] = pt(-span);
+  const [x1, y1] = pt(span);
+  // The chevron's arms go back along the arc's tangent at its end, turned ±38°.
+  const tx = Math.cos(span);
+  const ty = Math.sin(span);
+  const arm = (deg) => {
+    const a = (deg * Math.PI) / 180;
+    const bx = -tx * Math.cos(a) + ty * Math.sin(a);
+    const by = -tx * Math.sin(a) - ty * Math.cos(a);
+    return [x1 + bx * 11, y1 + by * 11];
+  };
+  const [ax, ay] = arm(38);
+  const [bx, by] = arm(-38);
+  const f = (n) => n.toFixed(2);
+  return {
+    arc: `M ${f(x0)} ${f(y0)} A ${r} ${r} 0 0 1 ${f(x1)} ${f(y1)}`,
+    head: `M ${f(ax)} ${f(ay)} L ${f(x1)} ${f(y1)} L ${f(bx)} ${f(by)}`,
+    from: x0,
+    to: x1,
+  };
+})();
+
+function Ring({ direction, spinRef }) {
+  return (
+    <svg ref={spinRef} className={`un-tray__ring ${direction < 0 ? 'is-ccw' : ''}`} viewBox="-100 -100 200 200" aria-label={direction > 0 ? 'Sens des aiguilles d’une montre' : 'Sens inverse'}>
+      <g transform={direction < 0 ? 'scale(-1 1)' : undefined}>
+        <defs>
+          <linearGradient id="un-ring-fade" gradientUnits="userSpaceOnUse" x1={RING.from} y1="0" x2={RING.to} y2="0">
+            <stop offset="0" stopColor="currentColor" stopOpacity="0" />
+            <stop offset="0.6" stopColor="currentColor" stopOpacity="0.8" />
+            <stop offset="1" stopColor="currentColor" stopOpacity="1" />
+          </linearGradient>
+        </defs>
+        {[0, 120, 240].map((a) => (
+          <g key={a} transform={`rotate(${a})`}>
+            <path d={RING.arc} fill="none" stroke="url(#un-ring-fade)" strokeWidth="3.4" strokeLinecap="round" />
+            <path d={RING.head} fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+
+/**
+ * Choosing the colour of a wild, over the tray (the hand never moves): the card in the middle,
+ * the four enamels around it where its own lobes are, with how many of each I hold.
+ */
+const QUARTERS = { r: [-1, -1], b: [1, -1], y: [-1, 1], g: [1, 1] };
+function ColorWheel({ card, hand, onPick, onCancel }) {
   const counts = Object.fromEntries(COLORS.map((c) => [c, hand.filter((x) => x !== card && colorOf(x) === c).length]));
   const best = COLORS.reduce((a, b) => (counts[b] > counts[a] ? b : a));
+  const r = reduced();
   return (
-    <div className="un-picker un-dock__in" role="dialog" aria-label="Choisir la couleur">
-      <span className="un-picker__title">{KIND_NAMES[kindOf(card)]} : quelle couleur demander ?</span>
-      <div className="un-picker__row">
-        {COLORS.map((c, i) => (
-          <button key={c} type="button" className={`un-swatch ${c === best && counts[c] ? 'is-best' : ''}`} style={{ '--c': COLOR_HEX[c] }} onClick={() => onPick(c)} autoFocus={i === 0}>
-            <svg viewBox="-12 -12 24 24" aria-hidden><Mark color={c} s={13} /></svg>
-            <span>{COLOR_LABELS[c]}</span>
-            <small>{counts[c] ? `×${counts[c]}` : '—'}</small>
-          </button>
-        ))}
+    <motion.div className="un-wheel" role="dialog" aria-label="Choisir la couleur demandée" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+      <button type="button" className="un-wheel__scrim" aria-label="Annuler" onClick={onCancel} />
+      <span className="un-wheel__title">{KIND_NAMES[kindOf(card)]} : quelle couleur demander ?</span>
+      <div className="un-wheel__grid">
+        <motion.span className="un-wheel__card" initial={r ? false : { scale: 0.6, y: 50 }} animate={{ scale: 1, y: 0 }} transition={{ type: 'spring', bounce: 0.35, duration: 0.45 }}>
+          <Card card={card} />
+        </motion.span>
+        {COLORS.map((c, i) => {
+          const [qx, qy] = QUARTERS[c];
+          return (
+            <motion.button
+              key={c}
+              type="button"
+              className={`un-petal ${c === best && counts[c] ? 'is-best' : ''}`}
+              style={{ '--c': COLOR_HEX[c], gridArea: `${qy < 0 ? 1 : 2} / ${qx < 0 ? 1 : 3}` }}
+              initial={r ? false : { opacity: 0, x: -qx * 46, y: -qy * 30, scale: 0.5 }}
+              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+              transition={{ type: 'spring', bounce: 0.4, duration: 0.45, delay: 0.04 * i }}
+              onClick={() => onPick(c)}
+              autoFocus={c === best}
+              aria-label={`${COLOR_LABELS[c]}, ${plural(counts[c], 'carte')} en main`}
+            >
+              <svg viewBox="-12 -12 24 24" aria-hidden><Mark color={c} s={13} /></svg>
+              <span>{COLOR_LABELS[c]}</span>
+              <small>{counts[c] ? `×${counts[c]} en main` : 'aucune'}</small>
+            </motion.button>
+          );
+        })}
       </div>
-      <button type="button" className="un-link" onClick={onCancel}>Annuler</button>
-    </div>
+      <button type="button" className="un-link un-wheel__cancel" onClick={onCancel}>Annuler</button>
+    </motion.div>
   );
 }
 
@@ -294,8 +429,11 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
   const [choosing, setChoosing] = useState(null); // a wild waiting for its colour
-  const [hover, setHover] = useState(null);
   const [bubbles, setBubbles] = useState({});
+  const [stamp, setStamp] = useState(null);
+  const [ripple, setRipple] = useState(null);
+  const [hurt, setHurt] = useState(null);
+  const ring = useRef(null);
   const [flights, setFlights] = useState([]);
   const [banner, setBanner] = useState(null);
   const [shake, setShake] = useState(0);
@@ -347,7 +485,8 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       setShake((x) => x + 1);
       const hint = v.stack ? `Contrez avec un ${KIND_NAMES[v.stack.kind]} ou piochez ${v.stack.count}.`
         : v.step === 'drawn' ? 'Posez la carte piochée, ou gardez-la.'
-          : `Il faut du ${COLOR_NAMES[v.color]}, ${symbolHint(v.top)} ou un Joker.`;
+          : kindOf(card) === 'F' ? `Le Joker +4 n’est permis que sans carte ${COLOR_NAMES[v.color]} en main.`
+          : `Il faut une carte ${COLOR_NAMES[v.color]}, ${symbolHint(v.top)} ou un Joker.`;
       toast({ title: hint, tone: 'info' });
       return;
     }
@@ -356,7 +495,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   };
   const playCard = (card, color) => {
     setChoosing(null);
-    setHover(null);
     sound('clink');
     haptic('medium');
     send({ type: 'play', card, ...(color ? { color } : {}) });
@@ -402,6 +540,9 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const discard = useRef({ round: v.round, cards: v.top ? [v.top] : [] });
   if (discard.current.round !== v.round) discard.current = { round: v.round, cards: v.top ? [v.top] : [] };
   else if (v.top && discard.current.cards.at(-1) !== v.top) discard.current.cards = [...discard.current.cards.filter((c) => c !== v.top), v.top].slice(-5);
+  // A wild keeps, on the pile, the colour it asked for.
+  const wilds = useRef({});
+  if (v.top && isWild(v.top)) wilds.current[v.top] = v.color;
   const lastPlay = [...v.log].reverse().find((e) => e.type === 'play' && e.card === v.top);
   const topFrom = useRef(null);
   const mounted = useRef(false);
@@ -432,6 +573,12 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     if (!fresh.length) return undefined;
     const timers = [];
     const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+    // The medallion over the tray: the strongest of what just happened wins.
+    let best = null;
+    const stampIt = (rank, st) => { if (!best || rank >= best.rank) best = { rank, ...st }; };
+    const hurtMe = () => { setHurt(Date.now()); haptic('error'); shakeEl(document.getElementById('un-hand'), 8); };
+    const jolt = (id) => shakeEl(document.getElementById(`un-seat-${id}`), 5);
+    const called = (id) => stampIt(2, { tone: 'call', text: 'UINIO !', caption: id === me ? 'Plus qu’une carte : bien annoncé' : `${nameOf(id)} n’a plus qu’une carte` });
     const fly = (to, count, card) => {
       const from = rectOf('un-pile');
       const target = rectOf(to);
@@ -448,23 +595,49 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       } else if (e.type === 'play') {
         if (!mine) later(380, () => sound('clink'));
         const kind = kindOf(e.card);
-        if (e.call) { say(e.playerId, 'UINIO !', 'call'); later(420, () => sound('uinio')); }
-        else if (kind === 'R' && players.length > 2) say(e.playerId, 'Inversion', 'info');
-        else if (isWild(e.card)) say(e.playerId, `${COLOR_LABELS[e.color]} !`, e.color);
+        if (e.call) { say(e.playerId, 'UINIO !', 'call'); later(420, () => sound('uinio')); called(e.playerId); }
+        if (kind === 'R' && players.length > 2) {
+          if (!e.call) say(e.playerId, 'Inversion', 'info');
+          stampIt(2, { tone: 'turn', symbol: 'R', spin: true, caption: 'Le sens du jeu change' });
+          later(60, () => ring.current?.animate?.(
+            [{ transform: 'rotate(0deg) scale(1)' }, { transform: `rotate(${v.direction * 320}deg) scale(1.1)`, offset: 0.7 }, { transform: `rotate(${v.direction * 360}deg) scale(1)` }],
+            { duration: 1100, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)' },
+          ));
+        } else if (isWild(e.card)) {
+          if (!e.call) say(e.playerId, `${COLOR_LABELS[e.color]} !`, e.color);
+          setRipple({ key: e.id, color: e.color });
+          stampIt(1, { tone: 'color', color: e.color, caption: mine ? `Couleur demandée : ${COLOR_NAMES[e.color]}` : `${nameOf(e.playerId)} demande : ${COLOR_NAMES[e.color]}` });
+        }
+        // Stacking: a +2 / +4 now waits on me.
+        if (v.stack && v.turn === me && !mine && e.id === v.log.at(-1)?.id) {
+          stampIt(4, { tone: 'hit', text: `+${v.stack.count}`, slam: true, caption: v.playable.length ? `Pour vous : contrez avec un ${KIND_NAMES[v.stack.kind]}, ou piochez` : 'Pour vous : il faut piocher' });
+          haptic('medium');
+        }
       } else if (e.type === 'skip') {
         say(e.playerId, 'Passe son tour', 'warn');
-        if (e.playerId === me) haptic('medium');
+        if (e.playerId === me) {
+          stampIt(5, { tone: 'hit', symbol: 'S', slam: true, caption: 'Vous passez votre tour' });
+          hurtMe();
+        } else jolt(e.playerId);
       } else if (e.type === 'draw' || e.type === 'penalty' || (e.type === 'catch')) {
         const victim = e.type === 'catch' ? e.target : e.playerId;
         if (e.type === 'penalty') say(victim, `+${e.count}`, 'warn');
-        if (e.type === 'catch') { say(victim, `Contré ! +${e.count}`, 'warn'); say(e.playerId, 'Contre !', 'call'); }
+        if (e.type === 'penalty' && victim === me) stampIt(5, { tone: 'hit', text: `+${e.count}`, slam: true, caption: `Vous piochez ${plural(e.count, 'carte')}` });
+        if (e.type === 'catch') {
+          say(victim, `Contré ! +${e.count}`, 'warn');
+          say(e.playerId, 'Contre !', 'call');
+          if (victim === me) stampIt(5, { tone: 'hit', text: 'Contré !', slam: true, caption: `${nameOf(e.playerId)} vous prend sans annonce : +${e.count}` });
+          else stampIt(3, { tone: 'call', text: 'Contre !', slam: true, caption: mine ? `Bien vu : ${nameOf(victim)} pioche ${e.count}` : `${nameOf(e.playerId)} prend ${nameOf(victim)} sans annonce : +${e.count}` });
+        }
+        if (e.type !== 'draw') { if (victim === me) hurtMe(); else jolt(victim); }
         if (e.type === 'draw' && e.count > 1) say(victim, `pioche ${e.count}`, 'info');
         if (victim !== me) fly(`un-seat-${victim}`, e.count);
         for (let i = 0; i < Math.min(e.count, 6); i++) later(i * 110, () => sound('flip'));
-        if (victim === me && e.type !== 'draw') { haptic('error'); later(200, () => sound('error')); }
+        if (victim === me && e.type !== 'draw') later(200, () => sound('error'));
       } else if (e.type === 'call') {
         say(e.playerId, 'UINIO !', 'call');
         sound('uinio');
+        called(e.playerId);
       } else if (e.type === 'keep') {
         say(e.playerId, 'garde', 'info');
       } else if (e.type === 'reshuffle') {
@@ -473,8 +646,25 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         later(500, () => { sound(mine ? 'bingo' : 'success'); if (mine) haptic('success'); });
       }
     }
+    if (best && !readOnly) setStamp({ ...best, key: `${Date.now()}-${best.rank}` });
     return () => timers.forEach(clearTimeout);
   }, [v.log]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!stamp) return undefined;
+    const t = setTimeout(() => setStamp(null), stamp.rank >= 4 ? 1500 : 1250);
+    return () => clearTimeout(t);
+  }, [stamp]);
+  useEffect(() => {
+    if (!ripple) return undefined;
+    const t = setTimeout(() => setRipple(null), 1300);
+    return () => clearTimeout(t);
+  }, [ripple]);
+  useEffect(() => {
+    if (!hurt) return undefined;
+    const t = setTimeout(() => setHurt(null), 900);
+    return () => clearTimeout(t);
+  }, [hurt]);
 
   useEffect(() => {
     const t = Object.keys(bubbles).length ? setTimeout(() => setBubbles({}), 1700) : null;
@@ -510,12 +700,12 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   else if (v.phase === 'reveal') status = 'Fin de manche.';
   else if (myTurn) {
     if (v.stack) status = playable.size ? `+${v.stack.count} pour vous : contrez avec un ${KIND_NAMES[v.stack.kind]}, ou piochez.` : `+${v.stack.count} pour vous : piochez.`;
+    else if (choosing) status = 'Choisissez la couleur demandée.';
     else if (v.step === 'drawn') status = `Vous piochez ${cardName(v.drawn)} : la poser ?`;
     else status = playable.size ? 'À vous : posez une carte.' : 'Rien à poser : piochez.';
   } else status = `${nameOf(v.turn)} joue…`;
 
   const clock = turn?.endsAt && turn.durationMs >= 2000 ? turn : null;
-  const ghost = myTurn && hover && playable.has(hover) ? hover : null;
   const pileHint = myTurn && v.step === 'play' && !playable.size;
 
   return (
@@ -534,14 +724,13 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         </div>
       </header>
 
-      <div className={`un-seats is-${order.length}`}>
+      <div className={`un-seats is-${order.length}`} style={{ '--n': order.length }}>
         {order.map((p) => (
           <Seat
             key={p.id}
             p={p}
             isTurn={v.phase === 'play' && v.turn === p.id}
             isNext={v.phase === 'play' && players[nextSeat]?.id === p.id}
-            bubble={bubbles[p.id]}
             exposed={v.exposed === p.id}
             onCatch={catchable === p.id ? () => catchIt(p.id) : null}
             turn={clock}
@@ -558,14 +747,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           </div>
         )}
         <div className="un-tray" style={{ '--asked': COLOR_HEX[v.color] ?? CREAM }}>
-          <svg className={`un-tray__ring ${v.direction < 0 ? 'is-ccw' : ''}`} viewBox="-100 -100 200 200" aria-label={v.direction > 0 ? 'Sens des aiguilles d’une montre' : 'Sens inverse'}>
-            {[0, 120, 240].map((a) => (
-              <g key={a} transform={`rotate(${a})`}>
-                <path d="M -40 -86 A 94 94 0 0 1 40 -86" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                <path d={v.direction > 0 ? 'M 40 -86 l -10 -6 l 2 11 z' : 'M -40 -86 l 10 -6 l -2 11 z'} fill="currentColor" />
-              </g>
-            ))}
-          </svg>
+          <Ring direction={v.direction} spinRef={ring} />
           <button type="button" id="un-pile" className={`un-pile ${pileHint ? 'is-hint' : ''}`} onClick={draw} disabled={!myTurn || v.step !== 'play'} aria-label={`Pioche, ${plural(v.pileCount, 'carte')}${myTurn ? ' : piocher' : ''}`}>
             {[2, 1, 0].map((i) => <span key={i} className="un-pile__card" style={{ '--i': i }}><Card card={null} /></span>)}
             <span className="un-pile__count">{v.pileCount}</span>
@@ -575,14 +757,16 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
             from={topFrom.current}
             animate={mounted.current}
             asked={v.color}
+            wilds={wilds.current}
             stack={v.stack}
-            ghost={ghost}
           />
-          <span className="un-asked" style={{ '--c': COLOR_HEX[v.color] }}>
-            <svg viewBox="-12 -12 24 24" aria-hidden><Mark color={v.color} s={12} /></svg>
-            {COLOR_LABELS[v.color]}
-          </span>
         </div>
+        <AnimatePresence>
+          {stamp && <Stamp key={stamp.key} s={stamp} />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {choosing && <ColorWheel key="wheel" card={choosing} hand={hand} onPick={(c) => playCard(choosing, c)} onCancel={() => setChoosing(null)} />}
+        </AnimatePresence>
       </main>
 
       <section id="un-hand" className={`un-me ${myTurn ? 'is-turn' : ''}`}>
@@ -601,7 +785,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           </div>
         )}
         <div key={shake} className={shake ? 'un-shake' : ''}>
-          <Hand cards={hand} playable={playable} myTurn={myTurn} fresh={fresh} selected={choosing} onPick={pick} onHover={setHover} rects={rects} drawn={myTurn && v.step === 'drawn' ? v.drawn : null} />
+          <Hand cards={hand} playable={playable} myTurn={myTurn} fresh={fresh} selected={choosing} onPick={pick} rects={rects} drawn={myTurn && v.step === 'drawn' ? v.drawn : null} />
         </div>
       </section>
 
@@ -612,34 +796,35 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
             Contrer {nameOf(catchable)} <small>+2 pour lui</small>
           </button>
         )}
-        {choosing ? (
-          <ColorPicker key="pick" card={choosing} hand={hand} onPick={(c) => playCard(choosing, c)} onCancel={() => setChoosing(null)} />
-        ) : (
-          <div key={`${v.turn}-${v.step}`} className="un-dock__row un-dock__in">
-            <p className="un-status" role="status" aria-live="polite">{status}</p>
-            <div className="un-dock__actions">
-              {canCall && (
-                <button type="button" className={`un-btn un-btn--call ${v.exposed === me ? 'is-urgent' : ''}`} onClick={callIt} disabled={busy}>
-                  UINIO !
-                </button>
-              )}
-              {myTurn && v.step === 'drawn' && (
-                <>
-                  <button type="button" className="un-btn" onClick={keep} disabled={busy}>Garder</button>
-                  <button type="button" className="un-btn un-btn--enamel" onClick={() => pick(v.drawn)} disabled={busy}>Poser</button>
-                </>
-              )}
-              {myTurn && v.step === 'play' && (
-                <button type="button" className={`un-btn ${!playable.size ? 'un-btn--enamel' : ''}`} onClick={draw} disabled={busy}>
-                  {v.stack ? `Piocher ${v.stack.count}` : 'Piocher'}
-                </button>
-              )}
-            </div>
+        <div key={`${v.turn}-${v.step}`} className="un-dock__row un-dock__in">
+          <p className="un-status" role="status" aria-live="polite">{status}</p>
+          <div className="un-dock__actions">
+            {canCall && (
+              <button type="button" className={`un-btn un-btn--call ${v.exposed === me ? 'is-urgent' : ''}`} onClick={callIt} disabled={busy}>
+                UINIO !
+              </button>
+            )}
+            {myTurn && v.step === 'drawn' && (
+              <>
+                <button type="button" className="un-btn" onClick={keep} disabled={busy}>Garder</button>
+                <button type="button" className="un-btn un-btn--enamel" onClick={() => pick(v.drawn)} disabled={busy}>Poser</button>
+              </>
+            )}
+            {myTurn && v.step === 'play' && !choosing && (
+              <button type="button" className={`un-btn ${!playable.size ? 'un-btn--enamel' : ''}`} onClick={draw} disabled={busy}>
+                {v.stack ? `Piocher ${v.stack.count}` : 'Piocher'}
+              </button>
+            )}
           </div>
-        )}
+        </div>
       </footer>
 
       {flights.map((f) => <Flight key={f.id} flight={f} onDone={(id) => setFlights((all) => all.filter((x) => x.id !== id))} />)}
+      <AnimatePresence>
+        {order.map((p) => bubbles[p.id] && <SeatBubble key={bubbles[p.id].key} id={p.id} bubble={bubbles[p.id]} low={v.exposed === p.id} />)}
+      </AnimatePresence>
+      {ripple && <Ripple key={ripple.key} color={ripple.color} />}
+      {hurt && <span key={hurt} className="un-hurt" aria-hidden />}
 
       <AnimatePresence>
         {v.roundResult && (v.phase === 'reveal' || v.phase === 'over') && (
