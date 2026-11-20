@@ -5,19 +5,20 @@ import { CHIP_VALUES, Chip } from './Chip.jsx';
 import { fmt } from './i18n.js';
 
 /**
- * The chip tray while bets are open: tap a chip to add it to the bet (shown as ghost chips in
- * my box), then confirm. Chips that would go over the stack are greyed out.
+ * The chip tray while bets are open: tap a chip to add it to the bet (ghost chips appear in
+ * my box on the felt, where tapping clears them), quick amounts, then the gold plaque that
+ * places the bet and says what will be left. Passing is on the felt, beside my box.
  */
-export function BetTray({ draft, stack, minBet, step, lastBet, busy, onAdd, onSet, onClear, onConfirm, onPass }) {
+export function BetTray({ draft, stack, minBet, step, lastBet, busy, onAdd, onSet, onConfirm }) {
   const max = stack - (stack % step);
   const ok = draft >= minBet && draft <= max;
   const again = lastBet && lastBet <= max && lastBet >= minBet ? lastBet : null;
   const quick = [
-    { label: 'Min', amount: minBet, show: minBet <= max },
-    { label: again != null ? `Même · ${fmt(again)}` : null, amount: again, show: again != null && again !== minBet },
-    { label: '×2', amount: draft * 2, show: draft > 0 && draft * 2 <= max },
-    { label: 'Tapis', amount: max, show: max >= minBet },
-  ].filter((q) => q.show && q.label);
+    { id: 'min', label: 'Min', sub: fmt(minBet), amount: minBet, on: minBet <= max },
+    { id: 'again', label: 'Même', sub: again != null ? fmt(again) : '—', amount: again, on: again != null },
+    { id: 'double', label: '×2', sub: draft > 0 ? fmt(draft * 2) : '—', amount: draft * 2, on: draft > 0 && draft * 2 <= max },
+    { id: 'all', label: 'Tapis', sub: fmt(max), amount: max, on: max >= minBet },
+  ];
   return (
     <div className="bj-tray" role="group" aria-label="Votre mise">
       <div className="bj-tray__chips">
@@ -35,21 +36,37 @@ export function BetTray({ draft, stack, minBet, step, lastBet, busy, onAdd, onSe
           </motion.button>
         ))}
       </div>
-      <div className="bj-tray__bar">
-        <div className="bj-tray__quick">
-          {quick.map((q) => (
-            <button key={q.label} type="button" className={`bj-link ${draft === q.amount ? 'is-on' : ''}`} disabled={busy} onClick={() => onSet(q.amount)}>{q.label}</button>
-          ))}
-          <button type="button" className="bj-link bj-link--dim" disabled={busy || !draft} onClick={onClear}>Effacer</button>
-          <span className="bj-tray__hint">{draft > 0 ? `reste ${fmt(stack - draft)}` : `tapis ${fmt(stack)}`}</span>
-        </div>
-        <div className="bj-tray__go">
-          <button type="button" className="bj-btn bj-btn--quiet" disabled={busy} onClick={onPass}>Passer</button>
-          <button type="button" className="bj-btn bj-btn--gold" disabled={busy || !ok} onClick={onConfirm}>
-            {draft ? <>Miser <b>{fmt(draft)}</b></> : `Min. ${fmt(minBet)}`}
-          </button>
-        </div>
+      <div className="bj-tray__quick">
+        {quick.map((q) => (
+          <motion.button
+            key={q.id}
+            type="button"
+            className={`bj-plaque ${q.on && draft === q.amount ? 'is-on' : ''}`}
+            disabled={busy || !q.on}
+            onClick={() => onSet(q.amount)}
+            whileTap={{ scale: 0.95 }}
+            aria-label={`${q.label} : ${q.sub}`}
+          >
+            <span className="bj-plaque__face">
+              <span className="bj-plaque__label">{q.label}</span>
+              <span className="bj-plaque__sub">{q.sub}</span>
+            </span>
+          </motion.button>
+        ))}
       </div>
+      <motion.button
+        type="button"
+        className="bj-plaque bj-plaque--gold bj-tray__go"
+        disabled={busy || !ok}
+        onClick={onConfirm}
+        whileTap={{ scale: 0.96 }}
+        aria-keyshortcuts="Enter"
+      >
+        <span className="bj-plaque__face">
+          <span className="bj-plaque__label">{draft ? <>Miser <b>{fmt(draft)}</b></> : 'Misez'}</span>
+          <span className="bj-plaque__sub">{draft ? `il vous restera ${fmt(stack - draft)}` : `${fmt(minBet)} au moins`}</span>
+        </span>
+      </motion.button>
     </div>
   );
 }

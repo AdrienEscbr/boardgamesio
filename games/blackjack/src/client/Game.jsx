@@ -122,6 +122,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const addChip = (value) => { setDraft((d) => d + value); sound('chip'); haptic('light'); };
   const setBet = (amount) => { setDraft(amount); sound('chip'); haptic('light'); };
   const confirmBet = () => { if (myBetTurn && draft >= v.minBet) { sound('chip'); haptic('medium'); send({ type: 'bet', amount: draft }); } };
+  const clearBet = () => { if (draft) { setDraft(0); sound('back'); haptic('light'); } };
   const pass = () => { if (myBetTurn) { sound('back'); send({ type: 'pass' }); } };
   const play = (type) => {
     if (!myTurn || !v.legal[type]) return;
@@ -132,7 +133,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
 
   // Keyboard: T R D S on my hand, Enter to bet.
   const keys = useRef({});
-  keys.current = { myTurn, myBetTurn, play, confirmBet };
+  keys.current = { myTurn, myBetTurn, play, confirmBet, clearBet };
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.closest?.('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -140,6 +141,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       const type = { t: 'hit', r: 'stand', d: 'double', s: 'split' }[e.key.toLowerCase()];
       if (k.myTurn && type) { e.preventDefault(); k.play(type); }
       if (k.myBetTurn && e.key === 'Enter' && !e.target.closest?.('button')) k.confirmBet();
+      if (k.myBetTurn && e.key === 'Backspace') { e.preventDefault(); k.clearBet(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -302,7 +304,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           )}
           {meP && (
             <div className="bj-mine">
-              <Seat p={meP} v={v} isMe draft={myBetTurn ? draft : 0} delayOf={delayOf} state={seatState(meP)} pos={arc[meP.id]} revealMs={revealMs} />
+              <Seat p={meP} v={v} isMe draft={myBetTurn ? draft : 0} onClearBet={myBetTurn ? clearBet : undefined} onPass={myBetTurn ? pass : undefined} busy={busy} delayOf={delayOf} state={seatState(meP)} pos={arc[meP.id]} revealMs={revealMs} />
             </div>
           )}
         </Felt>
@@ -322,9 +324,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
                 busy={busy}
                 onAdd={addChip}
                 onSet={setBet}
-                onClear={() => { setDraft(0); sound('back'); }}
                 onConfirm={confirmBet}
-                onPass={pass}
               />
             </div>
           ) : myTurn && myHand ? (
