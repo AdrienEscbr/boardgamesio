@@ -123,8 +123,10 @@ export function ActionBar({ hand, upCard, legal, stack, advice, busy, onAct }) {
   return (
     <div className="bj-actions" role="group" aria-label="Votre coup">
       {ACTIONS.map(({ type, label, key }) => (
+        // The advice tag sits above the plaque, outside its cut corners.
+        <div key={type} className={`bj-action-cell ${best === type ? 'is-advised' : ''}`}>
+        {best === type && <span className="bj-action__tip">conseil</span>}
         <motion.button
-          key={type}
           type="button"
           className={`bj-action bj-action--${type} ${best === type ? 'is-advised' : ''}`}
           disabled={busy || !legal[type]}
@@ -139,9 +141,9 @@ export function ActionBar({ hand, upCard, legal, stack, advice, busy, onAct }) {
               <span className="bj-action__note">{notes[type]}</span>
             </span>
             <kbd>{key.toUpperCase()}</kbd>
-            {best === type && <span className="bj-action__tip">conseil</span>}
           </span>
         </motion.button>
+        </div>
       ))}
     </div>
   );
