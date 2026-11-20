@@ -173,7 +173,10 @@ function HandCard({ card, ok, dim, isDrawn, selected, fresh, style, onPick }) {
       aria-disabled={!ok || undefined}
       onClick={(e) => onPick(card, e.currentTarget)}
     >
-      <span ref={ref} className="un-hcard__in" data-card={card}><Card card={card} /></span>
+      <span ref={ref} className="un-hcard__in" data-card={card}>
+        <Card card={card} />
+        {isDrawn && <span className="un-hcard__tag">Poser ?</span>}
+      </span>
     </button>
   );
 }
@@ -580,13 +583,16 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   useEffect(() => { prevHand.current = shownHand; }, [shownHand]);
 
   // ---- reacting to the table: sounds, bubbles, flights -----------------------------------
+  // Sounds and effects still due when the table goes away.
+  const pendingTimers = useRef([]);
+  useEffect(() => () => pendingTimers.current.forEach(clearTimeout), []);
   const lastEvent = useRef(v.log.at(-1)?.id ?? 0);
   const say = (id, text, tone) => setBubbles((b) => ({ ...b, [id]: { text, tone, key: `${Date.now()}-${Math.random()}` } }));
   useEffect(() => {
     const fresh = v.log.filter((e) => e.id > lastEvent.current);
     lastEvent.current = v.log.at(-1)?.id ?? lastEvent.current;
     if (!fresh.length) return undefined;
-    const timers = [];
+    const timers = pendingTimers.current;
     const later = (ms, fn) => timers.push(setTimeout(fn, ms));
     // What hits me: a plaque over my hand (only I see it), the edges flush, my hand jolts.
     let note = null;
@@ -613,12 +619,24 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         if (e.call) { say(e.playerId, 'UINIO !', 'call'); later(420, () => sound('uinio')); called(e.playerId); }
         if (kind === 'R' && players.length > 2) {
           if (!e.call) say(e.playerId, 'Inversion', 'info');
-          later(60, () => {
+          // The way play goes turns over: the ring folds in, swings round the other way and
+          // flares; the tray gives a little turn with it. Everyone sees it.
+          later(30, () => {
             if (reduced()) return;
+            const d = v.direction;
             ring.current?.animate?.(
-              [{ transform: 'rotate(0deg) scale(1)', color: 'rgba(251, 231, 181, 0.55)' }, { transform: `rotate(${v.direction * 300}deg) scale(1.06)`, color: 'rgba(255, 246, 220, 1)', offset: 0.6 }, { transform: `rotate(${v.direction * 360}deg) scale(1)`, color: 'rgba(251, 231, 181, 0.55)' }],
-              { duration: 1200, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)' },
+              [
+                { transform: `rotate(${-d * 140}deg) scale(0.82)`, opacity: 0.2, color: 'rgba(251, 231, 181, 0.55)' },
+                { transform: `rotate(${d * 25}deg) scale(1.1)`, opacity: 1, color: 'rgba(255, 248, 225, 1)', offset: 0.55 },
+                { transform: `rotate(${d * 360}deg) scale(1)`, opacity: 1, color: 'rgba(251, 231, 181, 0.55)' },
+              ],
+              { duration: 1400, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)' },
             );
+            document.querySelector('.un-tray')?.animate(
+              [{ transform: 'none' }, { transform: `rotate(${d * 8}deg) scale(1.03)`, offset: 0.35 }, { transform: 'none' }],
+              { duration: 700, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)' },
+            );
+            sound('flip');
           });
         } else if (isWild(e.card)) {
           if (!e.call) say(e.playerId, `${COLOR_LABELS[e.color]} !`, e.color);
@@ -667,8 +685,11 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       }
     }
     if (note && !readOnly) setNotice({ ...note, key: `${Date.now()}-${note.rank}` });
-    return () => timers.forEach(clearTimeout);
-  }, [v.log]); // eslint-disable-line react-hooks/exhaustive-deps
+    return undefined;
+    // Keyed on the last event, not on the log array: a view rebuilt with the same moves must
+    // not replay (or cancel) anything.
+  }, [v.log.at(-1)?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -740,6 +761,12 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
 
   const clock = turn?.endsAt && turn.durationMs >= 2000 ? turn : null;
   const pileHint = myTurn && v.step === 'play' && !playable.size;
+  // The pile is where a turn is drawn, kept or ended: its label says which.
+  const pileLabel = !myTurn || choosing ? null
+    : v.step === 'play' ? (v.stack ? `Piocher ${v.stack.count}` : 'Piocher')
+      : v.step === 'drawn' ? 'Garder'
+        : v.step === 'more' ? 'Terminer' : null;
+  const pileAction = () => (v.step === 'play' ? draw() : keep());
 
   return (
     <div className="un-table">
@@ -776,9 +803,16 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       <main className="un-stage">
         <div className={`un-tray ${choosing ? 'is-choosing' : ''}`} style={{ '--asked': COLOR_HEX[v.color] ?? CREAM }}>
           <Ring direction={v.direction} spinRef={ring} />
-          <button type="button" id="un-pile" className={`un-pile ${pileHint ? 'is-hint' : ''}`} onClick={draw} disabled={!myTurn || v.step !== 'play'} aria-label={`Pioche, ${plural(v.pileCount, 'carte')}${myTurn ? ' : piocher' : ''}`}>
+          <button type="button" id="un-pile" className={`un-pile ${pileHint ? 'is-hint' : ''}`} onClick={pileAction} disabled={!pileLabel || busy} aria-label={`Pioche, ${plural(v.pileCount, 'carte')}${pileLabel ? ` : ${pileLabel.toLowerCase()}` : ''}`}>
             {[2, 1, 0].map((i) => <span key={i} className="un-pile__card" style={{ '--i': i }}><Card card={null} /></span>)}
             <span className="un-pile__count">{v.pileCount}</span>
+            <AnimatePresence>
+              {pileLabel && (
+                <motion.span key={pileLabel} className="un-pile__label" initial={{ opacity: 0, y: -6, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.12 } }} transition={{ type: 'spring', bounce: 0.45, duration: 0.4 }}>
+                  {pileLabel}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </button>
           <Discard
             cards={dealing ? NONE : discard.current.cards}
@@ -801,6 +835,18 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
             <span className="un-me__pts">{meP.total} pts</span>
             {meP.called && hand.length === 1 && <span className="un-tag">UINIO !</span>}
             <AnimatePresence>
+              {canCall && (
+                <motion.button key="call" type="button" className={`un-seal ${v.exposed === me ? 'is-urgent' : ''}`} onClick={callIt} disabled={busy} initial={{ opacity: 0, scale: 0.4, rotate: -20 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, scale: 0.5 }} transition={{ type: 'spring', bounce: 0.5, duration: 0.45 }}>
+                  UINIO !
+                </motion.button>
+              )}
+              {catchable && (
+                <motion.button key="catch" type="button" className="un-seal un-seal--catch" onClick={() => catchIt(catchable)} initial={{ opacity: 0, scale: 0.4 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} transition={{ type: 'spring', bounce: 0.5, duration: 0.45 }}>
+                  Contrer {nameOf(catchable)} <small>+2</small>
+                </motion.button>
+              )}
+            </AnimatePresence>
+            <AnimatePresence>
               {notice && <Notice key={notice.key} n={notice} />}
             </AnimatePresence>
             <AnimatePresence>
@@ -819,34 +865,8 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
 
       <footer className="un-dock">
         {clock && myTurn && <TurnTimer key={`${clock.key}-${clock.endsAt}`} turn={clock} />}
-        {catchable && (
-          <button type="button" className="un-btn un-btn--catch un-dock__float" onClick={() => catchIt(catchable)}>
-            Contrer {nameOf(catchable)} <small>+2 pour lui</small>
-          </button>
-        )}
         <div key={`${v.turn}-${v.step}`} className="un-dock__row un-dock__in">
           <p className="un-status" role="status" aria-live="polite">{status}</p>
-          <div className="un-dock__actions">
-            {canCall && (
-              <button type="button" className={`un-btn un-btn--call ${v.exposed === me ? 'is-urgent' : ''}`} onClick={callIt} disabled={busy}>
-                UINIO !
-              </button>
-            )}
-            {myTurn && v.step === 'drawn' && (
-              <>
-                <button type="button" className="un-btn" onClick={keep} disabled={busy}>Garder</button>
-                <button type="button" className="un-btn un-btn--enamel" onClick={() => pick(v.drawn)} disabled={busy}>Poser</button>
-              </>
-            )}
-            {myTurn && v.step === 'more' && (
-              <button type="button" className="un-btn un-btn--enamel" onClick={keep} disabled={busy}>Terminer</button>
-            )}
-            {myTurn && v.step === 'play' && !choosing && (
-              <button type="button" className={`un-btn ${!playable.size ? 'un-btn--enamel' : ''}`} onClick={draw} disabled={busy}>
-                {v.stack ? `Piocher ${v.stack.count}` : 'Piocher'}
-              </button>
-            )}
-          </div>
         </div>
       </footer>
 
