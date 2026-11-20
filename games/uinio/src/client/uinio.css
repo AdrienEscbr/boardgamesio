@@ -262,6 +262,26 @@
 @media (hover: hover) and (pointer: fine) { .un-buzzer.is-live:hover .un-buzzer__dome { translate: 0 -5px; } }
 .un-buzzer:focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
 
+/* "UINIO !": enamel letter tiles over the tray */
+.un-shout { position: fixed; z-index: 46; width: 0; height: 0; pointer-events: none; display: grid; place-items: center; }
+.un-shout > * { position: absolute; }
+.un-shout__glow { width: 340px; height: 200px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 150, 110, 0.45), transparent); }
+@media (prefers-reduced-motion: no-preference) { .un-shout__glow { animation: un-shout-glow 1.6s ease-out forwards; } }
+@keyframes un-shout-glow { 0% { scale: 0.3; opacity: 0; } 30% { scale: 1; opacity: 1; } 100% { scale: 1.3; opacity: 0; } }
+.un-shout__word { display: flex; gap: clamp(3px, 1vw, 6px); translate: 0 -10px; }
+.un-shout__tile {
+  --t: clamp(38px, 11vw, 60px);
+  width: var(--t); height: calc(var(--t) * 1.15); border-radius: 22%; display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 800; font-size: calc(var(--t) * 0.66); line-height: 1; color: var(--cream);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+  background: radial-gradient(circle at 35% 22%, #ff9a80 0, #e0654c 25%, var(--brick) 60%, #7e2616);
+  box-shadow: inset 0 0 0 calc(var(--t) * 0.06) var(--cream), inset 0 -3px 0 calc(var(--t) * 0.06) rgba(0, 0, 0, 0.15), 0 10px 22px -8px rgba(0, 0, 0, 0.7);
+}
+.un-shout__who {
+  translate: 0 calc(clamp(38px, 11vw, 60px) * 0.58 + 10px); white-space: nowrap; padding: 4px 14px; border-radius: var(--radius-full);
+  background: rgba(16, 19, 24, 0.82); color: var(--ink); font-weight: 800; font-size: var(--text-sm);
+}
+
 /* a new round: announced over a dimmed table, then dealt */
 .un-deal {
   position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; pointer-events: none;

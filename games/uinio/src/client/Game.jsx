@@ -265,7 +265,8 @@ function Notice({ n }) {
 /** A call or a catch at a seat: rings of enamel spread from the coaster. */
 function Burst({ id, tone, onDone }) {
   const [at] = useState(() => {
-    const el = document.querySelector(`#un-seat-${CSS.escape(id)} .un-coaster`) ?? document.getElementById(`un-seat-${id}`);
+    const el = id === 'buzzer' ? document.querySelector('.un-buzzer')
+      : document.querySelector(`#un-seat-${CSS.escape(id)} .un-coaster`) ?? document.getElementById(`un-seat-${id}`);
     return el ? centre(el.getBoundingClientRect()) : null;
   });
   useEffect(() => {
@@ -277,6 +278,44 @@ function Burst({ id, tone, onDone }) {
     <span className={`un-burst is-${tone}`} style={{ left: at.x, top: at.y }} aria-hidden>
       <i /><i />
     </span>
+  );
+}
+
+/**
+ * "UINIO !": the letters spring out of the buzzer (or the caller's seat) as little enamel
+ * tiles, line up big over the tray, hold a moment with who called, and fade.
+ */
+const SHOUT = ['U', 'I', 'N', 'I', 'O', '!'];
+function Shout({ from, who }) {
+  const [at] = useState(() => {
+    const tray = document.querySelector('.un-tray')?.getBoundingClientRect();
+    const src = from === 'buzzer' ? document.querySelector('.un-buzzer')?.getBoundingClientRect()
+      : document.getElementById(`un-seat-${from}`)?.getBoundingClientRect();
+    if (!tray) return null;
+    const c = centre(tray);
+    const o = src ? centre(src) : c;
+    return { x: c.x, y: c.y, dx: o.x - c.x, dy: o.y - c.y };
+  });
+  if (!at) return null;
+  const r = reduced();
+  return (
+    <motion.div className="un-shout" style={{ left: at.x, top: at.y }} exit={{ opacity: 0, scale: 1.08, transition: { duration: 0.3 } }} role="status" aria-label={`${who} UINIO !`}>
+      <span className="un-shout__glow" aria-hidden />
+      <span className="un-shout__word" aria-hidden>
+        {SHOUT.map((l, i) => (
+          <motion.span
+            key={i}
+            className="un-shout__tile"
+            initial={r ? { opacity: 0 } : { opacity: 0, x: at.dx, y: at.dy, scale: 0.2, rotate: (i % 2 ? 1 : -1) * 50 }}
+            animate={{ opacity: 1, x: 0, y: 0, scale: 1, rotate: (i - 2.5) * 2.5 }}
+            transition={{ type: 'spring', bounce: 0.5, duration: 0.6, delay: i * 0.05 }}
+          >
+            {l}
+          </motion.span>
+        ))}
+      </span>
+      <motion.span className="un-shout__who" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>{who}</motion.span>
+    </motion.div>
   );
 }
 
@@ -469,6 +508,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const [notice, setNotice] = useState(null);
   const [ripple, setRipple] = useState(null);
   const [bursts, setBursts] = useState([]);
+  const [shout, setShout] = useState(null);
   const [hurt, setHurt] = useState(null);
   const ring = useRef(null);
   const [flights, setFlights] = useState([]);
@@ -624,7 +664,11 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     // What everyone sees happens where it happens: on a seat, round the tray, on the pile.
     const jolt = (id) => shakeEl(document.getElementById(`un-seat-${id}`), 5);
     const burst = (id, tone) => setBursts((b) => [...b, { key: `${Date.now()}-${Math.random()}`, id, tone }]);
-    const called = (id) => { if (id !== me) burst(id, 'call'); };
+    // A call is a moment for the whole table: rings where it comes from, then the word itself.
+    const called = (id) => {
+      burst(id === me ? 'buzzer' : id, 'call');
+      setShout({ key: `${Date.now()}-${id}`, id, mine: id === me });
+    };
     const fly = (to, count, card) => {
       const from = rectOf('un-pile');
       const target = rectOf(to);
@@ -639,7 +683,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       } else if (e.type === 'play') {
         if (!mine) later(380, () => sound('clink'));
         const kind = kindOf(e.card);
-        if (e.call) { say(e.playerId, 'UINIO !', 'call'); later(420, () => sound('uinio')); called(e.playerId); }
+        if (e.call) { later(420, () => sound('uinio')); called(e.playerId); }
         if (kind === 'R' && players.length > 2) {
           if (!e.call) say(e.playerId, 'Inversion', 'info');
           // The way play goes turns over: the ring folds in, swings round the other way and
@@ -696,7 +740,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         for (let i = 0; i < Math.min(e.count, 6); i++) later(i * 110, () => sound('flip'));
         if (victim === me && e.type !== 'draw') later(200, () => sound('error'));
       } else if (e.type === 'call') {
-        say(e.playerId, 'UINIO !', 'call');
         sound('uinio');
         called(e.playerId);
       } else if (e.type === 'keep') {
@@ -719,6 +762,11 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     const t = setTimeout(() => setNotice(null), 2200);
     return () => clearTimeout(t);
   }, [notice]);
+  useEffect(() => {
+    if (!shout) return undefined;
+    const t = setTimeout(() => setShout(null), 1700);
+    return () => clearTimeout(t);
+  }, [shout]);
   useEffect(() => {
     if (!ripple) return undefined;
     const t = setTimeout(() => setRipple(null), 1300);
@@ -913,6 +961,9 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         {order.map((p) => bubbles[p.id] && <SeatBubble key={bubbles[p.id].key} id={p.id} bubble={bubbles[p.id]} low={v.exposed === p.id} />)}
       </AnimatePresence>
       {ripple && <Ripple key={ripple.key} color={ripple.color} />}
+      <AnimatePresence>
+        {shout && !readOnly && <Shout key={shout.key} from={shout.mine ? 'buzzer' : shout.id} who={shout.mine ? 'Vous annoncez' : `${nameOf(shout.id)} annonce`} />}
+      </AnimatePresence>
       {bursts.map((b) => <Burst key={b.key} id={b.id} tone={b.tone} onDone={() => setBursts((all) => all.filter((x) => x.key !== b.key))} />)}
       {hurt && <span key={hurt} className="un-hurt" aria-hidden />}
 
