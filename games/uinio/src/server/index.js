@@ -8,7 +8,7 @@ export const TURN_SECONDS_OPTIONS = [10, 15, 20, 30];
 // someone left.
 const REVEAL_MS = 180_000;
 // A new round is announced, then dealt, before the first player's clock starts.
-const DEAL_MS = 2_200;
+const DEAL_MS = 1_300;
 
 function sanitizeSettings(base, patch = {}, { memberCount = 1 } = {}) {
   const next = { ...base };
