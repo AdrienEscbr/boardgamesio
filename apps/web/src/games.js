@@ -9,8 +9,9 @@ import dutch from '@bgio/dutch/client';
 import cactus from '@bgio/cactus/client';
 import mind from '@bgio/mind/client';
 import blackjack from '@bgio/blackjack/client';
+import uinio from '@bgio/uinio/client';
 
-export const GAMES = [scrabble, tarot, naval, p4, poker, planchettes, dutch, cactus, mind, blackjack];
+export const GAMES = [scrabble, tarot, naval, p4, poker, planchettes, dutch, cactus, mind, blackjack, uinio];
 
 /** Announced on the home page, not playable yet. */
 export const UPCOMING = [];

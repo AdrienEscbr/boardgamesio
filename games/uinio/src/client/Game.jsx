@@ -1012,7 +1012,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
             : <Button variant="danger" icon="logout" onClick={() => setSheet('leave')}>Quitter la partie</Button>}
         </div>
       </SettingsSheet>
-      <RulesSheet open={sheet === 'rules'} onClose={() => setSheet(null)} />
+      <RulesSheet open={sheet === 'rules'} onClose={() => setSheet(null)} settings={v} />
       <Sheet
         open={sheet === 'leave'}
         onClose={() => setSheet(null)}

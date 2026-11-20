@@ -495,3 +495,12 @@
 @media (min-width: 900px) {
   .un-dock { padding-bottom: calc(var(--safe-bottom) + 16px); }
 }
+
+/* ---- the results page (app theme, not the café counter) ---- */
+.un-results-rounds { flex: none; }
+.un-results-rounds h2 { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-md); }
+.un-results-rounds ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.un-results-rounds li { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--surface-2); }
+.un-results-rounds__n { font-weight: 800; min-width: 5.5em; }
+.un-results-rounds__who { flex: 1; color: var(--text-2); font-size: var(--text-sm); }
+.un-results-rounds__pts { font-weight: 800; }

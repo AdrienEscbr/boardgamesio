@@ -1,6 +1,6 @@
 ---
 objective: "Ajouter UINIO, un jeu de défausse par couleurs (famille du Huit américain) de 2 à 8 joueurs, robots possibles, en plusieurs manches aux points."
-status: in-progress (étapes 1 et 2 faites)
+status: done (étapes 1 à 3 faites ; maquette revue avec Adrien le 2026-11-20)
 ---
 
 # Plan: UINIO (jeu de défausse par couleurs)
