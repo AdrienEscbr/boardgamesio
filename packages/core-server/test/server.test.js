@@ -10,12 +10,14 @@ import { FLEET, randomVolley } from '@bgio/naval/engine';
 import { createP4Plugin } from '@bgio/p4/server';
 import { createDutchPlugin } from '@bgio/dutch/server';
 import { createCactusPlugin } from '@bgio/cactus/server';
+import { createBlackjackPlugin } from '@bgio/blackjack/server';
 
 const tarot = createTarotPlugin({ trickPauseMs: 0, chienPauseMs: 0 });
 const naval = createNavalPlugin({ placementMs: 60_000, finalPauseMs: 0 });
 const p4 = createP4Plugin({ roundPauseMs: 0 });
 const dutch = createDutchPlugin({ peekMs: 60_000, botBurnMs: 0, burnMs: 0, revealMs: 0 });
 const cactus = createCactusPlugin({ peekMs: 60_000, reactMs: 0, closingMs: 0, revealMs: 0 });
+const blackjack = createBlackjackPlugin({ botThinkMs: 0, dealerRevealMs: 0, dealerDrawMs: 0, settlePauseMs: 0 });
 
 /** Scrabble with a dictionary that accepts everything (moves are random in tests). */
 const scrabbleAnyWord = {
@@ -56,7 +58,7 @@ const clients = new Set();
 
 before(async () => {
   server = createPlatformServer({
-    games: [scrabbleAnyWord, race, tarot, naval, p4, dutch, cactus],
+    games: [scrabbleAnyWord, race, tarot, naval, p4, dutch, cactus, blackjack],
     origins: [],
     timings: { lobbyGraceMs: 150, awayTurnMs: 150, botMinMs: 20, botMaxMs: 40 },
   });
@@ -485,6 +487,58 @@ test('cactus: a human plays against a robot over the network, powers included, w
   assert.equal(state.status, 'finished');
   assert.equal(state.game.results.ranking.length, 2);
   assert.ok(state.game.results.ranking.some((r) => r.red));
+  host.close();
+});
+
+test('blackjack: a human plays against the house beside a robot, the hole card hidden until the dealer plays', async () => {
+  const host = await connect();
+  const { room } = await host.call('room:create', { gameId: 'blackjack', settings: { rounds: 5 } });
+  await host.call('room:addBot', { roomId: room.id });
+  assert.equal((await host.call('room:start', { roomId: room.id })).ok, true);
+  const me = host.session.playerId;
+  let state = (await host.call('room:sync', { roomId: room.id })).room;
+  assert.equal(state.game.phase, 'bet');
+  assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'bet', amount: 15 } })).error, 'INVALID_BET');
+  let sawPlay = false;
+  for (let guard = 0; guard < 600 && state.status !== 'finished'; guard++) {
+    const g = state.game;
+    assert.equal(g.shoe, undefined);
+    if (g.phase === 'play') {
+      sawPlay = true;
+      assert.equal(g.dealer.cards[1], null, 'the hole card stays hidden');
+    }
+    let action = null;
+    const mine = g.players.find((p) => p.id === me);
+    if (g.phase === 'bet' && !mine.betPlaced) action = { type: 'bet', amount: 20 };
+    else if (g.phase === 'play' && g.turn?.playerId === me) action = { type: mine.hands[g.turn.hand].total < 17 ? 'hit' : 'stand' };
+    if (action) {
+      const res = await host.call('game:action', { roomId: room.id, action });
+      assert.equal(res.ok, true, res.error);
+    }
+    const seq = g.seq;
+    state = await host.nextState((s) => s.game && s.game.seq > seq);
+  }
+  assert.equal(state.status, 'finished');
+  assert.ok(sawPlay);
+  assert.equal(state.game.results.ranking.length, 2);
+  assert.equal(state.game.history.length, 5);
+  host.close();
+});
+
+test('blackjack can be played alone against the house', async () => {
+  const host = await connect();
+  const { room } = await host.call('room:create', { gameId: 'blackjack', settings: { rounds: 5 } });
+  assert.equal((await host.call('room:start', { roomId: room.id })).ok, true);
+  let state = (await host.call('room:sync', { roomId: room.id })).room;
+  for (let guard = 0; guard < 300 && state.status !== 'finished'; guard++) {
+    const g = state.game;
+    const action = g.phase === 'bet' && !g.players[0].betPlaced ? { type: 'bet', amount: 10 } : g.phase === 'play' ? { type: 'stand' } : null;
+    if (action) assert.equal((await host.call('game:action', { roomId: room.id, action })).ok, true);
+    const seq = g.seq;
+    state = await host.nextState((s) => s.game && s.game.seq > seq);
+  }
+  assert.equal(state.status, 'finished');
+  assert.equal(state.game.results.ranking.length, 1);
   host.close();
 });
 

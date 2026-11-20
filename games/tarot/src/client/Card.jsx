@@ -100,12 +100,12 @@ function CornerIndex({ label, suit, color, children, inset = 0, size }) {
   );
 }
 
-function SuitFace({ suit, rank, uid }) {
+function SuitFace({ suit, rank, uid, aceLabel }) {
   const color = INK[suit];
   const isFace = rank >= 11;
   return (
     <>
-      <CornerIndex label={RANK_INDEX[rank] ?? String(rank)} suit={suit} color={color} />
+      <CornerIndex label={(rank === 1 && aceLabel) || (RANK_INDEX[rank] ?? String(rank))} suit={suit} color={color} />
       {rank === 1 && <Pip suit={suit} x={W / 2} y={H / 2} s={110} />}
       {rank >= 2 && rank <= 10 && PIPS[rank].map(([fx, fy], i) => (
         <Pip key={i} suit={suit} x={AREA.x + fx * AREA.w} y={AREA.y + fy * AREA.h} s={rank >= 9 ? 40 : 46} flip={fy > 0.55} />
@@ -195,9 +195,10 @@ function Back({ uid }) {
 }
 
 /**
- * @param {{ card?: string, faceDown?: boolean, className?: string, style?: object, title?: string }} props
+ * @param {{ card?: string, faceDown?: boolean, className?: string, style?: object, title?: string, aceLabel?: string }} props
+ * `aceLabel` replaces the ace's corner index ('A' for games where the ace is not a 1).
  */
-function Card({ card, faceDown = false, className = '', style, ...rest }) {
+function Card({ card, faceDown = false, className = '', style, aceLabel, ...rest }) {
   const uid = useId().replace(/:/g, '');
   const trump = card && isTrump(card);
   const night = faceDown || trump || card === EXCUSE;
@@ -254,7 +255,7 @@ function Card({ card, faceDown = false, className = '', style, ...rest }) {
         stroke={bout && !faceDown ? '#e3b04b' : night ? 'rgba(255,255,255,0.12)' : 'rgba(40,30,10,0.14)'}
         strokeWidth={bout && !faceDown ? 6 : 3}
       />
-      {faceDown ? <Back uid={uid} /> : card === EXCUSE ? <ExcuseFace uid={uid} /> : trump ? <TrumpFace rank={rankOf(card)} uid={uid} /> : <SuitFace suit={suitOf(card)} rank={rankOf(card)} uid={uid} />}
+      {faceDown ? <Back uid={uid} /> : card === EXCUSE ? <ExcuseFace uid={uid} /> : trump ? <TrumpFace rank={rankOf(card)} uid={uid} /> : <SuitFace suit={suitOf(card)} rank={rankOf(card)} uid={uid} aceLabel={aceLabel} />}
       {bout && !faceDown && (
         // Holographic sheen sweeping across the bouts (CSS animation, off with reduced motion).
         <g clipPath={`url(#${uid}-clip)`} className="tarot-card__foil" aria-hidden>

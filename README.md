@@ -10,6 +10,7 @@ Plateforme de jeux de société en ligne : un serveur et un site communs, et un 
 | PlanchettesIO | 1 à 4 | Jouable |
 | DutchIO | 2 à 6, robots possibles | Jouable |
 | MindIO (Mastermind : duel, classique, course) | 2, robots possibles | Jouable |
+| BlackjackIO (Black Jack contre la banque) | 1 à 6, robots possibles | Jouable |
 
 ## Démarrer en local
 
