@@ -10,7 +10,7 @@ import Icon from '@bgio/ui/components/Icon.jsx';
 import { toast, useToastPlacement } from '@bgio/ui/components/Toaster.jsx';
 import SettingsSheet from '@bgio/ui/components/SettingsSheet.jsx';
 import { BOX_COLS, COLS, ROWS, emptyInRow, inBox, isEnclosed, neighbours, settleBoard } from '../engine/game.js';
-import { cellHTML, cubeHTML, dieHTML, pieceNode, shellHTML } from './pieces.js';
+import { cellHTML, craterHTML, cubeHTML, dieHTML, pieceNode, shellHTML } from './pieces.js';
 import RulesSheet from './RulesSheet.jsx';
 import { MISS_LABELS, ORDERS, ROW_NAMES, coord, plural } from './i18n.js';
 import './fonts.js';
@@ -219,23 +219,37 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     if (alive.current) setAnimating(false);
   }
 
-  /** Flies a piece along an arc; resolves on landing with the node (still on screen). */
+  /**
+   * Flies a piece along an arc; resolves on landing with the node (still on screen).
+   * `from` and `to` are screen points, or functions giving one: the flight is steered every
+   * frame, so it still comes down on its hole when the layout moves under it.
+   */
   function fly(html, from, to, { dur = 680, lift = 90, spin = 0, scale = 1.6, faces = null } = {}) {
     const layer = fxRef.current;
-    if (!layer || !from || !to) return Promise.resolve(null);
+    const pt = (p) => (typeof p === 'function' ? p() : p);
+    if (!layer || !pt(from) || !pt(to)) return Promise.resolve(null);
     const node = pieceNode(html);
     const shadow = document.createElement('span');
     shadow.className = 'dk-flyshadow';
     layer.append(shadow, node);
     const d = reduced() ? 1 : dur;
-    const mid = { x: (from.x + to.x) / 2, y: Math.min(from.y, to.y) - lift };
-    const k = (p, s, r) => ({ transform: `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) scale(${s}) rotate(${r}deg)` });
-    node.animate([k(from, 0.85, 0), k(mid, scale, spin / 2), k(to, 1, spin)], { duration: d, easing: 'cubic-bezier(.33,.1,.4,1)', fill: 'forwards' });
-    shadow.animate([
-      { transform: `translate(${from.x}px, ${from.y + 8}px) translate(-50%, -50%) scale(.7)`, opacity: 0.45 },
-      { transform: `translate(${mid.x}px, ${(from.y + to.y) / 2 + 26}px) translate(-50%, -50%) scale(.45)`, opacity: 0.18 },
-      { transform: `translate(${to.x}px, ${to.y + 4}px) translate(-50%, -50%) scale(1)`, opacity: 0.5 },
-    ], { duration: d, easing: 'cubic-bezier(.33,.1,.4,1)', fill: 'forwards' });
+    let last = pt(to);
+    const frame = (t) => {
+      const a = pt(from) ?? last; const b = pt(to) ?? last;
+      last = b;
+      const u = 1 - Math.pow(1 - t, 1.8); // quick off the hand, slower on the way down
+      // a quadratic arc whose top is `lift` above the higher end
+      const top = Math.min(a.y, b.y) - lift;
+      const cy = 2 * top - (a.y + b.y) / 2;
+      const x = a.x + (b.x - a.x) * u;
+      const y = (1 - u) * (1 - u) * a.y + 2 * u * (1 - u) * cy + u * u * b.y;
+      const s = 0.85 + 0.15 * u + (scale - 1) * 4 * u * (1 - u);
+      node.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${s}) rotate(${spin * u}deg)`;
+      const gy = a.y + 8 + (b.y - a.y - 4) * u;
+      shadow.style.transform = `translate(${x}px, ${gy}px) translate(-50%, -50%) scale(${0.7 - 0.5 * 4 * u * (1 - u) + 0.3 * u})`;
+      shadow.style.opacity = String(0.45 - 0.3 * 4 * u * (1 - u));
+    };
+    frame(0);
     // a die tumbles: its face changes in the air, the real one shows at the end
     let tumble = null;
     if (faces) {
@@ -245,11 +259,16 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       }, 85);
     }
     return new Promise((res) => {
-      setTimeout(() => {
+      const t0 = performance.now();
+      const step = (now) => {
+        const t = Math.min(1, (now - t0) / d);
+        frame(t);
+        if (t < 1 && alive.current) { requestAnimationFrame(step); return; }
         if (tumble) { clearInterval(tumble); node.innerHTML = dieHTML(faces.value, faces.color, faces.seat); }
         shadow.remove();
         res(node);
-      }, d);
+      };
+      requestAnimationFrame(step);
     });
   }
 
@@ -270,15 +289,93 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     ], { duration: reduced() ? 900 : 1400, easing: 'ease-out' }).onfinish = () => el.remove();
   }
 
+  /** A short-lived node of the effects layer at a screen point. */
+  function spark(cls, at, frames, opts) {
+    const layer = fxRef.current;
+    if (!layer || !at) return;
+    const el = document.createElement('span');
+    el.className = cls;
+    el.style.left = `${at.x}px`;
+    el.style.top = `${at.y}px`;
+    layer.appendChild(el);
+    el.animate(frames, { fill: 'both', ...opts }).onfinish = () => el.remove();
+  }
+
+  /** The shell goes off: a flash, a shock ring, earth and concrete thrown out, the map shakes. */
+  function blast(at) {
+    sound('boom');
+    haptic('medium');
+    if (!at || reduced()) return;
+    const c = 'translate(-50%, -50%)';
+    spark('dk-boom__flash', at, [{ transform: `${c} scale(.2)`, opacity: 1 }, { transform: `${c} scale(1.3)`, opacity: 0.9, offset: 0.25 }, { transform: `${c} scale(1.6)`, opacity: 0 }], { duration: 520, easing: 'ease-out' });
+    spark('dk-boom__ring', at, [{ transform: `${c} scale(.15)`, opacity: 0.9 }, { transform: `${c} scale(2.4)`, opacity: 0 }], { duration: 620, easing: 'cubic-bezier(.2,.7,.3,1)' });
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2 + Math.random() * 0.4;
+      const d = 34 + Math.random() * 46;
+      const dx = Math.cos(a) * d; const dy = Math.sin(a) * d;
+      const cls = i % 3 === 0 ? 'dk-boom__chip is-concrete' : i % 3 === 1 ? 'dk-boom__chip' : 'dk-boom__ember';
+      spark(cls, at, [
+        { transform: `${c} translate(0, 0) rotate(0deg) scale(1)`, opacity: 1 },
+        { transform: `${c} translate(${dx * 0.7}px, ${dy * 0.7 - 16}px) rotate(${180 + i * 30}deg) scale(1)`, opacity: 1, offset: 0.55 },
+        { transform: `${c} translate(${dx}px, ${dy + 10}px) rotate(${300 + i * 40}deg) scale(.6)`, opacity: 0 },
+      ], { duration: 560 + Math.random() * 260, easing: 'cubic-bezier(.15,.7,.4,1)' });
+    }
+    puff(at, 1.6);
+    document.querySelector('.dk-map')?.animate([
+      { transform: 'none' }, { transform: 'translate(-4px, 2px)' }, { transform: 'translate(4px, -2px)' },
+      { transform: 'translate(-2px, -1px)' }, { transform: 'translate(1px, 1px)' }, { transform: 'none' },
+    ], { duration: 360, easing: 'ease-out' });
+  }
+
+  /** A puff of grey smoke rising from a point. */
+  function puff(at, size = 1) {
+    if (!at || reduced()) return;
+    for (let i = 0; i < 3; i++) {
+      const dx = (i - 1) * 12 * size;
+      spark('dk-boom__smoke', at, [
+        { transform: `translate(-50%, -50%) translate(${dx * 0.3}px, 0) scale(${0.3 * size})`, opacity: 0.75 },
+        { transform: `translate(-50%, -50%) translate(${dx}px, ${-30 * size}px) scale(${1.1 * size})`, opacity: 0 },
+      ], { duration: 900 + i * 140, delay: i * 70, easing: 'ease-out' });
+    }
+  }
+
   const holeCentre = (r, c) => { const rr = rectOf(holeId(r, c)); return rr && centre(rr); };
   const campCentre = (pid) => { const rr = rectOf(`dk-hand-${pid}`) ?? rectOf(`dk-camp-${pid}`); return rr && centre(rr); };
-  /** Screen point of a landing given in hole units, around the aimed hole. */
-  function pointOf(e) {
+  /**
+   * Where a throw comes down on screen, decided before it leaves the hand: the centre of the
+   * hole it falls in, or, when it leaves its trench, the spot of the parapet it crosses.
+   * `out` is the direction it keeps going after it touches down (for the skid off).
+   */
+  function landingOf(e) {
+    if (e.hole) {
+      const dx = e.point.x - e.hole.col; const dy = e.point.y - e.hole.row;
+      const len = Math.hypot(dx, dy) || 1;
+      return { at: () => holeCentre(e.hole.row, e.hole.col), out: { x: dx / len, y: dy / len } };
+    }
+    // off the trench: a spot of its parapet, kept relative to the trench while the page moves
+    const id = `dk-pits-${e.target.col < BOX_COLS ? 1 : 2}`;
+    const spot = parapet(e);
+    const r0 = rectOf(id);
+    if (!spot || !r0) return { at: () => holeCentre(e.target.row, e.target.col), out: { x: 0, y: 1 } };
+    const off = { x: spot.to.x - r0.left, y: spot.to.y - r0.top };
+    return { at: () => { const r = rectOf(id); return r && { x: r.left + off.x, y: r.top + off.y }; }, out: spot.out };
+  }
+
+  function parapet(e) {
     const base = e.target.col < BOX_COLS ? 0 : BOX_COLS;
-    const a = holeCentre(0, base); const b = holeCentre(0, base + 1); const c = holeCentre(1, base);
+    const pits = rectOf(`dk-pits-${base ? 2 : 1}`);
     const t = holeCentre(e.target.row, e.target.col);
-    if (!a || !b || !c || !t) return t;
-    return { x: t.x + (e.point.x - e.target.col) * (b.x - a.x), y: t.y + (e.point.y - e.target.row) * (c.y - a.y) };
+    const a = holeCentre(0, base); const b = holeCentre(0, base + 1); const c = holeCentre(1, base);
+    if (!pits || !t || !a || !b || !c) return null;
+    const p = { x: t.x + (e.point.x - e.target.col) * (b.x - a.x), y: t.y + (e.point.y - e.target.row) * (c.y - a.y) };
+    const rim = 6;
+    const L = pits.left - rim; const R = pits.right + rim; const T = pits.top - rim; const B = pits.bottom + rim;
+    const clampX = Math.min(R, Math.max(L, p.x)); const clampY = Math.min(B, Math.max(T, p.y));
+    // the axis on which it left the trench (in hole units) puts it on that side of the parapet
+    const gx = e.point.x - (base + 1.5); const gy = e.point.y - 2;
+    const overX = Math.abs(gx) - 2; const overY = Math.abs(gy) - 2.5;
+    if (overX >= overY) return { to: { x: gx < 0 ? L : R, y: clampY }, out: { x: Math.sign(gx), y: 0 } };
+    return { to: { x: clampX, y: gy < 0 ? T : B }, out: { x: 0, y: Math.sign(gy) } };
   }
   const flash = (r, c, cls) => {
     const el = document.getElementById(holeId(r, c));
@@ -290,38 +387,48 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
 
   async function play(e) {
     if (e.type === 'throw') {
-      const from = campCentre(e.playerId);
-      const to = pointOf(e);
+      // the outcome is known when the piece leaves: it flies straight to where it comes down
+      const land = landingOf(e);
       // the opponent's aim shows for a moment, so their throw can be followed
       if (e.playerId !== me) {
         setReticle({ row: e.target.row, col: e.target.col });
         await wait(380);
         setReticle(null);
       }
+      const isBall = e.item === 'ball';
       const html = e.item === 'die' ? dieHTML(e.value, e.color, e.seat) : e.item === 'cube' ? cubeHTML() : shellHTML();
-      if (e.item === 'ball') sound('whistle');
-      const spin = e.item === 'ball' ? 0 : (e.point.x > e.target.col ? 1 : -1) * (300 + Math.random() * 300);
-      const node = await fly(html, from, to, { spin, lift: e.item === 'ball' ? 140 : 90, faces: e.item === 'die' ? { value: e.value, color: e.color, seat: e.seat } : null });
+      if (isBall) sound('whistle');
+      const from = campCentre(e.playerId); const aim = land.at();
+      const side = aim && from && aim.x < from.x ? -1 : 1;
+      // a die or a block tumbles; the shell tips over in the air and comes down nose first
+      const spin = isBall ? side * 180 : side * (300 + Math.random() * 300);
+      const node = await fly(html, () => campCentre(e.playerId), land.at, { spin, lift: isBall ? 150 : 90, dur: isBall ? 820 : 680, scale: isBall ? 1.9 : 1.6, faces: e.item === 'die' ? { value: e.value, color: e.color, seat: e.seat } : null });
+      const to = land.at();
       if (e.hit) {
         node?.remove();
-        if (e.item === 'ball') {
+        if (isBall) {
           patch((n) => { n.ball = false; });
-          sound('boom');
-          haptic('medium');
-          flash(e.hole.row, e.hole.col, 'is-blast');
+          blast(to);
         } else {
           patch((n) => bump(n.cells, cellKey(e.hole.row, e.hole.col), -1));
           sound(e.item === 'die' ? 'thud' : 'concrete');
           flash(e.hole.row, e.hole.col, 'is-landed');
         }
-        await wait(160);
+        await wait(isBall ? 420 : 160);
         return;
       }
-      // a miss: the piece skids off and fades; the reason is stamped where it fell
+      // a miss: it touches down where the gauge sent it, then bounces off and fades
       sound('whiff');
-      if (node) {
-        const dx = (to.x - from.x) * 0.18;
-        node.animate([{ opacity: 1 }, { opacity: 0, transform: `translate(${to.x + dx}px, ${to.y + 26}px) translate(-50%, -50%) scale(.7)` }], { duration: 420, easing: 'ease-in', fill: 'forwards' }).onfinish = () => node.remove();
+      if (node && to) {
+        const o = land.out; const k = (x, y, s, r, op) => ({ transform: `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${s}) rotate(${r}deg)`, opacity: op });
+        const hop = e.reason === 'out' ? 34 : 28;
+        const r0 = isBall ? side * 180 : spin;
+        node.animate(e.reason === 'open'
+          // a dud: the shell sinks into the open ground and fizzles out
+          ? [k(to.x, to.y, 1, r0, 1), k(to.x + 2, to.y, 1, r0 + 8, 1), k(to.x - 2, to.y, 1, r0 - 6, 1), k(to.x, to.y + 4, 0.8, r0, 0)]
+          : [k(to.x, to.y, 1, r0, 1), k(to.x + o.x * hop * 0.6, to.y + o.y * hop * 0.6 - 18, 1.15, r0 + side * 50, 1), k(to.x + o.x * hop, to.y + o.y * hop + 6, 0.75, r0 + side * 90, 0)],
+        { duration: e.reason === 'open' ? 520 : 460, easing: 'ease-out', fill: 'forwards' }).onfinish = () => node.remove();
+        if (e.reason === 'open') puff(to);
       }
       const last = e.tries >= 3;
       stamp(last && e.item === 'die' ? 'Unité perdue' : MISS_LABELS[e.reason] ?? 'Raté', to, 'is-bad');
@@ -441,11 +548,20 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     if (preview) return preview.text;
     if (v.phase === 'opening') return 'Visez la tranchée de gauche : la plus forte face engage.';
     if (step.kind === 'place') return step.reason === 'red' ? `Touchez ${step.remaining > 1 ? 'les positions' : 'la position'} de droite où poser vos blocs.` : `Le bloc de ${opp.nickname} s’est égaré : posez-le où vous voulez.`;
-    if (step.kind === 'remove') return 'Touchez les blocs autour de l’obus, dans l’ordre de votre choix.';
+    if (step.kind === 'remove') return 'Touchez les blocs autour du cratère, dans l’ordre de votre choix.';
     if (step.item === 'die') return 'Touchez une position de la tranchée de gauche.';
     if (step.item === 'cube') return `Touchez une position de la tranchée de droite · ${plural(v.reserve, 'bloc')} en réserve.`;
     return 'Visez une position vide encerclée de blocs, ou annulez la frappe.';
   })();
+
+  // the plate keeps the order being played out until its effects end, so it never tells
+  // the outcome of a throw before the piece comes down
+  const settling = animating || v.events.some((e) => e.n > seen.current);
+  const shown = useRef(null);
+  if (!settling || !shown.current) {
+    shown.current = { order, instruction, mine: myTurn, tries: step?.kind === 'throw' && step.tries > 0 ? ` · essai ${step.tries + 1}/3` : '' };
+  }
+  const plate = shown.current;
 
   const clock = turn?.endsAt && turn.durationMs >= 2000 && playing ? turn : null;
   const aiming = canAct && step?.kind === 'throw' && !!target;
@@ -493,13 +609,14 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         const targetable = can(r, c);
         const doomed = cell?.kind === 'die' && preview?.doomed.has(cell.id);
         const lit = preview?.row === r || (focus && step?.item === 'die' && focus.row === r);
-        const html = ballHole && ballHole.row === r && ballHole.col === c ? shellHTML() : ghost ?? cellHTML(cell);
+        const struck = ballHole && ballHole.row === r && ballHole.col === c;
+        const html = struck ? craterHTML() : ghost ?? cellHTML(cell);
         holes.push(
           <button
             key={key}
             id={holeId(r, c)}
             type="button"
-            className={`dk-hole ${targetable ? 'is-can' : ''} ${isTarget ? 'is-target' : ''} ${enemyAim ? 'is-enemy-aim' : ''} ${doomed ? 'is-doomed' : ''} ${lit ? 'is-lit' : ''} ${ringSet.has(key) ? 'is-ring' : ''} ${step?.kind === 'remove' && targetable ? 'is-removable' : ''}`}
+            className={`dk-hole ${targetable ? 'is-can' : ''} ${isTarget ? 'is-target' : ''} ${enemyAim ? 'is-enemy-aim' : ''} ${doomed ? 'is-doomed' : ''} ${lit ? 'is-lit' : ''} ${ringSet.has(key) ? 'is-ring' : ''} ${step?.kind === 'remove' && targetable ? 'is-removable' : ''} ${struck ? 'is-struck' : ''}`}
             disabled={!targetable}
             aria-label={`${coord(r, c)}${cell ? (cell.kind === 'die' ? `, unité ${cell.value}` : ', bloc') : ', vide'}`}
             onClick={() => onHole(r, c)}
@@ -516,7 +633,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     return (
       <div className={`dk-trench is-box${b}`}>
         <div className="dk-trench__cols" aria-hidden>{Array.from({ length: BOX_COLS }, (_, i) => <span key={i}>{i + 1 + (b === 2 ? BOX_COLS : 0)}</span>)}</div>
-        <div className="dk-trench__pits">{holes}</div>
+        <div className="dk-trench__pits" id={`dk-pits-${b}`}>{holes}</div>
       </div>
     );
   };
@@ -541,18 +658,18 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       <div className="dk-order" aria-live="polite">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={`${order.eyebrow}-${order.name}`}
+            key={`${plate.order.eyebrow}-${plate.order.name}`}
             className="dk-order__plate"
             initial={{ scale: 1.25, rotate: -4, opacity: 0 }}
             animate={{ scale: 1, rotate: -1.5, opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.1 } }}
             transition={{ type: 'spring', stiffness: 520, damping: 26 }}
           >
-            <span className="dk-order__eyebrow">{order.eyebrow}{step?.kind === 'throw' && step.tries > 0 ? ` · essai ${step.tries + 1}/3` : ''}</span>
-            <strong className="dk-order__name">{order.name}</strong>
+            <span className="dk-order__eyebrow">{plate.order.eyebrow}{plate.tries}</span>
+            <strong className="dk-order__name">{plate.order.name}</strong>
           </motion.div>
         </AnimatePresence>
-        <p className={`dk-order__hint ${myTurn ? 'is-mine' : ''}`}>{instruction}</p>
+        <p className={`dk-order__hint ${plate.mine ? 'is-mine' : ''}`}>{plate.instruction}</p>
       </div>
 
       <main className="dk-map">
@@ -576,7 +693,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           <div className="dk-controls__btns">
             {canAct && step?.kind === 'throw' && (
               <button type="button" className="dk-btn dk-btn--fire" onClick={fire} disabled={!target}>
-                {step.item === 'die' && nextDie ? <span className="dk-btn__die" dangerouslySetInnerHTML={{ __html: dieHTML(0, nextDie.color, nextDie.seat) }} /> : null}
+                {step.item === 'die' && nextDie ? <span className="dk-btn__die" dangerouslySetInnerHTML={{ __html: dieHTML(0, nextDie.color, nextDie.seat) }} /> : step.item === 'ball' ? <span className="dk-btn__shell" dangerouslySetInnerHTML={{ __html: shellHTML() }} /> : null}
                 {target ? `Feu sur ${coord(target.row, target.col)}` : 'Choisir une cible'}
               </button>
             )}

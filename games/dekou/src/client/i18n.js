@@ -23,6 +23,6 @@ registerErrors({
   INVALID_HOLE: 'Cette position n’est pas sur le bon plateau.',
   INVALID_PRECISION: 'Lancer invalide.',
   HOLE_TAKEN: 'Cette position est déjà occupée.',
-  NOT_REMOVABLE: 'Ce bloc n’est pas autour de l’obus.',
+  NOT_REMOVABLE: 'Ce bloc n’est pas autour du cratère.',
   CANNOT_SKIP: 'Seule la frappe peut être annulée.',
 });

@@ -85,7 +85,7 @@
 @keyframes dk-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
 /* ---------------- the order plate ---------------- */
-.dk-order { display: grid; justify-items: center; gap: 6px; min-height: 84px; text-align: center; max-width: 560px; }
+.dk-order { display: grid; justify-items: center; align-content: start; gap: 6px; min-height: 112px; text-align: center; max-width: 560px; }
 .dk-order__plate {
   display: grid; justify-items: center; padding: 6px 16px 7px;
   border: 2px solid var(--brass); border-radius: 2px;
@@ -98,7 +98,7 @@
 .dk-order__hint.is-mine { color: var(--ink); font-weight: 600; }
 
 /* ---------------- the map and the trenches ---------------- */
-.dk-map { flex: 1; display: grid; place-items: center; width: 100%; padding-block: 6px; }
+.dk-map { flex: 1; display: grid; place-items: start center; align-content: start; width: 100%; padding-block: 6px; }
 .dk-board { display: grid; grid-template-columns: auto auto auto auto; gap: calc(var(--hole) * 0.3); align-items: end; }
 .dk-rows, .dk-counts { display: grid; grid-template-rows: repeat(5, var(--hole)); gap: var(--gap); padding-block: calc(var(--hole) * 0.22); }
 .dk-rows span { display: grid; place-items: center; font-size: 11px; color: var(--ink-3); transition: color 0.2s; }
@@ -168,8 +168,6 @@
 .dk-hole.is-landed::before { content: ""; position: absolute; inset: -30%; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(180, 150, 100, 0.55), transparent 65%); animation: dk-dust 0.6s ease-out forwards; }
 @keyframes dk-land { from { transform: scale(1.35); } }
 @keyframes dk-dust { from { transform: scale(0.4); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
-.dk-hole.is-blast::before { content: ""; position: absolute; inset: -110%; border-radius: 50%; pointer-events: none; z-index: 3; background: radial-gradient(circle, #fff6c8 0 12%, #ffb340 28%, rgba(184, 51, 58, 0.6) 46%, transparent 68%); animation: dk-blast 0.7s ease-out forwards; }
-@keyframes dk-blast { from { transform: scale(0.2); opacity: 1; } to { transform: scale(1.2); opacity: 0; } }
 .dk-hole.is-rallying .dk-die { animation: dk-rally 0.72s ease-in-out; box-shadow: 0 0 0 2px var(--ok), 0 0 16px var(--ok); }
 @keyframes dk-rally { 30% { transform: translateY(-6px) scale(1.2) rotate(-6deg); } 60% { transform: translateY(-4px) scale(1.15) rotate(5deg); } }
 .dk-hole.is-cleared .dk-cube { animation: dk-clear 0.38s ease-in forwards; }
@@ -195,13 +193,22 @@
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.18), 0 3px 4px rgba(0, 0, 0, 0.5);
 }
 .dk-cube b { position: absolute; left: 18%; right: 18%; top: 46%; height: 8%; background: rgba(0, 0, 0, 0.18); border-radius: 1px; }
-.dk-shell {
-  position: relative; width: calc(var(--hole) * 0.42); height: calc(var(--hole) * 0.78);
-  border-radius: 50% 50% 18% 18% / 62% 62% 14% 14%;
-  background: linear-gradient(90deg, #8a6a24, #f1d47a 42%, #c9a043 60%, #8a6a24);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.55);
-}
-.dk-shell b { position: absolute; left: 0; right: 0; bottom: 16%; height: 12%; background: linear-gradient(90deg, #5e4515, #b58a32, #5e4515); }
+.dk-shell { position: relative; display: block; width: calc(var(--hole) * 0.46); height: calc(var(--hole) * 0.96); filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.5)); }
+.dk-shell svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.dk-btn__shell { display: inline-grid; --hole: 26px; transform: rotate(35deg); }
+/* the struck hole: scorched ground with embers, smoke rising */
+.dk-crater { position: relative; width: calc(var(--hole) * 0.86); height: calc(var(--hole) * 0.86); border-radius: 46% 54% 50% 50%;
+  background: radial-gradient(circle at 50% 52%, #0b0806 0 22%, #2b1c10 40%, rgba(70, 40, 18, 0.85) 58%, transparent 72%),
+    conic-gradient(from 20deg, rgba(0,0,0,.5), transparent 12%, rgba(0,0,0,.45) 24%, transparent 36%, rgba(0,0,0,.5) 50%, transparent 62%, rgba(0,0,0,.4) 76%, transparent 88%, rgba(0,0,0,.5));
+  -webkit-mask: radial-gradient(circle, #000 60%, transparent 72%); mask: radial-gradient(circle, #000 60%, transparent 72%); }
+.dk-crater i { position: absolute; width: 12%; height: 12%; border-radius: 50%; background: #ffb340; box-shadow: 0 0 6px 2px rgba(255, 120, 40, 0.8); animation: dk-ember 1.4s ease-in-out infinite; }
+.dk-crater i:nth-child(1) { left: 40%; top: 44%; }
+.dk-crater i:nth-child(2) { left: 56%; top: 54%; width: 8%; height: 8%; animation-delay: -0.5s; }
+.dk-crater i:nth-child(3) { left: 46%; top: 60%; width: 6%; height: 6%; animation-delay: -0.9s; }
+@keyframes dk-ember { 50% { opacity: 0.35; transform: scale(0.7); } }
+.dk-hole.is-struck::after { content: ""; position: absolute; left: 30%; top: -10%; width: 40%; height: 50%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(200, 196, 180, 0.5), transparent 70%); filter: blur(2px); animation: dk-smoke 2.2s ease-out infinite; }
+@keyframes dk-smoke { from { transform: translateY(10px) scale(0.5); opacity: 0.8; } to { transform: translateY(-26px) scale(1.4); opacity: 0; } }
 
 /* ---------------- dock: my camp, the gauge, fire ---------------- */
 .dk-dock { width: 100%; max-width: 760px; display: grid; gap: 10px; }
@@ -235,6 +242,16 @@
 .dk-fx { position: fixed; inset: 0; pointer-events: none; z-index: 40; }
 .dk-flyer { position: absolute; left: 0; top: 0; display: grid; place-items: center; will-change: transform; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.35)); }
 .dk-flyshadow { position: absolute; left: 0; top: 0; width: var(--hole); height: calc(var(--hole) * 0.34); border-radius: 50%; background: rgba(0, 0, 0, 0.45); filter: blur(4px); }
+/* the explosion */
+.dk-boom__flash, .dk-boom__ring, .dk-boom__chip, .dk-boom__ember, .dk-boom__smoke { position: absolute; left: 0; top: 0; pointer-events: none; }
+.dk-boom__flash { width: calc(var(--hole) * 2.2); height: calc(var(--hole) * 2.2); border-radius: 50%; mix-blend-mode: screen;
+  background: radial-gradient(circle, #fffbe6 0 10%, #ffd36b 22%, #ff8a2a 38%, rgba(184, 51, 58, 0.55) 54%, transparent 70%); }
+.dk-boom__ring { width: calc(var(--hole) * 1.6); height: calc(var(--hole) * 1.6); border-radius: 50%; border: 3px solid rgba(255, 236, 190, 0.85); box-shadow: 0 0 12px rgba(255, 170, 80, 0.6); }
+.dk-boom__chip { width: 7px; height: 6px; border-radius: 1px 3px 2px 1px; background: #5a4128; box-shadow: inset 0 1px 0 rgba(255,255,255,.15); }
+.dk-boom__chip.is-concrete { width: 8px; height: 7px; background: #9b9a8f; }
+.dk-boom__ember { width: 4px; height: 4px; border-radius: 50%; background: #ffe08a; box-shadow: 0 0 6px 2px rgba(255, 140, 40, 0.9); }
+.dk-boom__smoke { width: calc(var(--hole) * 0.9); height: calc(var(--hole) * 0.9); border-radius: 50%; background: radial-gradient(circle, rgba(150, 146, 132, 0.85), rgba(90, 88, 80, 0.4) 50%, transparent 70%); filter: blur(3px); }
+
 .dk-stamp {
   position: absolute; white-space: nowrap; padding: 4px 10px;
   font-family: var(--stencil); font-size: 15px; letter-spacing: 0.1em; text-transform: uppercase;
