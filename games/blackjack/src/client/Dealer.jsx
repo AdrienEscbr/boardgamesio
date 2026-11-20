@@ -49,13 +49,18 @@ export default function Dealer({ dealer, round, delayOf = () => 0, verdict, thin
           )}
         </AnimatePresence>
       </div>
+      {/* The dealer's word: an engraved cartouche, like the players' result plaques. */}
       {(verdict || thinking) && (
         <span
-          key={verdict ?? 'thinking'}
-          className={`bj-dealer__verdict ${thinking && !verdict ? 'is-thinking' : ''}`}
+          key={verdict ? `${verdict.kind}-${verdict.main}` : 'thinking'}
+          className={`bj-cartouche bj-cartouche--${verdict?.kind ?? 'thinking'}`}
           style={{ '--d': `${verdict ? revealMs : 0}ms` }}
+          role="status"
         >
-          {verdict ?? 'La banque joue…'}
+          <span className="bj-cartouche__face">
+            <span className="bj-cartouche__word">{verdict?.word ?? 'La banque'}</span>
+            <span className="bj-cartouche__main">{verdict?.main ?? 'joue…'}</span>
+          </span>
         </span>
       )}
     </div>

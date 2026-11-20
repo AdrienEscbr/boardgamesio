@@ -240,7 +240,11 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const dealLeft = Math.max(0, deal.current.end - (performance.now() - deal.current.at));
   const revealMs = dealLeft > 0 ? dealLeft + 900 : 500;
   let dealerVerdict = null;
-  if (settled && d.cards.length) dealerVerdict = d.blackjack ? 'Blackjack de la banque' : d.total > 21 ? `La banque saute à ${d.total} !` : `La banque fait ${d.total}`;
+  if (settled && d.cards.length) {
+    dealerVerdict = d.blackjack ? { kind: 'bj', word: 'La banque a', main: 'Blackjack' }
+      : d.total > 21 ? { kind: 'bust', word: 'La banque saute', main: String(d.total) }
+        : { kind: 'stand', word: 'La banque fait', main: String(d.total) };
+  }
 
   let status;
   if (readOnly) status = 'Partie terminée.';

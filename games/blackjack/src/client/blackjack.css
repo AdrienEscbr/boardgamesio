@@ -173,8 +173,29 @@
 .bj-dealer__cards .bj-hand__slot + .bj-hand__slot { margin-left: calc(var(--cw) * -0.45); }
 .bj-dealer__empty { width: var(--cw); aspect-ratio: 250 / 400; border-radius: 8% / 5%; box-shadow: inset 0 0 0 1.5px rgba(226, 191, 110, 0.35); }
 .bj-total--dealer { top: auto; bottom: 0; right: auto; left: 100%; margin-left: 4px; }
-.bj-dealer__verdict { padding: 2px 10px; border-radius: var(--radius-full); background: var(--glass); color: var(--gold-hi); font-weight: 800; font-size: var(--text-sm); white-space: nowrap; }
-.bj-dealer__verdict.is-thinking { color: var(--ink-2); font-weight: 600; }
+.bj-cartouche {
+  --cut: 7px;
+  --rim: linear-gradient(160deg, #fff1c4, #c9a24f 30%, #7d5a14 55%, #e2bf6e 80%, #fff1c4);
+  display: block; padding: 1.5px; background: var(--rim);
+  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
+  animation: bj-plaque 420ms cubic-bezier(0.34, 1.4, 0.64, 1) var(--d, 0ms) both;
+}
+.bj-cartouche__face {
+  display: flex; align-items: baseline; gap: 10px; padding: 5px 16px 6px; clip-path: inherit; white-space: nowrap;
+  background: radial-gradient(120% 90% at 30% 0%, rgba(255, 255, 255, 0.08), transparent 60%), repeating-linear-gradient(90deg, rgba(226, 191, 110, 0.05) 0 1px, transparent 1px 9px), linear-gradient(180deg, #1c2a52, #0c1630 60%, #08101f);
+}
+.bj-cartouche__word { display: flex; align-items: center; gap: 0.5em; font-size: 10px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-2); }
+.bj-cartouche__word::before { content: ''; width: 0.9em; height: 1px; background: currentColor; opacity: 0.6; }
+.bj-cartouche__main { font-family: var(--font-display); font-size: 20px; font-weight: 800; line-height: 1; color: var(--gold-hi); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.bj-cartouche__main::after { content: ''; display: inline-block; width: 0.45em; height: 1px; margin-left: 0.5em; vertical-align: middle; background: var(--ink-2); opacity: 0.6; }
+.bj-cartouche--thinking .bj-cartouche__main { font-family: var(--font-ui); font-size: 13px; font-weight: 600; font-style: italic; color: var(--ink-2); }
+@media (prefers-reduced-motion: no-preference) { .bj-cartouche--thinking .bj-cartouche__main { animation: bj-blink 1s ease-in-out infinite alternate; } }
+.bj-cartouche--bust { --rim: linear-gradient(160deg, #ffb3ab, #b8322b 45%, #ff8f86); }
+.bj-cartouche--bust .bj-cartouche__main { color: #ff8f86; }
+.bj-cartouche--bj { --rim: linear-gradient(160deg, #fff6d6, #b38a33 50%, #fff1c4); }
+.bj-cartouche--bj .bj-cartouche__face { background: radial-gradient(120% 90% at 30% 0%, rgba(255, 255, 255, 0.55), transparent 60%), linear-gradient(180deg, #fff1c4, #e2bf6e 50%, #b38a33); }
+.bj-cartouche--bj .bj-cartouche__word { color: rgba(60, 38, 0, 0.75); }
+.bj-cartouche--bj .bj-cartouche__main { color: #2a1a00; font-size: 17px; letter-spacing: 0.1em; text-transform: uppercase; }
 .bj-dealer.is-bust .bj-card { filter: saturate(0.5) brightness(0.8); }
 
 .bj-shoe { position: absolute; top: 14px; right: 18px; z-index: 1; --w: calc(var(--cw-d) * 0.62); width: var(--w); aspect-ratio: 250 / 400; rotate: 8deg; }
@@ -496,7 +517,8 @@
 @container (min-width: 760px) {
   .bj-felt { justify-content: flex-start; --cw-o: clamp(30px, min(5.4cqw, 9.5cqh), 62px); --cw-me: clamp(44px, min(10cqw, 13cqh), 96px); }
   .bj-others, .bj-mine { display: contents; }
-  .bj-seat { position: absolute; left: var(--x, 50%); top: var(--y, 95%); translate: -50% -100%; z-index: 1; }
+  /* a seat near a side leans inwards (anchored at its own x %), so wide split hands stay on the felt */
+  .bj-seat { position: absolute; left: var(--x, 50%); top: var(--y, 95%); translate: calc(var(--ax, 50) * -1%) -100%; z-index: 1; }
   .bj-seat.is-me { z-index: 2; }
   /* the others' bets beside their cards, as mine: the seats stay low */
   .bj-seat.is-compact .bj-hand { grid-template-areas: 'bet cards'; grid-template-columns: auto auto; column-gap: 5px; }
@@ -538,9 +560,8 @@
 .bj-banner small { color: var(--ink-2); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
 .bj-banner { animation: bj-banner 1.7s var(--ease-out) both; }
 @keyframes bj-banner { 0% { opacity: 0; scale: 0.82; } 18% { opacity: 1; scale: 1; } 78% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.06; } }
-.bj-dealer__verdict { animation: bj-verdict 320ms var(--ease-out) var(--d, 0ms) both; }
 @keyframes bj-verdict { from { opacity: 0; translate: 0 -6px; } }
-@media (prefers-reduced-motion: reduce) { .bj-banner { animation-name: bj-fade; } .bj-dealer__verdict { animation-duration: 1ms; } }
+@media (prefers-reduced-motion: reduce) { .bj-banner { animation-name: bj-fade; } .bj-cartouche { animation-duration: 1ms; } }
 @keyframes bj-fade { 0%, 100% { opacity: 0; } 15%, 85% { opacity: 1; } }
 .bj-banner__rule { width: 120px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
 

@@ -7,6 +7,9 @@ import { fmt } from './i18n.js';
 /** End of a round: the cards are swept up towards the dealer. */
 export const SWEEP = { opacity: 0, y: -90, scale: 0.7, rotate: -6, transition: { duration: 0.45, ease: [0.5, 0, 0.75, 0] } };
 
+/** How far a seat leans inwards: only the seats near a side of the table (0..100, 50 = centred). */
+const lean = (x) => 50 + Math.sign(x - 50) * Math.max(0, Math.abs(x - 50) - 25) * 2;
+
 /**
  * A player's place at the table: name and stack on a brass plate, the betting box in front,
  * the hands in it. `draft` is my bet being composed (shown as ghost chips).
@@ -20,7 +23,7 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
   return (
     <div
       className={`bj-seat ${isMe ? 'is-me' : ''} ${compact ? 'is-compact' : ''} ${activeHand >= 0 ? 'is-active' : ''} ${p.out ? 'is-out' : ''} ${p.connected === false && !p.isBot ? 'is-away' : ''}`}
-      style={{ '--seat': p.seat, ...(pos && { '--x': `${pos.x}%`, '--y': `${pos.y}%` }) }}
+      style={{ '--seat': p.seat, ...(pos && { '--x': `${pos.x}%`, '--y': `${pos.y}%`, '--ax': lean(pos.x) }) }}
     >
       <div className="bj-seat__box">
         <AnimatePresence mode="popLayout" initial={false}>
