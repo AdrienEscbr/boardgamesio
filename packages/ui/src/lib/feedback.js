@@ -99,6 +99,9 @@ const SOUNDS = {
   pin: (ac, at = 0) => click(ac, { at, freq: 5200, gain: 0.1, dur: 0.012 }),
   shield: (ac) => { click(ac, { freq: 900, gain: 0.2, dur: 0.05 }); tone(ac, { freq: 220, slideTo: 160, dur: 0.12, gain: 0.08 }); tone(ac, { at: 0.03, freq: 1320, dur: 0.25, gain: 0.025, type: 'triangle' }); },
   // Blackjack: a clay chip set down on the felt.
+  // UINIO: an enamelled ceramic plaque set down on the tray, and the last-card call.
+  clink: (ac, at = 0) => { click(ac, { at, freq: 4600, gain: 0.15, dur: 0.018 }); tone(ac, { at, freq: 2490, slideTo: 2440, dur: 0.22, gain: 0.03 }); tone(ac, { at: at + 0.005, freq: 3730, dur: 0.12, gain: 0.012 }); tone(ac, { at, freq: 240, slideTo: 170, dur: 0.05, gain: 0.06 }); },
+  uinio: (ac) => { [659, 880, 1319].forEach((f, i) => tone(ac, { freq: f, at: i * 0.07, dur: 0.32, gain: 0.07, type: 'triangle' })); tone(ac, { freq: 2637, at: 0.2, dur: 0.4, gain: 0.02 }); },
   chip: (ac, at = 0) => { click(ac, { at, freq: 3600, gain: 0.14, dur: 0.02 }); click(ac, { at: at + 0.045, freq: 2900, gain: 0.08, dur: 0.018 }); tone(ac, { at, freq: 2100, slideTo: 1800, dur: 0.05, gain: 0.025 }); },
 };
 

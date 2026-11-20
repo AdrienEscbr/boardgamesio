@@ -22,6 +22,7 @@ scope: all
   - `node games/p4/scripts/arena.js [parties] [classic|large] [joueurs]`
   - `node games/mind/scripts/arena.js [codes]` (essais moyens par niveau et format, puis courses entre niveaux)
   - `node games/naval/scripts/arena.js [parties]`
+  - `node games/uinio/scripts/arena.js [parties] [niveaux] [cumul=0|1] [pioche-jusqu-a-jouer=0|1] [doublons=0|1]`
   - `node games/blackjack/scripts/arena.js [mains] [jeux]` (rendement de la stratégie de base, des règles du croupier et du hasard)
   - `node games/tarot/scripts/arena.js [parties]`, `node games/tarot/scripts/simulate.js [joueurs] [donnes] [seed]`
 
@@ -35,6 +36,6 @@ scope: all
 ## Mocking and Stubbing
 
 - Aléatoire : toute fonction aléatoire du moteur prend `rng` en paramètre (`Math.random` par défaut) ; les tests injectent un PRNG déterministe (ex. `seededRng` dans `games/scrabble/test/helpers.js`).
-- Pauses : plugins paramétrables, mis à 0 en test (`createP4Plugin({ roundPauseMs: 0 })`, `createTarotPlugin({ trickPauseMs: 0, chienPauseMs: 0 })`, `createNavalPlugin({ finalPauseMs: 0 })`, `createPokerPlugin({ showdownPauseMs, foldPauseMs, runoutPauseMs })`, `createBlackjackPlugin({ botThinkMs, dealerRevealMs, dealerDrawMs, settlePauseMs })`).
+- Pauses : plugins paramétrables, mis à 0 en test (`createP4Plugin({ roundPauseMs: 0 })`, `createTarotPlugin({ trickPauseMs: 0, chienPauseMs: 0 })`, `createNavalPlugin({ finalPauseMs: 0 })`, `createPokerPlugin({ showdownPauseMs, foldPauseMs, runoutPauseMs })`, `createBlackjackPlugin({ botThinkMs, dealerRevealMs, dealerDrawMs, settlePauseMs })`, `createUinioPlugin({ revealMs, dealMs })`).
 - Chronos du socle : option `timings` de `createPlatformServer` (ex. `lobbyGraceMs`, `awayTurnMs`, `botMinMs`, `botMaxMs`).
 - Plugins factices : jeux minimaux définis dans le test (ex. `race`) ou plugin surchargé (Scrabble avec dictionnaire qui accepte tout).

@@ -1,0 +1,6 @@
+/* Home-page thumbnail (loaded with the home page, not with the table). */
+.un-cover { position: relative; display: flex; align-items: flex-end; height: 42px; padding-left: 4px; width: max-content; }
+.un-cover__card { margin-right: -12px; rotate: calc((var(--i) - 1) * 13deg); transform-origin: 50% 110%; }
+.un-cover__card:nth-child(2) { translate: 0 -3px; }
+.un-cover .un-card { display: block; width: 26px; aspect-ratio: 2 / 3; border-radius: 11% / 7.4%; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35)); }
+.un-cover .un-svg { display: block; width: 100%; height: 100%; }

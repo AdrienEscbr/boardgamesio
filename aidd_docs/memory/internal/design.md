@@ -18,7 +18,7 @@ scope: frontend
 
 - **Theme Config**: `packages/ui/src/styles/tokens.css` (tokens), `packages/ui/src/styles/base.css` (reset, typo, focus).
 - **Design Components**: `packages/ui/src/components/` (`ui.jsx` + `ui.css`, `Tile.jsx`, `Toaster.jsx`, `NicknameSheet.jsx`, `SettingsSheet.jsx`, `Confetti.jsx`, `Icon.jsx`).
-- **Style Guidelines**: pas de doc dédiée ; pages de revue design non liées : `#/dev/cartes`, `#/dev/naval`, `#/dev/p4`, `#/dev/mind`.
+- **Style Guidelines**: pas de doc dédiée ; pages de revue design non liées : `#/dev/cartes`, `#/dev/naval`, `#/dev/p4`, `#/dev/mind`, `#/dev/uinio`.
 
 ## Design System
 
@@ -48,6 +48,7 @@ scope: frontend
 - **P4IO**: bois (`--wood-*`) et laiton `--brass`, jetons ambre / bleu (`p4.css`).
 - **PokerIO**: feutre bordeaux (`--felt-1/2`), or, plaques sombres (`table.css`).
 - **MindIO**: cabinet de décodeur années 60 : bureau en noyer et cuir vert, plateaux en bakélite (`--bake-*`) cerclés de laiton (`--brass*`), perles de verre avec un motif gravé par couleur, pions d'indice rouges (bien placé) et blancs (mal placé), cache à charnière sur le code (`mind.css`, `game.css`).
+- **UINIO**: plaques en céramique émaillée sur un comptoir de café : zinc brossé sous une lampe, plateau de service en laiton pour la pioche et la défausse, sièges en sous-verre. Quatre émaux (brique ◆, safran ●, bouteille ▲, cobalt ■ : un motif par couleur), médaillon en quadrilobe d'azulejo (`uinio.css`, `Card.jsx`).
 - Chaque jeu a un `cover.css` léger (vignette d'accueil) séparé de la feuille du jeu, chargée en lazy.
 - Écran d'accueil : héros 3D three.js (`Hero3D.jsx`, lazy).
 
