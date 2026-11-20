@@ -15,6 +15,7 @@ Mécaniques de la famille du Huit américain / Mau-Mau, avec un nom et une ident
 | Format | Plusieurs manches : le gagnant d'une manche marque les points des cartes restées chez les autres ; le premier à l'objectif (réglage du salon) gagne |
 | Variante « cumul » (réglage) | On répond à un +2 par un +2, à un +4 par un +4 ; le premier qui ne peut pas (ou ne veut pas) pioche le total et passe son tour |
 | Variante « pioche jusqu'à pouvoir jouer » (réglage) | Au lieu d'une seule carte |
+| Variante « doublons » (réglage, ajoutée le 2026-11-20 à la demande d'Adrien) | Après un chiffre, on peut poser le même chiffre dans d'autres couleurs, une carte après l'autre, puis « Terminer » ; la dernière posée donne la couleur. Chiffres seulement (pas les cartes d'action) |
 
 ## Choix de détail (à corriger si besoin)
 

@@ -199,6 +199,46 @@ test('drawUntil: draw until a playable card', () => {
   assert.equal(viewFor(game, 'B').log.at(-1).cards, undefined, 'only the drawer sees the cards');
 });
 
+test('doubles: the same number in other colours follows in the same turn', () => {
+  const game = rig(table(3, { doubles: true }), { A: 'r50 g51 b50 y70 bS0', B: 'y11 y12' }, { discard: 'r10' });
+  act(game, 'A', { type: 'play', card: 'r50' });
+  assert.equal(game.turn, 'A');
+  assert.equal(game.step, 'more');
+  assert.deepEqual(viewFor(game, 'A').playable.sort(), ['b50', 'g51']);
+  assert.deepEqual(viewFor(game, 'B').playable, []);
+  // Only the same number: not the colour, not an action card, and no draw.
+  for (const action of [{ type: 'play', card: 'y70' }, { type: 'play', card: 'bS0' }, { type: 'draw' }]) {
+    unchanged(game, () => assert.throws(() => act(game, 'A', action), /CANNOT_PLAY|WRONG_STEP/));
+  }
+  act(game, 'A', { type: 'play', card: 'g51' });
+  assert.equal(game.color, 'g', 'the last card laid sets the colour');
+  assert.equal(game.step, 'more');
+  act(game, 'A', { type: 'pass' });
+  assert.equal(game.turn, 'B');
+  assert.deepEqual(hand(game, 'A').sort(), ['b50', 'bS0', 'y70']);
+  // The last of them: the turn moves on by itself.
+  rig(game, { A: 'r50 g50 y70', B: 'y11' }, { discard: 'r10' });
+  act(game, 'A', { type: 'play', card: 'r50' });
+  act(game, 'A', { type: 'play', card: 'g50' });
+  assert.equal(game.turn, 'B');
+  // Off by default.
+  const plain = rig(table(3), { A: 'r50 g50 y70' }, { discard: 'r10' });
+  act(plain, 'A', { type: 'play', card: 'r50' });
+  assert.equal(plain.turn, 'B');
+  assertConserved(game);
+});
+
+test('doubles: down to one card the call is due, and laying the last ends the round', () => {
+  const game = rig(table(3, { doubles: true }), { A: 'r50 g50 b50' }, { discard: 'r10' });
+  act(game, 'A', { type: 'play', card: 'r50' });
+  act(game, 'A', { type: 'call' });
+  act(game, 'A', { type: 'play', card: 'g50' });
+  assert.equal(game.exposed, null, 'called while laying the same number');
+  act(game, 'A', { type: 'play', card: 'b50' });
+  assert.equal(game.phase, 'reveal');
+  assert.equal(game.roundResult.winnerId, 'A');
+});
+
 test('the last-card call, the catch and its penalty', () => {
   const game = rig(table(3), { A: 'r30 r31 g10', B: 'b20 b21', C: 'y20 y21' }, { discard: 'r10', next: 'y30 y31 y40 y41' });
   act(game, 'A', { type: 'play', card: 'r30' });

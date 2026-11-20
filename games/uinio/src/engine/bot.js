@@ -52,6 +52,14 @@ export function decide(view, level = 'normal', rng = Math.random) {
   if (view.exposed && rng() < t.catch) return { type: 'catch', playerId: view.exposed };
 
   const playable = view.playable;
+  if (view.step === 'more') {
+    // The same number again: lay them all, the colour I hold most last (it stays asked).
+    if (!playable.length || (!t.smart && rng() < 0.3)) return { type: 'pass' };
+    const counts = Object.fromEntries(COLORS.map((c) => [c, 0]));
+    for (const c of view.hand) if (!isWild(c)) counts[colorOf(c)] += 1;
+    const card = playable.reduce((a, b) => (counts[colorOf(b)] < counts[colorOf(a)] ? b : a));
+    return withCall(view, t, rng, { type: 'play', card });
+  }
   if (view.step === 'drawn') {
     const card = view.drawn;
     // A wild just drawn is worth keeping for later, unless the hand is nearly empty.
@@ -103,6 +111,8 @@ function pick(view, playable, rng, watch) {
     } else {
       s += cardPoints(card) / 4; // shed heavy cards first
       s += counts[colorOf(card)] * 2; // stay in a colour I hold
+      // Doubles: a number I hold several times sheds them all at once.
+      if (view.doubles && /[0-9]/.test(kind)) s += 6 * (view.hand.filter((c) => c !== card && !isWild(c) && kindOf(c) === kind).length);
       if (danger && (kind === 'D' || kind === 'S')) s += 30;
       if (danger && kind === 'R' && view.players.length > 2 && prev.count > next.count) s += 25;
       // Without danger, keep action cards a little for later.

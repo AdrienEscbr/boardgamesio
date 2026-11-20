@@ -29,10 +29,10 @@ function run(game, { humans = [] } = {}) {
 
 test('robots always play legal moves, at every level and option, and every game ends', () => {
   for (const botLevel of ['easy', 'normal', 'hard']) {
-    for (const [stacking, drawUntil] of [[false, false], [true, false], [false, true], [true, true]]) {
+    for (const [stacking, drawUntil, doubles] of [[false, false, false], [true, false, false], [false, true, false], [false, false, true], [true, true, true]]) {
       for (const n of [2, 4, 8]) {
         const ids = Array.from({ length: n }, (_, i) => `R${i}`);
-        const game = plugin.createGame({ playerIds: ids, botIds: ids, settings: { botLevel, stacking, drawUntil, target: 150 }, rng });
+        const game = plugin.createGame({ playerIds: ids, botIds: ids, settings: { botLevel, stacking, drawUntil, doubles, target: 150 }, rng });
         run(game);
         assert.equal(game.status, 'finished');
         assert.ok(game.players.some((p) => p.total >= 150));

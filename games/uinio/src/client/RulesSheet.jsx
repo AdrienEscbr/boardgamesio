@@ -25,7 +25,8 @@ export default function RulesSheet({ open, onClose, settings }) {
             <li>Posez une plaque de <strong>la même couleur</strong>, du <strong>même chiffre</strong> ou du <strong>même symbole</strong> que celle du dessus, ou un Joker. Les plaques jouables se lèvent dans votre main.</li>
             <li>Ou <strong>piochez</strong> (même si vous pouviez jouer). Si la plaque piochée peut être posée, vous la posez tout de suite ou vous la gardez ; sinon le tour passe.</li>
             <li>Variante <strong>pioche jusqu’à pouvoir jouer</strong>{on(settings?.drawUntil)} : on pioche jusqu’à tomber sur une plaque jouable.</li>
-            <li>Au clavier : <strong>P</strong> piocher, <strong>G</strong> garder, <strong>U</strong> annoncer, <strong>C</strong> contrer, <strong>1 à 4</strong> pour la couleur d’un Joker.</li>
+            <li>Variante <strong>doublons</strong>{on(settings?.doubles)} : après avoir posé un chiffre, vous pouvez poser aussi le <strong>même chiffre dans d’autres couleurs</strong>, une carte après l’autre, puis terminer votre tour. La dernière posée donne la couleur.</li>
+            <li>Au clavier : <strong>P</strong> piocher, <strong>G</strong> garder ou terminer, <strong>U</strong> annoncer, <strong>C</strong> contrer, <strong>1 à 4</strong> pour la couleur d’un Joker.</li>
           </ul>
         </section>
         <section>

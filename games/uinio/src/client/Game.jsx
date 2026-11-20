@@ -233,33 +233,46 @@ function SeatBubble({ id, bubble, low }) {
 }
 
 /**
- * A ceramic medallion stamped over the tray for the moves that matter. A lost turn and cards
- * to draw are only stamped for the player they hit; the way play goes, a colour asked, a call
- * and a catch are for the whole table.
+ * What hits me (a lost turn, cards to draw, a catch): a small enamelled plaque that rises
+ * from my hand. Only I see it; the others see my seat react.
  */
-function Stamp({ s }) {
+function Notice({ n }) {
   const r = reduced();
   return (
-    <div className="un-stamp-at" role="status">
-      <motion.div
-        className={`un-stamp is-${s.tone}`}
-        initial={r ? { opacity: 0 } : { opacity: 0, scale: s.slam ? 1.9 : 0.4, rotate: s.spin ? -200 : -10 }}
-        animate={{ opacity: 1, scale: 1, rotate: 0 }}
-        exit={r ? { opacity: 0 } : { opacity: 0, scale: 1.08, y: -12, transition: { duration: 0.25 } }}
-        transition={{ type: 'spring', bounce: s.slam ? 0.5 : 0.35, duration: s.spin ? 0.8 : 0.5 }}
-      >
-        <span className="un-stamp__disc" style={{ '--c': COLOR_HEX[s.color] }}>
-          {s.symbol ? (
-            <svg viewBox="-50 -50 100 100" aria-hidden><Symbol kind={s.symbol} fill={s.tone === 'turn' ? '#1b2130' : CREAM} /></svg>
-          ) : s.color ? (
-            <svg viewBox="-12 -12 24 24" aria-hidden><Mark color={s.color} s={13} /></svg>
-          ) : (
-            <strong>{s.text}</strong>
-          )}
-        </span>
-        {s.caption && <span className="un-stamp__caption">{s.caption}</span>}
-      </motion.div>
-    </div>
+    <motion.span
+      className="un-notice"
+      role="status"
+      initial={r ? { opacity: 0 } : { opacity: 0, y: 26, rotate: -4, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
+      exit={r ? { opacity: 0 } : { opacity: 0, y: -8, transition: { duration: 0.2 } }}
+      transition={{ type: 'spring', bounce: 0.45, duration: 0.5 }}
+    >
+      <span className="un-notice__seal" aria-hidden>
+        {n.symbol ? <svg viewBox="-50 -50 100 100"><Symbol kind={n.symbol} fill={CREAM} /></svg> : <b>{n.mark}</b>}
+      </span>
+      <span className="un-notice__text">
+        <strong>{n.title}</strong>
+        {n.caption && <small>{n.caption}</small>}
+      </span>
+    </motion.span>
+  );
+}
+
+/** A call or a catch at a seat: rings of enamel spread from the coaster. */
+function Burst({ id, tone, onDone }) {
+  const [at] = useState(() => {
+    const el = document.querySelector(`#un-seat-${CSS.escape(id)} .un-coaster`) ?? document.getElementById(`un-seat-${id}`);
+    return el ? centre(el.getBoundingClientRect()) : null;
+  });
+  useEffect(() => {
+    const t = setTimeout(onDone, 1000);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!at || reduced()) return null;
+  return (
+    <span className={`un-burst is-${tone}`} style={{ left: at.x, top: at.y }} aria-hidden>
+      <i /><i />
+    </span>
   );
 }
 
@@ -275,22 +288,22 @@ function Ripple({ color }) {
 
 /** The ring of arrows round the tray: one stroke each that fades in, ending in an open chevron. */
 const RING = (() => {
-  const r = 88;
-  const span = (26 * Math.PI) / 180;
+  const r = 91;
+  const span = (25 * Math.PI) / 180;
   const pt = (a) => [r * Math.sin(a), -r * Math.cos(a)];
   const [x0, y0] = pt(-span);
   const [x1, y1] = pt(span);
-  // The chevron's arms go back along the arc's tangent at its end, turned ±38°.
+  // The chevron's arms go back along the arc's tangent at its end, turned ±36°.
   const tx = Math.cos(span);
   const ty = Math.sin(span);
   const arm = (deg) => {
     const a = (deg * Math.PI) / 180;
     const bx = -tx * Math.cos(a) + ty * Math.sin(a);
     const by = -tx * Math.sin(a) - ty * Math.cos(a);
-    return [x1 + bx * 11, y1 + by * 11];
+    return [x1 + bx * 9, y1 + by * 9];
   };
-  const [ax, ay] = arm(38);
-  const [bx, by] = arm(-38);
+  const [ax, ay] = arm(36);
+  const [bx, by] = arm(-36);
   const f = (n) => n.toFixed(2);
   return {
     arc: `M ${f(x0)} ${f(y0)} A ${r} ${r} 0 0 1 ${f(x1)} ${f(y1)}`,
@@ -313,8 +326,8 @@ function Ring({ direction, spinRef }) {
         </defs>
         {[0, 120, 240].map((a) => (
           <g key={a} transform={`rotate(${a})`}>
-            <path d={RING.arc} fill="none" stroke="url(#un-ring-fade)" strokeWidth="3.4" strokeLinecap="round" />
-            <path d={RING.head} fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={RING.arc} fill="none" stroke="url(#un-ring-fade)" strokeWidth="3" strokeLinecap="round" />
+            <path d={RING.head} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
           </g>
         ))}
       </g>
@@ -322,48 +335,44 @@ function Ring({ direction, spinRef }) {
   );
 }
 
-
 /**
- * Choosing the colour of a wild, over the tray (the hand never moves): the card in the middle,
- * the four enamels around it where its own lobes are, with how many of each I hold.
+ * Choosing the colour of a wild, on the tray itself: four enamel lobes rise from under the
+ * pile where the wild's own lobes are (brique, cobalt / safran, bouteille). Tapping beside
+ * them, or Escape, puts the wild back.
  */
 const QUARTERS = { r: [-1, -1], b: [1, -1], y: [-1, 1], g: [1, 1] };
-function ColorWheel({ card, hand, onPick, onCancel }) {
+function ColorLobes({ card, hand, onPick, onCancel }) {
   const counts = Object.fromEntries(COLORS.map((c) => [c, hand.filter((x) => x !== card && colorOf(x) === c).length]));
   const best = COLORS.reduce((a, b) => (counts[b] > counts[a] ? b : a));
   const r = reduced();
   return (
-    <motion.div className="un-wheel" role="dialog" aria-label="Choisir la couleur demandée" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
-      <button type="button" className="un-wheel__scrim" aria-label="Annuler" onClick={onCancel} />
-      <span className="un-wheel__title">{KIND_NAMES[kindOf(card)]} : quelle couleur demander ?</span>
-      <div className="un-wheel__grid">
-        <motion.span className="un-wheel__card" initial={r ? false : { scale: 0.6, y: 50 }} animate={{ scale: 1, y: 0 }} transition={{ type: 'spring', bounce: 0.35, duration: 0.45 }}>
-          <Card card={card} />
-        </motion.span>
+    <>
+      <button type="button" className="un-lobes__away" aria-label="Annuler le Joker" onClick={onCancel} />
+      <div className="un-lobes" role="group" aria-label={`${KIND_NAMES[kindOf(card)]} : choisir la couleur demandée`}>
         {COLORS.map((c, i) => {
           const [qx, qy] = QUARTERS[c];
           return (
             <motion.button
               key={c}
               type="button"
-              className={`un-petal ${c === best && counts[c] ? 'is-best' : ''}`}
-              style={{ '--c': COLOR_HEX[c], gridArea: `${qy < 0 ? 1 : 2} / ${qx < 0 ? 1 : 3}` }}
-              initial={r ? false : { opacity: 0, x: -qx * 46, y: -qy * 30, scale: 0.5 }}
-              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-              transition={{ type: 'spring', bounce: 0.4, duration: 0.45, delay: 0.04 * i }}
+              className={`un-lobe ${c === best && counts[c] ? 'is-best' : ''}`}
+              style={{ '--c': COLOR_HEX[c], '--qx': qx, '--qy': qy }}
+              initial={r ? { opacity: 0 } : { opacity: 0, scale: 0.2, x: `${-qx * 60}%`, y: `${-qy * 60}%`, rotate: qx * qy * -40 }}
+              animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotate: 0 }}
+              exit={r ? { opacity: 0 } : { opacity: 0, scale: 0.4, x: `${-qx * 50}%`, y: `${-qy * 50}%`, transition: { duration: 0.18 } }}
+              transition={{ type: 'spring', bounce: 0.38, duration: 0.5, delay: 0.035 * i }}
               onClick={() => onPick(c)}
               autoFocus={c === best}
-              aria-label={`${COLOR_LABELS[c]}, ${plural(counts[c], 'carte')} en main`}
+              aria-label={`${COLOR_LABELS[c]} (${plural(counts[c], 'carte')} en main), touche ${i + 1}`}
             >
-              <svg viewBox="-12 -12 24 24" aria-hidden><Mark color={c} s={13} /></svg>
-              <span>{COLOR_LABELS[c]}</span>
-              <small>{counts[c] ? `×${counts[c]} en main` : 'aucune'}</small>
+              <svg viewBox="-12 -12 24 24" aria-hidden><Mark color={c} s={12} /></svg>
+              <span className="un-lobe__name">{COLOR_LABELS[c]}</span>
+              <span className="un-lobe__count">{counts[c] ? `×${counts[c]}` : '—'}</span>
             </motion.button>
           );
         })}
       </div>
-      <button type="button" className="un-link un-wheel__cancel" onClick={onCancel}>Annuler</button>
-    </motion.div>
+    </>
   );
 }
 
@@ -430,8 +439,9 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const [busy, setBusy] = useState(false);
   const [choosing, setChoosing] = useState(null); // a wild waiting for its colour
   const [bubbles, setBubbles] = useState({});
-  const [stamp, setStamp] = useState(null);
+  const [notice, setNotice] = useState(null);
   const [ripple, setRipple] = useState(null);
+  const [bursts, setBursts] = useState([]);
   const [hurt, setHurt] = useState(null);
   const ring = useRef(null);
   const [flights, setFlights] = useState([]);
@@ -457,7 +467,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     : players;
   const nextSeat = (((v.turnSeat + v.direction) % players.length) + players.length) % players.length;
   const canCall = !!meP && !readOnly && v.phase === 'play' && !hostPaused
-    && ((myTurn && v.step === 'play' && hand.length === 2 && !meP.called) || v.exposed === me);
+    && ((myTurn && (v.step === 'play' || v.step === 'more') && hand.length === 2 && !meP.called) || v.exposed === me);
   const catchable = meP && !readOnly && v.phase === 'play' && v.exposed && v.exposed !== me ? v.exposed : null;
 
   // ---- talking to the server --------------------------------------------------------
@@ -485,6 +495,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       setShake((x) => x + 1);
       const hint = v.stack ? `Contrez avec un ${KIND_NAMES[v.stack.kind]} ou piochez ${v.stack.count}.`
         : v.step === 'drawn' ? 'Posez la carte piochée, ou gardez-la.'
+          : v.step === 'more' ? `Seulement un autre ${v.chain}, ou terminez votre tour.`
           : kindOf(card) === 'F' ? `Le Joker +4 n’est permis que sans carte ${COLOR_NAMES[v.color]} en main.`
           : `Il faut une carte ${COLOR_NAMES[v.color]}, ${symbolHint(v.top)} ou un Joker.`;
       toast({ title: hint, tone: 'info' });
@@ -505,7 +516,8 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     haptic('light');
     send({ type: 'draw' });
   };
-  const keep = () => { if (myTurn && v.step === 'drawn') { sound('back'); send({ type: 'pass' }); } };
+  // Keep the card just drawn, or end a turn of doubles.
+  const keep = () => { if (myTurn && (v.step === 'drawn' || v.step === 'more')) { sound('back'); send({ type: 'pass' }); } };
   const callIt = () => { if (canCall) { sound('uinio'); haptic('success'); send({ type: 'call' }); } };
   const catchIt = (id) => { sound('pick'); haptic('medium'); send({ type: 'catch', playerId: id }); };
   const ready = () => { sound('pick'); send({ type: 'ready' }); };
@@ -528,7 +540,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         return;
       }
       if (key === 'p') k.draw();
-      if (key === 'g') k.keep();
+      if (key === 'g' || key === 't') k.keep();
       if (key === 'u') k.callIt();
       if (key === 'c' && k.catchable) k.catchIt(k.catchable);
     };
@@ -573,12 +585,14 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     if (!fresh.length) return undefined;
     const timers = [];
     const later = (ms, fn) => timers.push(setTimeout(fn, ms));
-    // The medallion over the tray: the strongest of what just happened wins.
-    let best = null;
-    const stampIt = (rank, st) => { if (!best || rank >= best.rank) best = { rank, ...st }; };
-    const hurtMe = () => { setHurt(Date.now()); haptic('error'); shakeEl(document.getElementById('un-hand'), 8); };
+    // What hits me: a plaque over my hand (only I see it), the edges flush, my hand jolts.
+    let note = null;
+    const tell = (rank, n) => { if (!note || rank >= note.rank) note = { rank, ...n }; };
+    const hurtMe = () => { setHurt(Date.now()); haptic('error'); shakeEl(document.getElementById('un-hand'), 6); };
+    // What everyone sees happens where it happens: on a seat, round the tray, on the pile.
     const jolt = (id) => shakeEl(document.getElementById(`un-seat-${id}`), 5);
-    const called = (id) => stampIt(2, { tone: 'call', text: 'UINIO !', caption: id === me ? 'Plus qu’une carte : bien annoncé' : `${nameOf(id)} n’a plus qu’une carte` });
+    const burst = (id, tone) => setBursts((b) => [...b, { key: `${Date.now()}-${Math.random()}`, id, tone }]);
+    const called = (id) => { if (id !== me) burst(id, 'call'); };
     const fly = (to, count, card) => {
       const from = rectOf('un-pile');
       const target = rectOf(to);
@@ -598,36 +612,41 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         if (e.call) { say(e.playerId, 'UINIO !', 'call'); later(420, () => sound('uinio')); called(e.playerId); }
         if (kind === 'R' && players.length > 2) {
           if (!e.call) say(e.playerId, 'Inversion', 'info');
-          stampIt(2, { tone: 'turn', symbol: 'R', spin: true, caption: 'Le sens du jeu change' });
-          later(60, () => ring.current?.animate?.(
-            [{ transform: 'rotate(0deg) scale(1)' }, { transform: `rotate(${v.direction * 320}deg) scale(1.1)`, offset: 0.7 }, { transform: `rotate(${v.direction * 360}deg) scale(1)` }],
-            { duration: 1100, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)' },
-          ));
+          later(60, () => {
+            if (reduced()) return;
+            ring.current?.animate?.(
+              [{ transform: 'rotate(0deg) scale(1)', color: 'rgba(251, 231, 181, 0.55)' }, { transform: `rotate(${v.direction * 300}deg) scale(1.06)`, color: 'rgba(255, 246, 220, 1)', offset: 0.6 }, { transform: `rotate(${v.direction * 360}deg) scale(1)`, color: 'rgba(251, 231, 181, 0.55)' }],
+              { duration: 1200, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)' },
+            );
+          });
         } else if (isWild(e.card)) {
           if (!e.call) say(e.playerId, `${COLOR_LABELS[e.color]} !`, e.color);
           setRipple({ key: e.id, color: e.color });
-          stampIt(1, { tone: 'color', color: e.color, caption: mine ? `Couleur demandée : ${COLOR_NAMES[e.color]}` : `${nameOf(e.playerId)} demande : ${COLOR_NAMES[e.color]}` });
         }
         // Stacking: a +2 / +4 now waits on me.
         if (v.stack && v.turn === me && !mine && e.id === v.log.at(-1)?.id) {
-          stampIt(4, { tone: 'hit', text: `+${v.stack.count}`, slam: true, caption: v.playable.length ? `Pour vous : contrez avec un ${KIND_NAMES[v.stack.kind]}, ou piochez` : 'Pour vous : il faut piocher' });
+          tell(4, { mark: `+${v.stack.count}`, title: `+${v.stack.count} pour vous`, caption: v.playable.length ? `Contrez avec un ${KIND_NAMES[v.stack.kind]}, ou piochez` : 'Il faut piocher' });
           haptic('medium');
         }
       } else if (e.type === 'skip') {
-        say(e.playerId, 'Passe son tour', 'warn');
         if (e.playerId === me) {
-          stampIt(5, { tone: 'hit', symbol: 'S', slam: true, caption: 'Vous passez votre tour' });
+          tell(5, { symbol: 'S', title: 'Vous passez votre tour', caption: `${nameOf(lastPlayer(v.log, e.id))} vous fait passer` });
           hurtMe();
-        } else jolt(e.playerId);
+        } else {
+          say(e.playerId, 'Passe son tour', 'warn');
+          jolt(e.playerId);
+        }
       } else if (e.type === 'draw' || e.type === 'penalty' || (e.type === 'catch')) {
         const victim = e.type === 'catch' ? e.target : e.playerId;
-        if (e.type === 'penalty') say(victim, `+${e.count}`, 'warn');
-        if (e.type === 'penalty' && victim === me) stampIt(5, { tone: 'hit', text: `+${e.count}`, slam: true, caption: `Vous piochez ${plural(e.count, 'carte')}` });
+        if (e.type === 'penalty') {
+          if (victim === me) tell(5, { mark: `+${e.count}`, title: `Vous piochez ${plural(e.count, 'carte')}`, caption: 'Et vous passez votre tour' });
+          else say(victim, `+${e.count}`, 'warn');
+        }
         if (e.type === 'catch') {
-          say(victim, `Contré ! +${e.count}`, 'warn');
-          say(e.playerId, 'Contre !', 'call');
-          if (victim === me) stampIt(5, { tone: 'hit', text: 'Contré !', slam: true, caption: `${nameOf(e.playerId)} vous prend sans annonce : +${e.count}` });
-          else stampIt(3, { tone: 'call', text: 'Contre !', slam: true, caption: mine ? `Bien vu : ${nameOf(victim)} pioche ${e.count}` : `${nameOf(e.playerId)} prend ${nameOf(victim)} sans annonce : +${e.count}` });
+          if (victim === me) tell(5, { mark: '!', title: 'Contré !', caption: `${nameOf(e.playerId)} vous prend sans annonce : +${e.count}` });
+          else { say(victim, `Contré ! +${e.count}`, 'warn'); burst(victim, 'catch'); }
+          if (mine) say(me, `Bien vu : ${nameOf(victim)} pioche ${e.count}`, 'call');
+          else say(e.playerId, 'Contre !', 'call');
         }
         if (e.type !== 'draw') { if (victim === me) hurtMe(); else jolt(victim); }
         if (e.type === 'draw' && e.count > 1) say(victim, `pioche ${e.count}`, 'info');
@@ -646,15 +665,15 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         later(500, () => { sound(mine ? 'bingo' : 'success'); if (mine) haptic('success'); });
       }
     }
-    if (best && !readOnly) setStamp({ ...best, key: `${Date.now()}-${best.rank}` });
+    if (note && !readOnly) setNotice({ ...note, key: `${Date.now()}-${note.rank}` });
     return () => timers.forEach(clearTimeout);
   }, [v.log]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!stamp) return undefined;
-    const t = setTimeout(() => setStamp(null), stamp.rank >= 4 ? 1500 : 1250);
+    if (!notice) return undefined;
+    const t = setTimeout(() => setNotice(null), 2200);
     return () => clearTimeout(t);
-  }, [stamp]);
+  }, [notice]);
   useEffect(() => {
     if (!ripple) return undefined;
     const t = setTimeout(() => setRipple(null), 1300);
@@ -702,6 +721,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     if (v.stack) status = playable.size ? `+${v.stack.count} pour vous : contrez avec un ${KIND_NAMES[v.stack.kind]}, ou piochez.` : `+${v.stack.count} pour vous : piochez.`;
     else if (choosing) status = 'Choisissez la couleur demandée.';
     else if (v.step === 'drawn') status = `Vous piochez ${cardName(v.drawn)} : la poser ?`;
+    else if (v.step === 'more') status = `Encore un ${v.chain} ? Posez-le, ou terminez votre tour.`;
     else status = playable.size ? 'À vous : posez une carte.' : 'Rien à poser : piochez.';
   } else status = `${nameOf(v.turn)} joue…`;
 
@@ -746,7 +766,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
             <small>{plural(7, 'carte')} chacun</small>
           </div>
         )}
-        <div className="un-tray" style={{ '--asked': COLOR_HEX[v.color] ?? CREAM }}>
+        <div className={`un-tray ${choosing ? 'is-choosing' : ''}`} style={{ '--asked': COLOR_HEX[v.color] ?? CREAM }}>
           <Ring direction={v.direction} spinRef={ring} />
           <button type="button" id="un-pile" className={`un-pile ${pileHint ? 'is-hint' : ''}`} onClick={draw} disabled={!myTurn || v.step !== 'play'} aria-label={`Pioche, ${plural(v.pileCount, 'carte')}${myTurn ? ' : piocher' : ''}`}>
             {[2, 1, 0].map((i) => <span key={i} className="un-pile__card" style={{ '--i': i }}><Card card={null} /></span>)}
@@ -760,13 +780,10 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
             wilds={wilds.current}
             stack={v.stack}
           />
+          <AnimatePresence>
+            {choosing && <ColorLobes key="lobes" card={choosing} hand={hand} onPick={(c) => playCard(choosing, c)} onCancel={() => setChoosing(null)} />}
+          </AnimatePresence>
         </div>
-        <AnimatePresence>
-          {stamp && <Stamp key={stamp.key} s={stamp} />}
-        </AnimatePresence>
-        <AnimatePresence>
-          {choosing && <ColorWheel key="wheel" card={choosing} hand={hand} onPick={(c) => playCard(choosing, c)} onCancel={() => setChoosing(null)} />}
-        </AnimatePresence>
       </main>
 
       <section id="un-hand" className={`un-me ${myTurn ? 'is-turn' : ''}`}>
@@ -776,7 +793,10 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
             <span className="un-me__pts">{meP.total} pts</span>
             {meP.called && hand.length === 1 && <span className="un-tag">UINIO !</span>}
             <AnimatePresence>
-              {bubbles[me] && (
+              {notice && <Notice key={notice.key} n={notice} />}
+            </AnimatePresence>
+            <AnimatePresence>
+              {bubbles[me] && !notice && (
                 <motion.span key={bubbles[me].key} className={`un-bubble un-bubble--me is-${bubbles[me].tone ?? 'info'}`} initial={{ opacity: 0, y: 6, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}>
                   {bubbles[me].text}
                 </motion.span>
@@ -810,6 +830,9 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
                 <button type="button" className="un-btn un-btn--enamel" onClick={() => pick(v.drawn)} disabled={busy}>Poser</button>
               </>
             )}
+            {myTurn && v.step === 'more' && (
+              <button type="button" className="un-btn un-btn--enamel" onClick={keep} disabled={busy}>Terminer</button>
+            )}
             {myTurn && v.step === 'play' && !choosing && (
               <button type="button" className={`un-btn ${!playable.size ? 'un-btn--enamel' : ''}`} onClick={draw} disabled={busy}>
                 {v.stack ? `Piocher ${v.stack.count}` : 'Piocher'}
@@ -824,6 +847,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         {order.map((p) => bubbles[p.id] && <SeatBubble key={bubbles[p.id].key} id={p.id} bubble={bubbles[p.id]} low={v.exposed === p.id} />)}
       </AnimatePresence>
       {ripple && <Ripple key={ripple.key} color={ripple.color} />}
+      {bursts.map((b) => <Burst key={b.key} id={b.id} tone={b.tone} onDone={() => setBursts((all) => all.filter((x) => x.key !== b.key))} />)}
       {hurt && <span key={hurt} className="un-hurt" aria-hidden />}
 
       <AnimatePresence>
@@ -894,4 +918,9 @@ function symbolHint(top) {
   const kind = kindOf(top);
   if (/[0-9]/.test(kind)) return `un ${kind}`;
   return { S: 'une Passe', R: 'une Inversion', D: 'un +2' }[kind] ?? 'la même carte';
+}
+
+/** Who played the card that led to event `id` (a skip names its victim, not its author). */
+function lastPlayer(log, id) {
+  return [...log].reverse().find((e) => e.id < id && e.type === 'play')?.playerId;
 }

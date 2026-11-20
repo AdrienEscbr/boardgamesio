@@ -7,6 +7,8 @@
 //   'play'    turns, in `direction` (1 or -1); steps of a turn:
 //               'play'   play a card, or draw (or, facing a stacked draw, answer it or draw it)
 //               'drawn'  the card just drawn is playable: play it, or keep it (`pass`)
+//               'more'   (`doubles`) a number was just played: lay the same number in another
+//                        colour too, one card at a time, or end the turn (`pass`)
 //   'reveal'  the round is over: hands are shown and scored; everyone `ready` (or `advance`)
 //   'over'    the game is finished
 //
@@ -15,7 +17,8 @@
 // `catch` a player left with one card and no call: they draw two.
 //
 // Options: `stacking` (a draw two may answer a draw two, a draw four a draw four; the first
-// who does not draws the total), `drawUntil` (draw until a playable card, not just one).
+// who does not draws the total), `drawUntil` (draw until a playable card, not just one),
+// `doubles` (after a number, the same number in other colours may follow in the same turn).
 
 import { COLORS, HAND_SIZE, canPlay, colorOf, createDeck, drawsOf, handPoints, isNumber, isWild, kindOf, shuffle } from './cards.js';
 import { decide } from './bot.js';
@@ -78,7 +81,7 @@ function give(game, p, count, rng) {
 // ---------------------------------------------------------------------------
 
 /**
- * @param {{ playerIds: string[], botIds?: string[], settings?: { target?: number, botLevel?: string, stacking?: boolean, drawUntil?: boolean }, rng?: () => number }} opts
+ * @param {{ playerIds: string[], botIds?: string[], settings?: { target?: number, botLevel?: string, stacking?: boolean, drawUntil?: boolean, doubles?: boolean }, rng?: () => number }} opts
  */
 export function createGame({ playerIds, botIds = [], settings = {}, rng = Math.random }) {
   const n = playerIds.length;
@@ -90,6 +93,7 @@ export function createGame({ playerIds, botIds = [], settings = {}, rng = Math.r
     botLevel: BOT_LEVELS.includes(settings.botLevel) ? settings.botLevel : 'normal',
     stacking: settings.stacking === true,
     drawUntil: settings.drawUntil === true,
+    doubles: settings.doubles === true,
     players: playerIds.map((id) => ({ id, isBot: botIds.includes(id), hand: [], total: 0, ready: false, called: false })),
     round: 0,
     firstDealer: Math.floor(rng() * n), // deals the first round; then it rotates
@@ -104,6 +108,7 @@ export function createGame({ playerIds, botIds = [], settings = {}, rng = Math.r
     color: null, // the colour asked: the top card's, or the one chosen with a wild
     stack: null, // { kind: 'D' | 'F', count } a stacked draw waiting for the player to act
     drawn: null, // the playable card just drawn (step 'drawn')
+    chain: null, // the number being laid again (step 'more')
     exposed: null, // id of a player left with one card and no call, until the next player acts
     dry: 0, // consecutive turns that could neither play nor draw: the round is blocked
     log: [],
@@ -144,6 +149,7 @@ function startTurn(game, seat) {
   game.turn = game.players[seat].id;
   game.step = 'play';
   game.drawn = null;
+  game.chain = null;
   game.turnNumber += 1;
 }
 
@@ -152,7 +158,7 @@ function endRound(game, winner, { blocked = false } = {}) {
   const points = Object.fromEntries(game.players.map((p) => [p.id, 0]));
   points[winner.id] = game.players.reduce((s, p) => s + (p === winner ? 0 : handPoints(p.hand)), 0);
   winner.total += points[winner.id];
-  Object.assign(game, { phase: 'reveal', turn: null, step: null, drawn: null, stack: null, exposed: null });
+  Object.assign(game, { phase: 'reveal', turn: null, step: null, drawn: null, chain: null, stack: null, exposed: null });
   for (const p of game.players) p.ready = p.isBot;
   game.roundResult = { round: game.round, winnerId: winner.id, points, hands, blocked };
   game.history.push(game.roundResult);
@@ -182,6 +188,7 @@ function finish(game) {
 export function playableCards(game, p) {
   if (game.phase !== 'play' || game.turn !== p.id) return [];
   if (game.step === 'drawn') return [game.drawn];
+  if (game.step === 'more') return p.hand.filter((c) => isNumber(c) && kindOf(c) === game.chain);
   const ctx = { top: top(game), color: game.color, stack: game.stack, hand: p.hand };
   return p.hand.filter((c) => canPlay(c, ctx));
 }
@@ -196,7 +203,8 @@ export function playableCards(game, p) {
  *                                  second-to-last card)
  *   draw                           my turn, step 'play': draw (one card, until playable with
  *                                  `drawUntil`, or the stacked total)
- *   pass                           step 'drawn': keep the card just drawn
+ *   pass                           step 'drawn': keep the card just drawn; step 'more': end
+ *                                  the turn
  *   call                           anytime: call "UINIO" with one card left (or two, on my turn)
  *   catch { playerId }             anytime: catch a player left with one card and no call
  *   ready                          reveal: go on to the next round
@@ -223,6 +231,11 @@ export function act(game, playerId, action, { rng = Math.random } = {}) {
     case 'play': play(game, p, action, rng); break;
     case 'draw': draw(game, p, rng); break;
     case 'pass': {
+      if (game.step === 'more') {
+        log(game, { type: 'done', playerId });
+        startTurn(game, seatAfter(game, game.turnSeat));
+        break;
+      }
       if (game.step !== 'drawn') throw new GameError('WRONG_STEP');
       game.exposed = null;
       log(game, { type: 'keep', playerId });
@@ -278,6 +291,11 @@ function play(game, p, { card, color, call: calling }, rng) {
   } else if (kind === 'R') {
     game.direction = -game.direction;
     startTurn(game, seatAfter(game, game.turnSeat));
+  } else if (game.doubles && p.hand.some((c) => isNumber(c) && kindOf(c) === kind)) {
+    // The same number in another colour may follow, still on this turn.
+    game.step = 'more';
+    game.chain = kind;
+    game.drawn = null;
   } else {
     startTurn(game, next);
   }
@@ -331,7 +349,7 @@ function blocked(game) {
 
 function call(game, p) {
   const late = p.hand.length === 1 && !p.called;
-  const early = p.hand.length === 2 && game.turn === p.id && game.step === 'play';
+  const early = p.hand.length === 2 && game.turn === p.id && (game.step === 'play' || game.step === 'more');
   if (!late && !early) throw new GameError('CANNOT_CALL');
   p.called = true;
   if (game.exposed === p.id) game.exposed = null;
@@ -385,6 +403,8 @@ export function viewFor(game, viewerId) {
     botLevel: game.botLevel,
     stacking: game.stacking,
     drawUntil: game.drawUntil,
+    doubles: game.doubles,
+    chain: game.chain,
     dealer: game.dealer,
     direction: game.direction,
     turn: game.turn,

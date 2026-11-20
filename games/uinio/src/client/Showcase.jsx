@@ -20,7 +20,7 @@ const START = Number(hash().match(/n=(\d)/)?.[1]) || 4;
  * driven like the platform drives it (robots, clocks, the end of a round).
  */
 export default function Showcase() {
-  const [opts, setOpts] = useState({ n: START, stacking: false, drawUntil: false, botLevel: 'normal', target: 300 });
+  const [opts, setOpts] = useState({ n: START, stacking: false, drawUntil: false, doubles: false, botLevel: 'normal', target: 300 });
   const [game, setGame] = useState(() => make(opts));
   const [, setVersion] = useState(0);
   const [turn, setTurn] = useState(null);
@@ -93,10 +93,11 @@ export default function Showcase() {
 
   return (
     <>
-      <Game key={game.firstDealer + String(game.players.length) + opts.stacking + opts.drawUntil} room={room} local={local} />
+      <Game key={game.firstDealer + String(game.players.length) + opts.stacking + opts.drawUntil + opts.doubles} room={room} local={local} />
       <details className="un-devbar"><summary>revue</summary>
         <label>Joueurs <select value={opts.n} onChange={(e) => restart({ n: Number(e.target.value) })}>{[2, 3, 4, 5, 6, 7, 8].map((n) => <option key={n}>{n}</option>)}</select></label>
         <label><input type="checkbox" checked={opts.stacking} onChange={(e) => restart({ stacking: e.target.checked })} /> cumul</label>
+        <label><input type="checkbox" checked={opts.doubles} onChange={(e) => restart({ doubles: e.target.checked })} /> doublons</label>
         <label><input type="checkbox" checked={opts.drawUntil} onChange={(e) => restart({ drawUntil: e.target.checked })} /> pioche jusqu’à jouer</label>
         <label>Robots <select value={opts.botLevel} onChange={(e) => restart({ botLevel: e.target.value })}>{['easy', 'normal', 'hard'].map((l) => <option key={l}>{l}</option>)}</select></label>
         <button type="button" onClick={() => restart()}>Nouvelle partie</button>

@@ -20,6 +20,7 @@ function sanitizeSettings(base, patch = {}, { memberCount = 1 } = {}) {
   pick('botLevel', BOT_LEVELS);
   pick('stacking', [true, false]);
   pick('drawUntil', [true, false]);
+  pick('doubles', [true, false]);
   pick('turnSeconds', TURN_SECONDS_OPTIONS);
   if (patch.maxPlayers !== undefined) {
     const n = patch.maxPlayers;
@@ -36,7 +37,7 @@ export function createUinioPlugin({ revealMs = REVEAL_MS } = {}) {
     name: 'UINIO',
     minPlayers: MIN_PLAYERS,
     maxPlayers: MAX_PLAYERS,
-    defaultSettings: { target: 300, botLevel: 'normal', stacking: false, drawUntil: false, turnSeconds: 15, maxPlayers: 4 },
+    defaultSettings: { target: 300, botLevel: 'normal', stacking: false, drawUntil: false, doubles: false, turnSeconds: 15, maxPlayers: 4 },
     sanitizeSettings,
 
     createGame: ({ playerIds, botIds, settings, rng }) => createGame({ playerIds, botIds, settings, rng }),
