@@ -321,35 +321,12 @@
 .bj-quiet { display: flex; align-items: center; gap: 14px; color: var(--ink-2); font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
 .bj-quiet::before, .bj-quiet::after { content: ''; width: 46px; height: 1px; background: linear-gradient(90deg, transparent, rgba(226, 191, 110, 0.6)); }
 .bj-quiet::after { transform: scaleX(-1); }
-/* my result: a wide plaque, word above, amount below */
-.bj-medal {
-  --cut: 12px;
-  --rim: linear-gradient(160deg, #fff1c4, #c9a24f 30%, #7d5a14 55%, #e2bf6e 80%, #fff1c4);
-  display: block; min-width: 260px; padding: 2px; background: var(--rim);
-  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
-  animation: bj-plaque 520ms cubic-bezier(0.34, 1.4, 0.64, 1) var(--d, 0ms) both;
-}
-.bj-medal__face {
-  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 28px 9px; clip-path: inherit;
-  background: radial-gradient(120% 90% at 30% 0%, rgba(255, 255, 255, 0.08), transparent 60%), repeating-linear-gradient(90deg, rgba(226, 191, 110, 0.05) 0 1px, transparent 1px 9px), linear-gradient(180deg, #1c2a52, #0c1630 60%, #08101f);
-}
-.bj-medal__word { display: flex; align-items: center; gap: 0.6em; font-size: 11px; font-weight: 800; letter-spacing: 0.26em; text-transform: uppercase; color: var(--ink-2); line-height: 1; padding-left: 0.26em; }
-.bj-medal__word::before, .bj-medal__word::after { content: ''; width: 1.6em; height: 1px; background: currentColor; opacity: 0.6; }
-.bj-medal__main { font-family: var(--font-display); font-size: 30px; font-weight: 800; line-height: 1.05; color: var(--gold-hi); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
-.bj-medal--win, .bj-medal--blackjack { --rim: linear-gradient(160deg, #fff6d6, #8f6a1f 50%, #fff1c4); }
-.bj-medal--win .bj-medal__face, .bj-medal--blackjack .bj-medal__face { background: radial-gradient(120% 90% at 30% 0%, rgba(255, 255, 255, 0.55), transparent 60%), linear-gradient(180deg, #fff1c4, #e2bf6e 50%, #b38a33); }
-.bj-medal--win .bj-medal__word, .bj-medal--blackjack .bj-medal__word { color: rgba(60, 38, 0, 0.75); }
-.bj-medal--win .bj-medal__main, .bj-medal--blackjack .bj-medal__main { color: #2a1a00; }
-.bj-medal--blackjack { filter: drop-shadow(0 0 16px rgba(255, 210, 120, 0.6)); }
-.bj-medal--lose .bj-medal__main { color: #ff9c93; }
-.bj-medal--bust { --rim: linear-gradient(160deg, #ffb3ab, #b8322b 45%, #ff8f86); }
-.bj-medal--bust .bj-medal__main { color: #ff8f86; }
-.bj-medal--push { --rim: linear-gradient(160deg, #fff, #b9ae96 50%, #f6efe0); }
-.bj-medal--push .bj-medal__face { background: linear-gradient(180deg, #f8f2e4, #ddd3bd); }
-.bj-medal--push .bj-medal__word { color: rgba(40, 30, 15, 0.7); }
-.bj-medal--push .bj-medal__main, .bj-medal--none .bj-medal__main { font-family: var(--font-ui); font-size: 15px; font-weight: 700; font-style: italic; letter-spacing: 0.02em; }
-.bj-medal--push .bj-medal__main { color: #3a2c18; }
-.bj-medal--none .bj-medal__main { color: var(--ink-2); }
+.bj-quiet__text { display: inline-flex; align-items: baseline; gap: 0.7em; }
+.bj-quiet__text b { font-family: var(--font-display); font-size: 1.35em; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--gold-hi); }
+.bj-quiet__text i { font-style: italic; text-transform: none; letter-spacing: 0.02em; font-weight: 600; }
+.bj-quiet.is-win, .bj-quiet.is-blackjack { color: var(--gold-hi); }
+.bj-quiet.is-lose b, .bj-quiet.is-bust b { color: #ff9c93; }
+.bj-quiet.is-bust { color: #ffb3ab; }
 .bj-verdict__next { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--ink-3); font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
 
 /* buttons */

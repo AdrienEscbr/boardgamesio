@@ -339,31 +339,22 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
               <ActionBar hand={myHand} upCard={d.cards[0]} legal={v.legal} stack={meP.stack} advice={advice} busy={busy} onAct={play} />
             </div>
           ) : (
-            <div
-              key={settled ? `over-${v.roundNumber}` : status}
-              className={`bj-verdict bj-dock__in ${settled ? 'is-over' : 'is-quiet'}`}
-              style={{ '--d': `${settled && d.cards.length ? revealMs : 0}ms` }}
-              role="status"
-              aria-live="polite"
-            >
-              {settled && !readOnly ? (
-                <>
-                  {/* My result as an engraved plaque; under it, the wait for the next round drains. */}
-                  <span className={`bj-medal bj-medal--${mine.kind}`}>
-                    <span className="bj-medal__face">
-                      <span className="bj-medal__word">{mine.word}</span>
-                      <span className="bj-medal__main">{mine.main}</span>
-                    </span>
-                  </span>
-                  {playing && (
-                    <span className="bj-verdict__next">
-                      <span>{lastRound ? 'Fin de partie' : 'Manche suivante'}</span>
-                      {turn?.endsAt && <TurnTimer key={`next-${turn.key}`} turn={turn} className="bj-timer bj-timer--verdict" />}
-                    </span>
-                  )}
-                </>
-              ) : (
-                <span className="bj-quiet">{status}</span>
+            // The rules either side stay put; only the words change, with a fade.
+            <div key="status" className="bj-verdict" role="status" aria-live="polite">
+              <span className={`bj-quiet ${settled && !readOnly ? `is-${mine.kind}` : ''}`}>
+                <span
+                  key={settled ? `over-${v.roundNumber}` : status}
+                  className="bj-quiet__text bj-dock__in"
+                  style={{ '--d': `${settled && d.cards.length ? revealMs : 0}ms` }}
+                >
+                  {settled && !readOnly ? <>{mine.word}{mine.kind !== 'push' && mine.kind !== 'none' ? <b>{mine.main}</b> : <i>{mine.main}</i>}</> : status}
+                </span>
+              </span>
+              {settled && playing && (
+                <span className="bj-verdict__next">
+                  <span>{lastRound ? 'Fin de partie' : 'Manche suivante'}</span>
+                  {turn?.endsAt && <TurnTimer key={`next-${turn.key}`} turn={turn} className="bj-timer bj-timer--verdict" />}
+                </span>
               )}
             </div>
           )}
