@@ -47,7 +47,7 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
               key="spot"
               className={`bj-spot ${betting && !p.betPlaced && !p.out ? 'is-waiting' : ''}`}
               initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1, transition: { delay: 0.3 } }}
+              animate={{ opacity: 1, scale: 1, transition: { delay: 0.5 } }}
               exit={{ opacity: 0, transition: { duration: 0 } }}
             >
               {betting && isMe && !p.betPlaced && draft > 0 && <ChipStack amount={draft} ghost onPick={busy ? undefined : onRemoveChip} />}

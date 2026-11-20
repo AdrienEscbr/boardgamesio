@@ -409,7 +409,10 @@
   .bj-stack__pile.is-pickable:hover .bj-stack__chip:last-child { translate: 0 -5px; filter: drop-shadow(0 0 6px rgba(255, 120, 110, 0.8)); }
 }
 .bj-spot__hint { color: rgba(226, 191, 110, 0.55); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; line-height: 1.3; padding: 0 8px; }
-.bj-side { position: absolute; top: 50%; translate: 0 -50%; z-index: 2; }
+.bj-side { position: absolute; top: 50%; translate: 0 -50%; z-index: 2; animation: bj-side-in 320ms var(--ease-out) 520ms both; }
+/* they wait for the previous round's cards to be swept up (0.45 s) before showing */
+@keyframes bj-side-in { from { opacity: 0; scale: 0.9; } }
+@media (prefers-reduced-motion: reduce) { .bj-side { animation-duration: 1ms; } }
 /* on the felt the plaques stay put under the pointer: only their face lights up */
 @media (hover: hover) and (pointer: fine) {
   .bj-plaque.bj-side:hover:not(:disabled) { translate: 0 -50%; }
