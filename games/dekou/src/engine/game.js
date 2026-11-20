@@ -216,7 +216,11 @@ function settle(game, actorId) {
   const hand = player(game, actorId).hand;
   for (const wave of waves) {
     for (const { id } of wave) hand.push(id);
-    emit(game, { type: 'recover', playerId: actorId, dice: wave.map((d) => ({ ...d, value: game.dice[d.id].value })) });
+    emit(game, {
+      type: 'recover',
+      playerId: actorId,
+      dice: wave.map((d) => ({ ...d, value: game.dice[d.id].value, color: game.dice[d.id].color, seat: game.dice[d.id].seat })),
+    });
   }
 }
 
@@ -227,7 +231,7 @@ function reclaim(game, playerId, value) {
   if (!back.length) return;
   p.discard = p.discard.filter((id) => !back.includes(id));
   p.hand.push(...back);
-  emit(game, { type: 'reclaim', playerId, dice: back.map((id) => ({ id, value })) });
+  emit(game, { type: 'reclaim', playerId, dice: back.map((id) => ({ id, value, color: game.dice[id].color, seat: game.dice[id].seat })) });
 }
 
 /**
@@ -254,7 +258,7 @@ export function throwItem(game, playerId, target, precision, rng = Math.random) 
     const dieId = nextDie(game, playerId);
     const die = game.dice[dieId];
     die.value = rollFace(rng);
-    Object.assign(event, { dieId, color: die.color, value: die.value });
+    Object.assign(event, { dieId, color: die.color, seat: die.seat, value: die.value });
     emit(game, event);
     if (hit) landDie(game, playerId, dieId, hole);
     else if (step.tries >= TRIES) discardDie(game, playerId, dieId);
@@ -303,7 +307,8 @@ function discardDie(game, playerId, dieId) {
   const p = player(game, playerId);
   p.hand = p.hand.filter((id) => id !== dieId);
   p.discard.push(dieId);
-  emit(game, { type: 'discard', playerId, dieId, value: game.dice[dieId].value });
+  const die = game.dice[dieId];
+  emit(game, { type: 'discard', playerId, dieId, value: die.value, color: die.color, seat: die.seat });
   if (game.phase === 'opening') { openingNext(game, playerId, 0); return; }
   afterDie(game);
 }
