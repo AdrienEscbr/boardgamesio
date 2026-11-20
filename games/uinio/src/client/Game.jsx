@@ -380,6 +380,29 @@ function ColorLobes({ card, hand, onPick, onCancel }) {
   );
 }
 
+/**
+ * The call: a brass buzzer screwed to the counter beside the tray. Asleep (sunk, dull) until
+ * a call is possible; then it rises, lights up in brick enamel and throbs.
+ */
+function Buzzer({ live, urgent, onPress, disabled }) {
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      type="button"
+      className={`un-buzzer ${live ? 'is-live' : ''} ${urgent && live ? 'is-urgent' : ''} ${pressed ? 'is-pressed' : ''}`}
+      onClick={() => { if (!live) return; setPressed(true); setTimeout(() => setPressed(false), 220); onPress(); }}
+      disabled={!live || disabled}
+      aria-label={live ? 'Annoncer UINIO !' : 'UINIO (pas encore : il faut être à deux cartes)'}
+      title={live ? 'Annoncer UINIO ! (touche U)' : undefined}
+    >
+      <span className="un-buzzer__halo" aria-hidden />
+      <span className="un-buzzer__bezel" aria-hidden>
+        <span className="un-buzzer__dome">UINIO</span>
+      </span>
+    </button>
+  );
+}
+
 /** The end of a round: who won, everyone's cards and points, the race to the target. */
 function Recap({ v, nameOf, me, onReady, readyDisabled, finished, onNext }) {
   const r = v.roundResult;
@@ -801,30 +824,33 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       </div>
 
       <main className="un-stage">
-        <div className={`un-tray ${choosing ? 'is-choosing' : ''}`} style={{ '--asked': COLOR_HEX[v.color] ?? CREAM }}>
-          <Ring direction={v.direction} spinRef={ring} />
-          <button type="button" id="un-pile" className={`un-pile ${pileHint ? 'is-hint' : ''}`} onClick={pileAction} disabled={!pileLabel || busy} aria-label={`Pioche, ${plural(v.pileCount, 'carte')}${pileLabel ? ` : ${pileLabel.toLowerCase()}` : ''}`}>
-            {[2, 1, 0].map((i) => <span key={i} className="un-pile__card" style={{ '--i': i }}><Card card={null} /></span>)}
-            <span className="un-pile__count">{v.pileCount}</span>
+        <div className="un-counter">
+          <div className={`un-tray ${choosing ? 'is-choosing' : ''}`} style={{ '--asked': COLOR_HEX[v.color] ?? CREAM }}>
+            <Ring direction={v.direction} spinRef={ring} />
+            <button type="button" id="un-pile" className={`un-pile ${pileHint ? 'is-hint' : ''}`} onClick={pileAction} disabled={!pileLabel || busy} aria-label={`Pioche, ${plural(v.pileCount, 'carte')}${pileLabel ? ` : ${pileLabel.toLowerCase()}` : ''}`}>
+              {[2, 1, 0].map((i) => <span key={i} className="un-pile__card" style={{ '--i': i }}><Card card={null} /></span>)}
+              <span className="un-pile__count">{v.pileCount}</span>
+              <AnimatePresence>
+                {pileLabel && (
+                  <motion.span key={pileLabel} className="un-pile__label" initial={{ opacity: 0, y: -6, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.12 } }} transition={{ type: 'spring', bounce: 0.45, duration: 0.4 }}>
+                    {pileLabel}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
+            <Discard
+              cards={dealing ? NONE : discard.current.cards}
+              from={topFrom.current}
+              animate={mounted.current}
+              asked={v.color}
+              wilds={wilds.current}
+              stack={v.stack}
+            />
             <AnimatePresence>
-              {pileLabel && (
-                <motion.span key={pileLabel} className="un-pile__label" initial={{ opacity: 0, y: -6, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.12 } }} transition={{ type: 'spring', bounce: 0.45, duration: 0.4 }}>
-                  {pileLabel}
-                </motion.span>
-              )}
+              {choosing && <ColorLobes key="lobes" card={choosing} hand={hand} onPick={(c) => playCard(choosing, c)} onCancel={() => setChoosing(null)} />}
             </AnimatePresence>
-          </button>
-          <Discard
-            cards={dealing ? NONE : discard.current.cards}
-            from={topFrom.current}
-            animate={mounted.current}
-            asked={v.color}
-            wilds={wilds.current}
-            stack={v.stack}
-          />
-          <AnimatePresence>
-            {choosing && <ColorLobes key="lobes" card={choosing} hand={hand} onPick={(c) => playCard(choosing, c)} onCancel={() => setChoosing(null)} />}
-          </AnimatePresence>
+          </div>
+          <Buzzer live={canCall} urgent={v.exposed === me} onPress={callIt} disabled={busy} />
         </div>
       </main>
 
@@ -835,11 +861,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
             <span className="un-me__pts">{meP.total} pts</span>
             {meP.called && hand.length === 1 && <span className="un-tag">UINIO !</span>}
             <AnimatePresence>
-              {canCall && (
-                <motion.button key="call" type="button" className={`un-seal ${v.exposed === me ? 'is-urgent' : ''}`} onClick={callIt} disabled={busy} initial={{ opacity: 0, scale: 0.4, rotate: -20 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, scale: 0.5 }} transition={{ type: 'spring', bounce: 0.5, duration: 0.45 }}>
-                  UINIO !
-                </motion.button>
-              )}
               {catchable && (
                 <motion.button key="catch" type="button" className="un-seal un-seal--catch" onClick={() => catchIt(catchable)} initial={{ opacity: 0, scale: 0.4 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} transition={{ type: 'spring', bounce: 0.5, duration: 0.45 }}>
                   Contrer {nameOf(catchable)} <small>+2</small>

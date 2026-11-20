@@ -141,8 +141,8 @@
 
 /* ---- the brass tray: pile, discard, the way play goes ---- */
 .un-stage { container-type: size; min-height: 0; display: grid; place-items: center; padding: var(--space-2); }
+.un-counter { --cw: clamp(58px, min(22cqw, 30cqh), 104px); position: relative; }
 .un-tray {
-  --cw: clamp(58px, min(22cqw, 30cqh), 104px);
   position: relative; display: flex; align-items: center; justify-content: center; gap: calc(var(--cw) * 0.45);
   width: calc(var(--cw) * 3.3); aspect-ratio: 1; max-height: 100cqh; border-radius: 50%;
   background:
@@ -218,6 +218,48 @@
   .un-seal { animation: un-throb 800ms ease-in-out infinite alternate; }
   .un-seal.is-urgent, .un-seal--catch { animation-duration: 380ms; }
 }
+
+/* the call: a buzzer on the counter, down-right of the tray */
+.un-buzzer {
+  --b: clamp(58px, calc(var(--cw) * 0.82), 84px);
+  position: absolute; z-index: 6; width: var(--b); height: var(--b);
+  left: calc(50% + var(--cw) * 1.62 - var(--b) / 2); top: calc(50% + var(--cw) * 1.3 - var(--b) / 2);
+  border: 0; padding: 0; background: none; border-radius: 50%; cursor: default; -webkit-tap-highlight-color: transparent;
+}
+.un-buzzer.is-live { cursor: pointer; }
+/* the brass bezel, screwed to the zinc */
+.un-buzzer__bezel {
+  position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 38% 28%, var(--brass-hi), var(--brass) 45%, var(--brass-lo));
+  box-shadow: inset 0 0 0 2px rgba(255, 240, 200, 0.4), inset 0 -3px 6px rgba(70, 45, 10, 0.5), 0 6px 14px -4px rgba(10, 12, 18, 0.65);
+}
+/* the dome: dull and sunk while asleep */
+.un-buzzer__dome {
+  width: 76%; height: 76%; border-radius: 50%; display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 800; font-size: calc(var(--b) * 0.17); letter-spacing: 0.04em;
+  color: rgba(246, 241, 231, 0.35);
+  background: radial-gradient(circle at 40% 30%, #6c5a55, #4a3c39 60%, #2e2523);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  transition: background 260ms ease, color 260ms ease, box-shadow 260ms ease, translate 160ms ease;
+}
+.un-buzzer.is-live .un-buzzer__dome {
+  color: var(--cream); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  background: radial-gradient(circle at 38% 26%, #ff9a80 0, #e0654c 22%, var(--brick) 58%, #7e2616);
+  box-shadow: inset 0 -4px 6px rgba(80, 15, 5, 0.55), inset 0 2px 2px rgba(255, 220, 200, 0.6), 0 5px 0 #6a1f12, 0 7px 10px rgba(0, 0, 0, 0.45);
+  translate: 0 -4px;
+}
+.un-buzzer.is-pressed .un-buzzer__dome { translate: 0 1px; box-shadow: inset 0 -2px 4px rgba(80, 15, 5, 0.55), 0 1px 0 #6a1f12; }
+.un-buzzer__halo { position: absolute; inset: -14%; border-radius: 50%; opacity: 0; background: radial-gradient(closest-side, rgba(255, 140, 110, 0.6), transparent); transition: opacity 260ms ease; pointer-events: none; }
+.un-buzzer.is-live .un-buzzer__halo { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .un-buzzer.is-live .un-buzzer__halo { animation: un-halo 900ms ease-in-out infinite alternate; }
+  .un-buzzer.is-urgent .un-buzzer__halo { animation-duration: 350ms; }
+  .un-buzzer.is-live:not(.is-pressed) { animation: un-buzz-in 420ms var(--ease-spring); }
+}
+@keyframes un-halo { from { scale: 0.9; opacity: 0.55; } to { scale: 1.15; opacity: 1; } }
+@keyframes un-buzz-in { 0% { scale: 0.85; } 60% { scale: 1.08; } }
+@media (hover: hover) and (pointer: fine) { .un-buzzer.is-live:hover .un-buzzer__dome { translate: 0 -5px; } }
+.un-buzzer:focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
 
 /* a new round: announced over a dimmed table, then dealt */
 .un-deal {
