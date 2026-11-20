@@ -22,7 +22,7 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
   const hasHands = p.hands.length > 0;
   return (
     <div
-      className={`bj-seat ${isMe ? 'is-me' : ''} ${compact ? 'is-compact' : ''} ${activeHand >= 0 ? 'is-active' : ''} ${p.out ? 'is-out' : ''} ${p.connected === false && !p.isBot ? 'is-away' : ''}`}
+      className={`bj-seat ${isMe ? 'is-me' : ''} ${compact ? 'is-compact' : ''} ${activeHand >= 0 ? 'is-active' : ''} ${p.out ? 'is-out' : ''} ${p.connected === false && !p.isBot ? 'is-away' : ''} ${onRemoveChip && !p.betPlaced ? 'is-betting' : ''}`}
       style={{ '--seat': p.seat, ...(pos && { '--x': `${pos.x}%`, '--y': `${pos.y}%`, '--ax': lean(pos.x) }) }}
     >
       <div className="bj-seat__box">

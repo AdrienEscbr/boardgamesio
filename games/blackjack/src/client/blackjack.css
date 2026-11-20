@@ -229,7 +229,7 @@
 .bj-spot {
   --chip: clamp(22px, calc(var(--cw-me) * 0.42), 40px);
   /* flex, not grid: a pile wider than the box still spreads evenly on both sides */
-  display: flex; justify-content: center; align-items: center; width: calc(var(--cw-me) * 1.1); aspect-ratio: 1; border-radius: 50%;
+  display: flex; justify-content: center; align-items: center; width: calc(var(--cw-me) * var(--spot, 1.1)); aspect-ratio: 1; border-radius: 50%; transition: width 260ms var(--ease-out);
   box-shadow: inset 0 0 0 1.5px rgba(226, 191, 110, 0.6), inset 0 0 0 5px rgba(10, 18, 40, 0.25);
 }
 .bj-seat.is-compact .bj-spot { --chip: clamp(14px, calc(var(--cw-o) * 0.4), 24px); width: calc(var(--cw-o) * 1.25); }
@@ -291,6 +291,9 @@
 .bj-spot .bj-stack__pile + .bj-stack__pile { margin-left: calc(var(--chip, 30px) * -0.2); }
 /* up to four piles still fit inside the box */
 .bj-spot .bj-stack { --chip: clamp(19px, calc(var(--cw-me) * 0.3), 32px); }
+/* while I compose my bet: chips half as big again (easier to tap), in a wider box */
+.bj-seat.is-betting { --spot: 1.6; }
+.bj-seat.is-betting .bj-spot .bj-stack { --chip: clamp(28px, calc(var(--cw-me) * 0.45), 48px); }
 .bj-stack__pile { position: relative; display: block; flex: none; width: var(--chip, 30px); height: calc(var(--chip, 30px) + (var(--n) - 1) * var(--chip, 30px) * 0.12); }
 .bj-stack__chip { position: absolute; left: 0; bottom: calc(var(--i) * var(--chip, 30px) * 0.12); display: block; }
 .bj-stack__amount { padding: 0 6px; border-radius: var(--radius-full); background: rgba(6, 10, 24, 0.75); color: var(--gold-hi); font-weight: 800; font-size: clamp(10px, calc(var(--chip, 30px) * 0.42), 13px); font-variant-numeric: tabular-nums; }
@@ -413,8 +416,8 @@
   .bj-plaque.bj-side .bj-plaque__face { transition: filter 150ms ease; }
   .bj-plaque.bj-side:hover:not(:disabled) .bj-plaque__face { filter: brightness(1.35); }
 }
-.bj-side--right { left: calc(50% + var(--cw-me) * 0.55 + 16px); }
-.bj-side--left { right: calc(50% + var(--cw-me) * 0.55 + 16px); }
+.bj-side--right { left: calc(50% + var(--cw-me) * var(--spot, 1.1) / 2 + 16px); }
+.bj-side--left { right: calc(50% + var(--cw-me) * var(--spot, 1.1) / 2 + 16px); }
 .bj-plaque--table { height: 50px; min-width: 104px; --cut: 8px; }
 .bj-plaque--table .bj-plaque__label { font-size: 13px; }
 .bj-plaque--table .bj-plaque__sub { font-size: 10px; }
@@ -423,8 +426,8 @@
 @media (max-width: 759px) {
   .bj-plaque--table { min-width: 0; height: 44px; }
   .bj-plaque--table .bj-plaque__face { padding: 0 8px; }
-  .bj-side--right { left: calc(50% + var(--cw-me) * 0.55 + 8px); }
-  .bj-side--left { right: calc(50% + var(--cw-me) * 0.55 + 8px); }
+  .bj-side--right { left: calc(50% + var(--cw-me) * var(--spot, 1.1) / 2 + 8px); }
+  .bj-side--left { right: calc(50% + var(--cw-me) * var(--spot, 1.1) / 2 + 8px); }
 }
 
 /* my four moves: lacquered plaques with cut corners and a gilded rim */
