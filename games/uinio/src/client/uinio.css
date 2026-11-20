@@ -221,9 +221,10 @@
 
 /* the call: a buzzer on the counter, down-right of the tray */
 .un-buzzer {
-  --b: clamp(58px, calc(var(--cw) * 0.82), 84px);
+  /* outside the ring of arrows (it turns: any spot on its circle gets crossed), down-right */
+  --b: clamp(52px, calc(var(--cw) * 0.72), 76px);
   position: absolute; z-index: 6; width: var(--b); height: var(--b);
-  left: calc(50% + var(--cw) * 1.62 - var(--b) / 2); top: calc(50% + var(--cw) * 1.3 - var(--b) / 2);
+  left: calc(50% + var(--cw) * 1.58 - var(--b) / 2); top: calc(50% + var(--cw) * 1.84 - var(--b) / 2);
   border: 0; padding: 0; background: none; border-radius: 50%; cursor: default; -webkit-tap-highlight-color: transparent;
 }
 .un-buzzer.is-live { cursor: pointer; }
