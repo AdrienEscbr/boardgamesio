@@ -94,6 +94,10 @@ const SOUNDS = {
   burn: (ac) => { noise(ac, { freq: 2600, type: 'bandpass', dur: 0.2, gain: 0.06, q: 0.6 }); tone(ac, { freq: 660, slideTo: 990, at: 0.04, dur: 0.16, gain: 0.03 }); },
   cactus: (ac) => { [392, 523, 784].forEach((f, i) => tone(ac, { freq: f, at: i * 0.1, dur: 0.5, gain: 0.07, type: 'triangle' })); tone(ac, { freq: 1568, at: 0.3, dur: 0.5, gain: 0.03 }); },
   dutch: (ac) => [784, 1175, 1568].forEach((f, i) => tone(ac, { freq: f, at: i * 0.09, dur: 0.6, gain: 0.07, type: 'triangle' })),
+  // Mind: a glass bead pressed into bakelite, a small key pin, the brass shield.
+  peg: (ac, at = 0) => { click(ac, { at, freq: 3000, gain: 0.16, dur: 0.025 }); tone(ac, { at, freq: 1760, slideTo: 1500, dur: 0.06, gain: 0.04 }); },
+  pin: (ac, at = 0) => click(ac, { at, freq: 5200, gain: 0.1, dur: 0.012 }),
+  shield: (ac) => { click(ac, { freq: 900, gain: 0.2, dur: 0.05 }); tone(ac, { freq: 220, slideTo: 160, dur: 0.12, gain: 0.08 }); tone(ac, { at: 0.03, freq: 1320, dur: 0.25, gain: 0.025, type: 'triangle' }); },
   // Blackjack: a clay chip set down on the felt.
   chip: (ac, at = 0) => { click(ac, { at, freq: 3600, gain: 0.14, dur: 0.02 }); click(ac, { at: at + 0.045, freq: 2900, gain: 0.08, dur: 0.018 }); tone(ac, { at, freq: 2100, slideTo: 1800, dur: 0.05, gain: 0.025 }); },
 };

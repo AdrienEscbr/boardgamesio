@@ -1,0 +1,88 @@
+/* =========================================================
+   MindIO game screen. Builds on mind.css (boards, beads, tray).
+   The whole table fits the screen: the boards take the room left.
+   ========================================================= */
+.mi-game {
+  height: 100dvh; min-height: 0;
+  display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  overflow: hidden;
+  padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
+}
+.mi-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2) 0; min-width: 0; }
+.mi-bar__title { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: var(--space-2); white-space: nowrap; overflow: hidden; }
+.mi-bar__name { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; }
+.mi-bar__chip { padding: 2px 9px; border-radius: var(--radius-full); background: var(--brass); color: #2a1a00; font-size: var(--text-xs); font-weight: 800; }
+.mi-bar__sub { color: var(--ink-2); font-size: var(--text-xs); font-weight: 600; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.mi-bar__side { display: flex; gap: 2px; }
+.mi-icon { color: var(--ink-2); }
+@media (hover: hover) and (pointer: fine) { .mi-icon:hover { background: rgba(255, 255, 255, 0.08); color: var(--ink); } }
+
+/* the two players, the score between them, the clock below */
+.mi-duel {
+  position: relative; justify-self: center; width: min(560px, calc(100% - var(--space-4)));
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-2);
+  margin: var(--space-2) 0 var(--space-1); padding: 5px 8px 7px;
+  border-radius: var(--radius-full); background: var(--glass); box-shadow: 0 0 0 1px rgba(220, 178, 90, 0.3);
+}
+.mi-player { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 700; font-size: var(--text-sm); }
+.mi-player.is-opp { flex-direction: row-reverse; text-align: right; }
+.mi-player__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mi-player .avatar { flex: none; transition: box-shadow 200ms ease; }
+.mi-player.is-active .avatar { box-shadow: 0 0 0 2px var(--brass), 0 0 14px rgba(255, 200, 110, 0.6); }
+.mi-player.is-away { opacity: 0.55; }
+.mi-player .mi-chip { flex: none; }
+.mi-duel__score { order: 0; grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+.mi-duel > .mi-player.is-opp { grid-column: 3; grid-row: 1; }
+.mi-duel > .mi-player.is-me { grid-column: 1; grid-row: 1; }
+.mi-duel__score b { min-width: 1.8em; padding: 1px 7px; border-radius: var(--radius-sm); text-align: center; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 45%, var(--brass-lo)); color: #2a1a00; }
+.mi-duel__score small { color: var(--ink-3); font-family: var(--font-ui); font-weight: 700; font-size: var(--text-xs); }
+.mi-pips { display: inline-flex; gap: 3px; }
+.mi-pips i { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(244, 234, 217, 0.45); transition: background-color 300ms ease, box-shadow 300ms ease; }
+.mi-pips i.is-won { background: var(--brass); box-shadow: 0 0 8px rgba(255, 200, 110, 0.8); }
+
+.mi-timer { position: absolute; left: 22px; right: 22px; bottom: 2px; height: 2px; border-radius: 1px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.mi-timer span { display: block; height: 100%; background: var(--brass); transform-origin: 0 50%; animation-name: mi-timer; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes mi-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.mi-timer--verdict { left: 18px; right: 18px; bottom: 4px; }
+
+/* the stage: boards as big as the room allows */
+.mi-game .mi-stage { container-type: size; min-height: 0; display: grid; place-items: center; padding: var(--space-1) var(--space-2) 0; }
+.mi-game .mi-stage.is-compose { padding-top: 0; }
+.mi-game .mi-boards { --h: min(calc((100cqw - 24px) / var(--units-w)), calc((100cqh - 70px) / var(--units-h)), 46px); align-items: flex-start; }
+.mi-game .mi-boards .mi-board { --hole: var(--h); }
+.mi-game .mi-boards .mi-board.is-compact { --hole: calc(var(--h) * 0.55); }
+.mi-game .mi-composer { --hole: min(calc((100cqw - 60px) / (var(--units-w) - 1.4)), 60px); }
+
+/* the dock */
+.mi-game .mi-dock { position: static; margin: 0; min-height: 84px; align-items: center; padding-top: var(--space-2); background: linear-gradient(to top, rgba(18, 10, 6, 0.9) 70%, transparent); }
+.mi-game .mi-dock:empty { display: flex; }
+.mi-verdict { position: relative; max-width: min(560px, 100%); }
+.mi-verdict.is-quiet { background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; color: var(--ink-2); }
+.mi-verdict.is-quiet strong { font-weight: 600; }
+.mi-verdict.is-over strong { color: var(--brass-hi); font-family: var(--font-display); font-size: var(--text-lg); }
+.mi-verdict__next { color: var(--ink-3); font-size: var(--text-sm); font-weight: 600; }
+
+/* host pause */
+.mi-paused { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; background: rgba(15, 9, 5, 0.55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.mi-paused__card { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-6) var(--space-8); border-radius: var(--radius-xl); background: rgba(30, 19, 12, 0.94); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 30px 60px -20px rgba(0, 0, 0, 0.7); text-align: center; color: var(--ink); }
+.mi-paused__card strong { font-family: var(--font-display); font-size: var(--text-2xl); }
+.mi-paused__text { color: var(--ink-2); margin-bottom: var(--space-3); }
+.mi-paused__card .mi-btn { display: inline-flex; align-items: center; gap: 8px; }
+
+/* results */
+.mi-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.mi-history li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--surface-2); }
+.mi-history__round { font-weight: 800; min-width: 5.5em; }
+.mi-history__text { flex: 1; min-width: 12em; color: var(--text-2); font-size: var(--text-sm); }
+.mi-history__code { display: inline-flex; gap: 3px; }
+.mi-history__code .mi-peg { width: 18px; height: 18px; }
+.mi-history__code .mi-peg__mark { display: none; }
+.results .mi-ranking { flex: none; }
+.mi-rounds { flex: 1; width: min(560px, 100%); padding: 0 calc(var(--safe-right) + var(--space-4)) var(--space-6) calc(var(--safe-left) + var(--space-4)); }
+.mi-results-title { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-md); }
+
+@media (min-width: 900px) {
+  .mi-bar { padding: var(--space-2) var(--space-4) 0; }
+  .mi-player { font-size: var(--text-md); }
+}

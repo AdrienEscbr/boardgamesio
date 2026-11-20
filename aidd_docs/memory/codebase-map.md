@@ -17,7 +17,7 @@ flowchart TD
       CORE["packages/core-server<br/>server, rooms, sessions, plugin, errors"]
       UI["packages/ui<br/>components, lib socket/store/i18n, styles"]
     end
-    subgraph Jeux["games/scrabble · tarot · naval · p4 · poker"]
+    subgraph Jeux["games/scrabble · tarot · naval · p4 · poker · … · mind"]
       ENG["src/engine<br/>regles pures + bot.js"]
       GS["src/server<br/>GamePlugin"]
       GC["src/client<br/>descripteur + ecrans"]
@@ -39,5 +39,5 @@ flowchart TD
 - `packages/ui/src` : `components/` (`ui.jsx`, `Toaster`, `NicknameSheet`, `SettingsSheet`…), `lib/` (`socket.js`, `store.js`, `i18n.js`, `prefs.js`, `feedback.js`), `styles/` (`tokens.css`, `base.css`).
 - `games/<jeu>/package.json` : exports `./engine`, `./server`, `./client`, `./client/*`.
 - `games/scrabble/assets/dictionaries` : dictionnaires FR/EN chargés côté serveur (`src/server/dictionary.js`).
-- Pages de revue design non liées : `/#/dev/cartes` (tarot), `/#/dev/naval`, `/#/dev/p4`.
+- Pages de revue design non liées : `/#/dev/cartes` (tarot), `/#/dev/naval`, `/#/dev/p4`, `/#/dev/mind`.
 - `.github/workflows/pages.yml` : tests + build + déploiement GitHub Pages.
