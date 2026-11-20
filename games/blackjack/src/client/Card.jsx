@@ -87,8 +87,12 @@ function Card({ card, faceUp = true, from, delay = 0, className = '' }) {
     if (!el || !source || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const a = source.getBoundingClientRect();
     const b = el.getBoundingClientRect();
-    const dx = a.left + a.width / 2 - (b.left + b.width / 2);
-    const dy = a.top + a.height / 2 - (b.top + b.height / 2);
+    let dx = a.left + a.width / 2 - (b.left + b.width / 2);
+    let dy = a.top + a.height / 2 - (b.top + b.height / 2);
+    // A card laid sideways (a double) is rotated by the CSS `rotate` property, which applies
+    // before `transform`: express the flight in the card's own turned frame.
+    const turn = (parseFloat(getComputedStyle(el).rotate) || 0) * (Math.PI / 180);
+    if (turn) [dx, dy] = [dx * Math.cos(turn) + dy * Math.sin(turn), -dx * Math.sin(turn) + dy * Math.cos(turn)];
     el.animate(
       // Slid off the top of the pile, a slight arc and a spin, then laid on the felt.
       [
