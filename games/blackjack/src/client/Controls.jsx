@@ -69,10 +69,47 @@ const ACTIONS = [
   { type: 'split', label: 'Séparer', key: 's' },
 ];
 
+/** Engraved gold glyphs, one per move (24 × 24, stroked). */
+const GLYPHS = {
+  // one more card
+  hit: (
+    <>
+      <rect x="4.5" y="3" width="11" height="15" rx="1.8" />
+      <path d="M17 13.5v7M13.5 17h7" />
+    </>
+  ),
+  // the hand held flat over the cards: I stay
+  stand: (
+    <>
+      <path d="M8 12.5V6.2a1.4 1.4 0 0 1 2.8 0V11" />
+      <path d="M10.8 11V4.6a1.4 1.4 0 0 1 2.8 0V11" />
+      <path d="M13.6 11V5.6a1.4 1.4 0 0 1 2.8 0V12" />
+      <path d="M16.4 12V8.6a1.4 1.4 0 0 1 2.8 0v5.2c0 4-2.8 7.2-6.8 7.2h-.8c-2.6 0-4.4-1.4-5.6-3.6L4.2 13.5a1.4 1.4 0 0 1 2.4-1.4L8 14" />
+    </>
+  ),
+  // two chips: twice the bet
+  double: (
+    <>
+      <ellipse cx="10" cy="15.5" rx="6" ry="2.6" />
+      <path d="M4 15.5v2c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-2" />
+      <ellipse cx="14" cy="8" rx="6" ry="2.6" />
+      <path d="M8 8v2c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6V8" />
+    </>
+  ),
+  // a pair pulled apart
+  split: (
+    <>
+      <rect x="2.6" y="5" width="8.4" height="12.5" rx="1.5" transform="rotate(-12 6.8 11.25)" />
+      <rect x="13" y="5" width="8.4" height="12.5" rx="1.5" transform="rotate(12 17.2 11.25)" />
+      <path d="M10.5 20.5h3M9 19l-1.5 1.5L9 22M15 19l1.5 1.5L15 22" />
+    </>
+  ),
+};
+
 /**
- * My four moves on the hand in turn. Each says what it will do before it is chosen: the risk
- * of busting, the total kept, what doubling or splitting costs; the basic strategy's move is
- * marked when advice is on.
+ * My four moves on the hand in turn: lacquered plaques with cut corners and a gilded rim.
+ * Each says what it will do before it is chosen: the risk of busting, the total kept, what
+ * doubling or splitting costs; the basic strategy's move shimmers when advice is on.
  */
 export function ActionBar({ hand, upCard, legal, stack, advice, busy, onAct }) {
   const best = advice ? basicStrategy(hand.cards, upCard, legal) : null;
@@ -92,11 +129,18 @@ export function ActionBar({ hand, upCard, legal, stack, advice, busy, onAct }) {
           className={`bj-action bj-action--${type} ${best === type ? 'is-advised' : ''}`}
           disabled={busy || !legal[type]}
           onClick={() => onAct(type)}
-          whileTap={{ scale: 0.94 }}
+          whileTap={{ scale: 0.95 }}
           aria-keyshortcuts={key.toUpperCase()}
         >
-          <span className="bj-action__label">{label}<kbd>{key.toUpperCase()}</kbd></span>
-          <span className="bj-action__note">{best === type ? <i className="bj-action__tip">conseil · </i> : null}{notes[type]}</span>
+          <span className="bj-action__face">
+            <svg className="bj-action__glyph" viewBox="0 0 24 24" aria-hidden>{GLYPHS[type]}</svg>
+            <span className="bj-action__text">
+              <span className="bj-action__label">{label}</span>
+              <span className="bj-action__note">{notes[type]}</span>
+            </span>
+            <kbd>{key.toUpperCase()}</kbd>
+            {best === type && <span className="bj-action__tip">conseil</span>}
+          </span>
         </motion.button>
       ))}
     </div>

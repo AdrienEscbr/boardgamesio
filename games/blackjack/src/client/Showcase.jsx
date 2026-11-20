@@ -47,7 +47,8 @@ export default function Showcase() {
   useEffect(() => {
     clearTimeout(timer.current);
     if (!pending || paused) return undefined;
-    const isBot = pending.playerId && (pending.playerId !== ME || AUTO);
+    // ?auto&hold: the robot bets for me, then leaves my hand to me.
+    const isBot = pending.playerId && (pending.playerId !== ME || (AUTO && !location.hash.includes('hold')));
     const ms = AUTO && game.phase === 'bet' && !game.players[0].betPlaced ? BOT_MS : pending.autoMs ?? (isBot ? BOT_MS : game.turnMs);
     const now = Date.now();
     setTurn({ key, playerId: pending.playerId ?? null, durationMs: ms, endsAt: now + ms, startedAt: now });
