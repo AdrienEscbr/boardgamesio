@@ -148,7 +148,9 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   // An empty box, or "Passer", is what sits a round out.
   const confirmRef = useRef(confirmBet);
   confirmRef.current = confirmBet;
-  const betClock = myBetTurn && !hostPaused && turn?.endsAt ? turn.endsAt : null;
+  // Only the clock of this round's bets counts: right after a round, the page may still hold
+  // the pause that just ran out, which must not place the new bet at once.
+  const betClock = myBetTurn && !hostPaused && turn?.endsAt && turn.key === `r${v.roundNumber}-bet` ? turn.endsAt : null;
   useEffect(() => {
     if (!betClock) return undefined;
     const t = setTimeout(() => confirmRef.current(), Math.max(0, betClock - serverNow() - 700));
