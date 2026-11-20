@@ -28,7 +28,7 @@ const MAX_PER_COLUMN = 6;
  * amount (the tallest piles are capped). New chips drop in on top; `ghost` draws a bet still
  * being composed.
  */
-export function ChipStack({ amount, ghost = false, label = true, vertical = false, layoutId, className = '' }) {
+export function ChipStack({ amount, ghost = false, label = true, vertical = false, layoutId, onPick, className = '' }) {
   const chips = chipsOf(amount);
   const columns = CHIP_VALUES.map((v) => ({ v, n: Math.min(MAX_PER_COLUMN, chips.filter((c) => c === v).length) })).filter((c) => c.n);
   return (
@@ -41,7 +41,18 @@ export function ChipStack({ amount, ghost = false, label = true, vertical = fals
     >
       <span className="bj-stack__piles">
         {columns.map(({ v, n }) => (
-          <motion.span key={v} className="bj-stack__pile" style={{ '--n': n }} layout={layoutId ? 'position' : undefined} transition={{ type: 'spring', stiffness: 260, damping: 30 }}>
+          <motion.span
+            key={v}
+            className={`bj-stack__pile ${onPick ? 'is-pickable' : ''}`}
+            style={{ '--n': n }}
+            layout={layoutId ? 'position' : undefined}
+            transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+            // A bet being composed: tap a pile to take one of its chips back.
+            onClick={onPick ? (e) => { e.stopPropagation(); onPick(v); } : undefined}
+            role={onPick ? 'button' : undefined}
+            aria-label={onPick ? `Retirer un jeton de ${v}` : undefined}
+            title={onPick ? `Retirer un jeton de ${v}` : undefined}
+          >
             <AnimatePresence initial={false}>
               {Array.from({ length: n }, (_, i) => (
                 <motion.span

@@ -11,7 +11,7 @@ export const SWEEP = { opacity: 0, y: -90, scale: 0.7, rotate: -6, transition: {
  * A player's place at the table: name and stack on a brass plate, the betting box in front,
  * the hands in it. `draft` is my bet being composed (shown as ghost chips).
  */
-export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, state, pos, revealMs = 0, onClearBet, onPass, busy = false }) {
+export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, state, pos, revealMs = 0, onClearBet, onRemoveChip, onPass, busy = false }) {
   const settled = v.phase === 'settle' || v.phase === 'over';
   const activeHand = v.phase === 'play' && v.turn?.playerId === p.id ? v.turn.hand : -1;
   const betting = v.phase === 'bet';
@@ -42,18 +42,13 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
           ) : (
             <motion.div
               key="spot"
-              className={`bj-spot ${betting && !p.betPlaced && !p.out ? 'is-waiting' : ''} ${onClearBet && draft > 0 ? 'is-editable' : ''}`}
+              className={`bj-spot ${betting && !p.betPlaced && !p.out ? 'is-waiting' : ''}`}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1, transition: { delay: 0.3 } }}
               exit={{ opacity: 0, transition: { duration: 0 } }}
-              onClick={onClearBet && draft > 0 && !busy ? onClearBet : undefined}
-              role={onClearBet && draft > 0 ? 'button' : undefined}
-              aria-label={onClearBet && draft > 0 ? 'Effacer la mise' : undefined}
-              title={onClearBet && draft > 0 ? 'Effacer la mise (Retour arrière)' : undefined}
             >
-              {betting && isMe && !p.betPlaced && draft > 0 && <ChipStack amount={draft} ghost />}
+              {betting && isMe && !p.betPlaced && draft > 0 && <ChipStack amount={draft} ghost onPick={busy ? undefined : onRemoveChip} />}
               {betting && isMe && !p.betPlaced && draft === 0 && onClearBet && <span className="bj-spot__hint">vos jetons ici</span>}
-              {onClearBet && draft > 0 && <span className="bj-spot__clear" aria-hidden>×</span>}
               {betting && p.betPlaced && p.bet > 0 && <ChipStack amount={p.bet} layoutId={`bet-${p.id}`} />}
               {betting && p.betPlaced && p.bet == null && <span className="bj-spot__secret" aria-label="Mise posée">?</span>}
               {betting && p.betPlaced && p.bet === 0 && !p.out && <span className="bj-spot__pass">passe</span>}
@@ -61,9 +56,14 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
             </motion.div>
           )}
         </AnimatePresence>
+        {onClearBet && !hasHands && draft > 0 && (
+          <button type="button" className="bj-plaque bj-plaque--table bj-plaque--muted bj-side bj-side--left" onClick={onClearBet} disabled={busy} title="Retour arrière">
+            <span className="bj-plaque__face"><span className="bj-plaque__label">Effacer</span><span className="bj-plaque__sub">toute la mise</span></span>
+          </button>
+        )}
         {onPass && !hasHands && (
-          <button type="button" className="bj-sitout" onClick={onPass} disabled={busy}>
-            <span>Passer</span><small>la manche</small>
+          <button type="button" className="bj-plaque bj-plaque--table bj-side bj-side--right" onClick={onPass} disabled={busy}>
+            <span className="bj-plaque__face"><span className="bj-plaque__label">Passer</span><span className="bj-plaque__sub">la manche</span></span>
           </button>
         )}
       </div>

@@ -67,6 +67,7 @@ export default function Showcase() {
 
   const local = {
     me: ME,
+    initialDraft: Number(typeof location !== 'undefined' && location.hash.match(/draft=(\d+)/)?.[1]) || null,
     async act(action) {
       try {
         plugin.act(game, ME, action, { rng: Math.random });

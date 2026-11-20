@@ -102,7 +102,8 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     if (v.phase !== 'bet' || !meP) return;
     const max = meP.stack - (meP.stack % v.betStep);
     const again = lastBet.current;
-    setDraft(again && again <= max && again >= v.minBet ? again : Math.min(v.minBet, max));
+    const seed = v.roundNumber === 1 ? local?.initialDraft : null; // design review page
+    setDraft(seed || (again && again <= max && again >= v.minBet ? again : Math.min(v.minBet, max)));
   }, [v.roundNumber]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = async (action) => {
@@ -122,6 +123,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const addChip = (value) => { setDraft((d) => d + value); sound('chip'); haptic('light'); };
   const setBet = (amount) => { setDraft(amount); sound('chip'); haptic('light'); };
   const confirmBet = () => { if (myBetTurn && draft >= v.minBet) { sound('chip'); haptic('medium'); send({ type: 'bet', amount: draft }); } };
+  const removeChip = (value) => { setDraft((d) => Math.max(0, d - value)); sound('back'); haptic('light'); };
   const clearBet = () => { if (draft) { setDraft(0); sound('back'); haptic('light'); } };
   const pass = () => { if (myBetTurn) { sound('back'); send({ type: 'pass' }); } };
   const play = (type) => {
@@ -304,7 +306,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           )}
           {meP && (
             <div className="bj-mine">
-              <Seat p={meP} v={v} isMe draft={myBetTurn ? draft : 0} onClearBet={myBetTurn ? clearBet : undefined} onPass={myBetTurn ? pass : undefined} busy={busy} delayOf={delayOf} state={seatState(meP)} pos={arc[meP.id]} revealMs={revealMs} />
+              <Seat p={meP} v={v} isMe draft={myBetTurn ? draft : 0} onClearBet={myBetTurn ? clearBet : undefined} onRemoveChip={myBetTurn ? removeChip : undefined} onPass={myBetTurn ? pass : undefined} busy={busy} delayOf={delayOf} state={seatState(meP)} pos={arc[meP.id]} revealMs={revealMs} />
             </div>
           )}
         </Felt>
