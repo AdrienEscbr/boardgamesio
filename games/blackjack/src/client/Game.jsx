@@ -261,6 +261,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     status = `${nameOf(who)} ${who === me ? 'jouez' : 'joue'}${byId[who]?.hands.length > 1 ? ` (main ${v.turn.hand + 1})` : ''}…`;
   } else if (v.phase === 'dealer') status = d.revealed ? 'La banque tire jusqu’à 17…' : 'La banque retourne sa carte…';
   else status = roundVerdict(meP);
+  const mine = roundResult(meP);
 
   const clock = turn?.endsAt && turn.durationMs >= 2000 ? turn : null;
   const arc = arcPositions(players, me);
@@ -345,9 +346,25 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
               role="status"
               aria-live="polite"
             >
-              <strong>{status}</strong>
-              {settled && playing && <span className="bj-verdict__next">{lastRound ? 'Fin de partie…' : 'Manche suivante…'}</span>}
-              {settled && playing && turn?.endsAt && <TurnTimer key={`next-${turn.key}`} turn={turn} className="bj-timer bj-timer--verdict" />}
+              {settled && !readOnly ? (
+                <>
+                  {/* My result as an engraved plaque; under it, the wait for the next round drains. */}
+                  <span className={`bj-medal bj-medal--${mine.kind}`}>
+                    <span className="bj-medal__face">
+                      <span className="bj-medal__word">{mine.word}</span>
+                      <span className="bj-medal__main">{mine.main}</span>
+                    </span>
+                  </span>
+                  {playing && (
+                    <span className="bj-verdict__next">
+                      <span>{lastRound ? 'Fin de partie' : 'Manche suivante'}</span>
+                      {turn?.endsAt && <TurnTimer key={`next-${turn.key}`} turn={turn} className="bj-timer bj-timer--verdict" />}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="bj-quiet">{status}</span>
+              )}
             </div>
           )}
       </footer>
@@ -430,6 +447,17 @@ export function arcPositions(players, me) {
   angles(left.length).forEach((a, i) => left[i] && at(left[i], -a));
   angles(right.length).forEach((a, i) => right[i] && at(right[i], a));
   return pos;
+}
+
+/** My result for the round just paid, for the dock's plaque: { kind, word, main }. */
+export function roundResult(meP) {
+  if (!meP || meP.out) return { kind: 'none', word: 'Manche', main: 'terminée' };
+  if (!meP.hands.length) return { kind: 'none', word: 'Vous passiez', main: 'cette manche' };
+  const net = signed(meP.net);
+  if (meP.hands.some((h) => h.outcome === 'blackjack')) return { kind: 'blackjack', word: 'Blackjack', main: net };
+  if (meP.net > 0) return { kind: 'win', word: 'Gagné', main: net };
+  if (meP.net < 0) return meP.hands.every((h) => h.outcome === 'bust') ? { kind: 'bust', word: 'Sauté', main: net } : { kind: 'lose', word: 'Perdu', main: net };
+  return { kind: 'push', word: meP.hands.some((h) => h.outcome === 'win') ? 'Une main gagnée, une perdue' : 'Égalité', main: 'mise rendue' };
 }
 
 /** My result for the round just paid. */
