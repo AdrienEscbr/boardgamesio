@@ -16,6 +16,7 @@ import { COLOR_HEX, COLOR_LABELS, COLOR_NAMES, KIND_NAMES, plural } from './i18n
 import './uinio.css';
 
 const ORDER = [...COLORS, 'w'];
+const NONE = [];
 const KINDS = '0123456789SRDWF';
 /** My hand, sorted: by colour, then by value; wilds last. */
 const sortHand = (hand) => [...hand].sort((a, b) => ORDER.indexOf(colorOf(a)) - ORDER.indexOf(colorOf(b)) || KINDS.indexOf(kindOf(a)) - KINDS.indexOf(kindOf(b)) || a.localeCompare(b));
@@ -91,7 +92,7 @@ function Flight({ flight, onDone }) {
 function Discard({ cards, from, animate, asked, wilds, stack, onClick, canDrop }) {
   return (
     <button type="button" id="un-discard" className={`un-discard ${canDrop ? 'is-target' : ''}`} onClick={onClick} disabled={!onClick} aria-label="Défausse" style={{ '--asked': COLOR_HEX[asked] ?? CREAM }}>
-      <span className="un-discard__halo" aria-hidden />
+      {cards.length > 0 && <span className="un-discard__halo" aria-hidden />}
       {cards.map((c, i) => (
         <Laid key={c} card={c} asked={wilds[c]} top={i === cards.length - 1} from={i === cards.length - 1 && animate ? from : null} />
       ))}
@@ -178,7 +179,7 @@ function HandCard({ card, ok, dim, isDrawn, selected, fresh, style, onPick }) {
 }
 
 /** Another player, round the table: a coaster, a fan of backs, the score, what they just did. */
-function Seat({ p, isTurn, isNext, exposed, onCatch, turn, playing }) {
+function Seat({ p, isTurn, isNext, exposed, onCatch, turn, playing, dealing }) {
   const shown = Math.min(p.count, 9);
   return (
     <div id={`un-seat-${p.id}`} className={`un-seat ${isTurn ? 'is-turn' : ''} ${p.connected === false ? 'is-away' : ''}`}>
@@ -189,7 +190,7 @@ function Seat({ p, isTurn, isNext, exposed, onCatch, turn, playing }) {
           <span className="un-seat__pts">{p.total} pts</span>
         </span>
       </div>
-      <div className="un-seat__fan" aria-label={plural(p.count, 'carte')}>
+      <div className="un-seat__fan" aria-label={plural(p.count, 'carte')} style={dealing ? { visibility: 'hidden' } : undefined}>
         <span className="un-seat__backs" style={{ '--n': shown }}>
           {Array.from({ length: shown }, (_, i) => <span key={i} style={{ '--i': i }} className="un-mini"><Card card={null} /></span>)}
         </span>
@@ -445,7 +446,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const [hurt, setHurt] = useState(null);
   const ring = useRef(null);
   const [flights, setFlights] = useState([]);
-  const [banner, setBanner] = useState(null);
   const [shake, setShake] = useState(0);
   useToastPlacement('top');
 
@@ -457,10 +457,13 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const meP = byId[me];
   const nameOf = (id) => (id === me ? 'Vous' : byId[id]?.nickname ?? '—');
   const hostPaused = !!turn?.pausedByHost;
-  const playing = !readOnly && room.status === 'playing' && v.phase === 'play';
+  // A new round: announced over a dimmed table, then dealt (the server waits meanwhile).
+  const dealing = v.phase === 'play' && !!v.dealing;
+  const playing = !readOnly && room.status === 'playing' && v.phase === 'play' && !dealing;
   const myTurn = playing && !hostPaused && v.turn === me;
   const playable = useMemo(() => new Set(myTurn ? v.playable : []), [myTurn, v.playable]);
-  const hand = useMemo(() => sortHand(v.hand), [v.hand]);
+  const shownHand = dealing ? NONE : v.hand;
+  const hand = useMemo(() => sortHand(shownHand), [shownHand]);
   const mySeat = v.mySeat;
   const order = mySeat >= 0
     ? Array.from({ length: players.length - 1 }, (_, k) => players[(mySeat + 1 + k) % players.length])
@@ -570,11 +573,11 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     const before = prevHand.current;
     if (before) {
       let k = 0;
-      for (const c of v.hand) if (!before.includes(c)) out.set(c, { delay: k++ * 110 });
+      for (const c of shownHand) if (!before.includes(c)) out.set(c, { delay: k++ * 110 });
     }
     return out;
-  }, [v.hand]);
-  useEffect(() => { prevHand.current = v.hand; }, [v.hand]);
+  }, [shownHand]);
+  useEffect(() => { prevHand.current = shownHand; }, [shownHand]);
 
   // ---- reacting to the table: sounds, bubbles, flights -----------------------------------
   const lastEvent = useRef(v.log.at(-1)?.id ?? 0);
@@ -603,9 +606,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     for (const e of fresh) {
       const mine = e.playerId === me;
       if (e.type === 'deal') {
-        if (!readOnly) setBanner({ round: e.round, key: e.id });
         sound('shuffle');
-        for (const p of players) if (p.id !== me) fly(`un-seat-${p.id}`, 4);
       } else if (e.type === 'play') {
         if (!mine) later(380, () => sound('clink'));
         const kind = kindOf(e.card);
@@ -689,11 +690,22 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     const t = Object.keys(bubbles).length ? setTimeout(() => setBubbles({}), 1700) : null;
     return () => clearTimeout(t);
   }, [bubbles]);
+  // The announcement over: the cards leave the pile for every seat (mine fly into my hand).
+  const wasDealing = useRef(dealing);
   useEffect(() => {
-    if (!banner) return undefined;
-    const t = setTimeout(() => setBanner(null), 1600);
-    return () => clearTimeout(t);
-  }, [banner]);
+    if (wasDealing.current && !dealing) {
+      const from = rectOf('un-pile');
+      const add = [];
+      players.forEach((p, k) => {
+        const to = p.id !== me && rectOf(`un-seat-${p.id}`);
+        if (!from || !to) return;
+        for (let i = 0; i < 4; i++) add.push({ id: `${Date.now()}-${p.id}-${i}`, from, to, delay: i * 180 + k * 45, spin: 12 - i * 6 });
+      });
+      setFlights((f) => [...f, ...add]);
+      for (let i = 0; i < 7; i++) setTimeout(() => sound('flip'), i * 110);
+    }
+    wasDealing.current = dealing;
+  }, [dealing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // My turn after a wait: a call.
   const wasMine = useRef(false);
@@ -715,6 +727,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   // ---- what to say ---------------------------------------------------------------------
   let status;
   if (readOnly) status = 'Partie terminée.';
+  else if (dealing) status = 'Distribution des cartes…';
   else if (hostPaused) status = 'Partie en pause.';
   else if (v.phase === 'reveal') status = 'Fin de manche.';
   else if (myTurn) {
@@ -748,9 +761,10 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         {order.map((p) => (
           <Seat
             key={p.id}
-            p={p}
-            isTurn={v.phase === 'play' && v.turn === p.id}
-            isNext={v.phase === 'play' && players[nextSeat]?.id === p.id}
+            p={dealing ? { ...p, count: 0, called: false } : p}
+            dealing={dealing}
+            isTurn={playing && v.turn === p.id}
+            isNext={playing && players[nextSeat]?.id === p.id}
             exposed={v.exposed === p.id}
             onCatch={catchable === p.id ? () => catchIt(p.id) : null}
             turn={clock}
@@ -760,12 +774,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       </div>
 
       <main className="un-stage">
-        {banner && (
-          <div key={banner.key} className="un-banner" aria-hidden>
-            <strong>Manche {banner.round}</strong>
-            <small>{plural(7, 'carte')} chacun</small>
-          </div>
-        )}
         <div className={`un-tray ${choosing ? 'is-choosing' : ''}`} style={{ '--asked': COLOR_HEX[v.color] ?? CREAM }}>
           <Ring direction={v.direction} spinRef={ring} />
           <button type="button" id="un-pile" className={`un-pile ${pileHint ? 'is-hint' : ''}`} onClick={draw} disabled={!myTurn || v.step !== 'play'} aria-label={`Pioche, ${plural(v.pileCount, 'carte')}${myTurn ? ' : piocher' : ''}`}>
@@ -773,7 +781,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
             <span className="un-pile__count">{v.pileCount}</span>
           </button>
           <Discard
-            cards={discard.current.cards}
+            cards={dealing ? NONE : discard.current.cards}
             from={topFrom.current}
             animate={mounted.current}
             asked={v.color}
@@ -842,6 +850,23 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         </div>
       </footer>
 
+      <AnimatePresence>
+        {dealing && !readOnly && (
+          <motion.div key={`deal-${v.round}`} className="un-deal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.4 } }} aria-live="polite">
+            <motion.div
+              className="un-deal__title"
+              initial={{ opacity: 0, y: 18, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 1.04, transition: { duration: 0.3 } }}
+              transition={{ type: 'spring', bounce: 0.35, duration: 0.6, delay: 0.15 }}
+            >
+              <span className="un-deal__rule" aria-hidden />
+              <strong>Manche {v.round}</strong>
+              <small>{nameOf(players[v.dealer]?.id)} {players[v.dealer]?.id === me ? 'distribuez' : 'distribue'} · {plural(7, 'carte')} chacun</small>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {flights.map((f) => <Flight key={f.id} flight={f} onDone={(id) => setFlights((all) => all.filter((x) => x.id !== id))} />)}
       <AnimatePresence>
         {order.map((p) => bubbles[p.id] && <SeatBubble key={bubbles[p.id].key} id={p.id} bubble={bubbles[p.id]} low={v.exposed === p.id} />)}

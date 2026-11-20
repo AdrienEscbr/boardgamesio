@@ -48,7 +48,8 @@ export default function Showcase() {
     if (!pending || paused) return undefined;
     const isBot = pending.playerId && (pending.playerId !== ME || AUTO);
     // At the end of a round the robots are ready: the next one waits for me (or `auto`).
-    const ms = pending.autoMs != null ? (AUTO ? 2500 : pending.autoMs) : isBot ? BOT_MS : TURN_MS;
+    // The end of a round waits for me (or 2.5 s with `auto`); the deal pause runs as on the server.
+    const ms = pending.autoMs != null ? (AUTO && pending.key.endsWith('reveal') ? 2500 : pending.autoMs) : isBot ? BOT_MS : TURN_MS;
     const now = Date.now();
     setTurn({ key, playerId: pending.playerId ?? null, durationMs: ms, endsAt: now + ms, startedAt: now });
     timer.current = setTimeout(() => {

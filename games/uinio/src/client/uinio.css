@@ -186,14 +186,20 @@
 @media (prefers-reduced-motion: no-preference) { .un-stack { animation: un-pop 420ms var(--ease-spring); } }
 @keyframes un-pop { from { scale: 0.2; opacity: 0; } }
 
-/* a new round */
-.un-banner {
-  position: absolute; inset: 0; z-index: 6; display: grid; place-content: center; text-align: center; pointer-events: none;
-  animation: un-banner 1.6s ease forwards;
+/* a new round: announced over a dimmed table, then dealt */
+.un-deal {
+  position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; pointer-events: none;
+  background: radial-gradient(70% 55% at 50% 45%, rgba(12, 14, 18, 0.35), rgba(12, 14, 18, 0.62));
 }
-.un-banner strong { font-family: var(--font-display); font-size: clamp(30px, 9vw, 54px); letter-spacing: 0.02em; color: var(--cream); text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25), 0 8px 30px rgba(0, 0, 0, 0.5); }
-.un-banner small { color: var(--ink-2); font-weight: 700; }
-@keyframes un-banner { 0% { opacity: 0; scale: 0.85; } 15% { opacity: 1; scale: 1; } 80% { opacity: 1; } 100% { opacity: 0; scale: 1.05; } }
+.un-deal__title { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.un-deal__title strong { font-family: var(--font-display); font-size: clamp(34px, 10vw, 60px); line-height: 1; letter-spacing: 0.02em; color: var(--cream); text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25), 0 10px 30px rgba(0, 0, 0, 0.55); }
+.un-deal__title small { color: var(--ink-2); font-weight: 700; font-size: var(--text-sm); }
+/* a thin brass rule that draws itself above the title */
+.un-deal__rule { width: 64px; height: 2px; border-radius: 1px; background: linear-gradient(90deg, transparent, var(--brass), transparent); }
+@media (prefers-reduced-motion: no-preference) {
+  .un-deal__rule { animation: un-rule 700ms 250ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+}
+@keyframes un-rule { from { scale: 0 1; opacity: 0; } }
 
 /* ---- my hand ---- */
 .un-me { position: relative; padding: 0 var(--space-2); z-index: 4; }

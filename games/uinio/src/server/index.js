@@ -7,6 +7,8 @@ export const TURN_SECONDS_OPTIONS = [10, 15, 20, 30];
 // The next round starts when everyone is ready (as DutchIO); this only unblocks a table if
 // someone left.
 const REVEAL_MS = 180_000;
+// A new round is announced, then dealt, before the first player's clock starts.
+const DEAL_MS = 2_200;
 
 function sanitizeSettings(base, patch = {}, { memberCount = 1 } = {}) {
   const next = { ...base };
@@ -31,7 +33,7 @@ function sanitizeSettings(base, patch = {}, { memberCount = 1 } = {}) {
 }
 
 /** Pauses are configurable so tests can run at full speed. */
-export function createUinioPlugin({ revealMs = REVEAL_MS } = {}) {
+export function createUinioPlugin({ revealMs = REVEAL_MS, dealMs = DEAL_MS } = {}) {
   return {
     id: 'uinio',
     name: 'UINIO',
@@ -42,16 +44,27 @@ export function createUinioPlugin({ revealMs = REVEAL_MS } = {}) {
 
     createGame: ({ playerIds, botIds, settings, rng }) => createGame({ playerIds, botIds, settings, rng }),
 
-    act: (game, playerId, action, { rng }) => act(game, playerId, action, { rng }),
+    act(game, playerId, action, { rng }) {
+      if (game.dealing) throw new GameError('DEALING');
+      return act(game, playerId, action, { rng });
+    },
 
     pending(game) {
       if (game.status !== 'playing') return null;
       if (game.phase === 'reveal') return { key: `r${game.round}-reveal`, autoMs: revealMs };
+      if (game.dealing) return { key: `r${game.round}-deal`, autoMs: dealMs };
       // `seq` changes with every move, a call or a catch included: a robot is asked again.
       return { key: `s${game.seq}`, playerId: game.turn };
     },
 
-    advance: (game, { rng }) => advance(game, { rng }),
+    advance(game, { rng }) {
+      if (game.dealing) {
+        game.dealing = false;
+        game.seq += 1;
+        return;
+      }
+      advance(game, { rng });
+    },
 
     // Time out or away: a "normal" robot plays for the player.
     timeoutAction,

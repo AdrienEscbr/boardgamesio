@@ -360,6 +360,13 @@ test('the view hides hands, the pile and draws', () => {
 test('timeouts play for the player; the plugin follows the platform contract', () => {
   const plugin = createUinioPlugin({ revealMs: 0 });
   const game = plugin.createGame({ playerIds: IDS, botIds: [], settings: plugin.defaultSettings, rng: () => 0.3 });
+  // Each round opens with a pause while it is announced and dealt: nobody may play yet.
+  const deal = plugin.pending(game);
+  assert.equal(deal.key, 'r1-deal');
+  assert.ok(deal.autoMs > 0);
+  assert.throws(() => plugin.act(game, game.turn, timeoutAction(game, game.turn), { rng: Math.random }), { code: 'DEALING' });
+  plugin.advance(game, { rng: Math.random });
+  assert.equal(viewFor(game, 'A').dealing, false);
   const first = plugin.pending(game);
   assert.equal(first.playerId, game.turn);
   const a = timeoutAction(game, game.turn);

@@ -139,7 +139,8 @@ function startRound(game, rng) {
   game.discard = deck.splice(first, 1);
   game.pile = deck;
   game.color = colorOf(top(game));
-  Object.assign(game, { stack: null, drawn: null, exposed: null, dry: 0, roundResult: null });
+  // `dealing`: the platform shows the new round before anyone plays (see the plugin).
+  Object.assign(game, { stack: null, drawn: null, exposed: null, dry: 0, roundResult: null, dealing: true });
   log(game, { type: 'deal', dealer: game.players[game.dealer].id, card: top(game) });
   startTurn(game, seatAfter(game, game.dealer));
 }
@@ -406,6 +407,7 @@ export function viewFor(game, viewerId) {
     doubles: game.doubles,
     chain: game.chain,
     dealer: game.dealer,
+    dealing: !!game.dealing,
     direction: game.direction,
     turn: game.turn,
     turnSeat: game.turnSeat,

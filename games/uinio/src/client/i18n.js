@@ -14,6 +14,7 @@ export const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
 registerErrors({
   PLAYER_COUNT: (d) => `Il faut entre ${d?.min ?? 2} et ${d?.max ?? 8} joueurs.`,
   WRONG_PHASE: 'Ce n’est pas le moment.',
+  DEALING: 'Les cartes sont en cours de distribution.',
   WRONG_STEP: 'Ce n’est pas le moment.',
   NOT_IN_HAND: 'Cette carte n’est pas dans votre main.',
   CANNOT_PLAY: 'Cette carte ne peut pas être posée maintenant.',
