@@ -173,17 +173,36 @@ test('cube missed three times: the opponent places it and takes what it recovers
   assert.equal(g.currentId, 'B');
 });
 
-test('red die: thrown once the whites are gone, its face is the number of cubes the thrower places', () => {
+test('red die: thrown once the whites are gone, the thrower places its face in cubes on its row', () => {
   const g = opened();
   const a = g.players[0];
   a.hand = a.hand.filter((id) => g.dice[id].color === 'red');
   throwItem(g, 'A', { row: 1, col: 1 }, 1, seq(...STRAIGHT, face(3)));
-  assert.deepEqual([g.step.kind, g.step.remaining, g.step.reason], ['place', 3, 'red']);
-  placeCube(g, 'A', { row: 0, col: 4 });
-  placeCube(g, 'A', { row: 3, col: 6 });
-  assert.throws(() => placeCube(g, 'A', { row: 3, col: 6 }), { code: 'HOLE_TAKEN' });
-  placeCube(g, 'A', { row: 4, col: 6 });
+  assert.deepEqual([g.step.kind, g.step.remaining, g.step.reason, g.step.row], ['place', 3, 'red', 1]);
+  assert.throws(() => placeCube(g, 'A', { row: 0, col: 4 }), { code: 'WRONG_ROW' });
+  placeCube(g, 'A', { row: 1, col: 4 });
+  assert.throws(() => placeCube(g, 'A', { row: 1, col: 4 }), { code: 'HOLE_TAKEN' });
+  placeCube(g, 'A', { row: 1, col: 6 });
+  placeCube(g, 'A', { row: 1, col: 7 });
   assert.equal(g.step.item, 'cube'); // then the usual cube throw
+});
+
+test('red die: cubes that do not fit in its row are lost (4 at most)', () => {
+  const g = opened();
+  const a = g.players[0];
+  a.hand = a.hand.filter((id) => g.dice[id].color === 'red');
+  g.board[3][4] = { kind: 'cube' };
+  g.board[3][5] = { kind: 'cube' };
+  throwItem(g, 'A', { row: 3, col: 1 }, 1, seq(...STRAIGHT, face(5)));
+  assert.deepEqual([g.step.kind, g.step.remaining], ['place', 2]);
+  placeCube(g, 'A', { row: 3, col: 6 });
+  placeCube(g, 'A', { row: 3, col: 7 });
+  assert.equal(g.step.kind, 'throw');
+
+  const h = opened();
+  h.players[0].hand = h.players[0].hand.filter((id) => h.dice[id].color === 'red');
+  throwItem(h, 'A', { row: 4, col: 2 }, 1, seq(...STRAIGHT, face(6)));
+  assert.equal(h.step.remaining, 4);
 });
 
 test('a player with no die in hand when their turn starts loses', () => {

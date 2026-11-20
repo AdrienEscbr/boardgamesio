@@ -48,7 +48,7 @@ export default function RulesSheet({ open, onClose }) {
         </section>
         <section>
           <h3>L’unité rouge : les renforts</h3>
-          <p>Elle se lance quand vous n’avez plus d’unité blanche. Elle agit comme une autre unité, et sa face donne le nombre de <strong>blocs que vous posez</strong> vous-même dans la tranchée de droite, avant la fortification. Elle se rapatrie comme les autres ; la perdre ne fait pas perdre la partie.</p>
+          <p>Elle se lance quand vous n’avez plus d’unité blanche. Elle agit comme une autre unité, et sa face donne le nombre de <strong>blocs que vous posez</strong> vous-même, avant la fortification, mais <strong>seulement sur sa ligne</strong>, dans la tranchée de droite. Les blocs qui n’y trouvent pas de place sont perdus : on en pose donc entre 0 et 4. Elle se rapatrie comme les autres ; la perdre ne fait pas perdre la partie.</p>
         </section>
         <section>
           <h3>Ouverture</h3>

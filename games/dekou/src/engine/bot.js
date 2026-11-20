@@ -3,7 +3,7 @@
 // A robot aims like a human: it picks a hole and a precision. Its level sets how steady its
 // hand is; the hard robot also looks one step ahead (what the opponent could recover).
 import {
-  BOX_COLS, COLS, ROWS, emptyHoles, emptyInRow, enclosedHoles, inBox, inRows, neighbours, settleBoard,
+  BOX_COLS, COLS, ROWS, emptyHoles, emptyInRow, enclosedHoles, inBox, inRows, neighbours, placeableHoles, settleBoard,
 } from './game.js';
 
 const HANDS = {
@@ -90,10 +90,10 @@ function cubeScore(view, hole, lookahead) {
   return gain * 10 - (lookahead ? threats(board, value) * 2 : 0);
 }
 
-function chooseCubeHole(view, rng, level) {
+function chooseCubeHole(view, rng, level, holes = null) {
   const { board } = simBoard(view);
   const look = level !== 'easy';
-  return pickBest(emptyHoles(board, 2), (h) => cubeScore(view, h, look) + (level === 'easy' ? rng() * 8 : 0), rng);
+  return pickBest(holes ?? emptyHoles(board, 2), (h) => cubeScore(view, h, look) + (level === 'easy' ? rng() * 8 : 0), rng);
 }
 
 const permutations = (xs) => (xs.length <= 1 ? [xs] : xs.flatMap((x, i) => permutations([...xs.slice(0, i), ...xs.slice(i + 1)]).map((p) => [x, ...p])));
@@ -137,7 +137,7 @@ export function botAction(view, playerId, rng = Math.random) {
     return { type: 'remove', cell: bestStrike(view, step.remaining).order[0] };
   }
   if (step.kind === 'place') {
-    return { type: 'place', cell: chooseCubeHole(view, rng, level === 'easy' ? 'easy' : 'hard') };
+    return { type: 'place', cell: chooseCubeHole(view, rng, level === 'easy' ? 'easy' : 'hard', placeableHoles(view.board, step)) };
   }
   const precision = botPrecision(level, rng);
   if (step.item === 'die') return { type: 'throw', target: chooseDieTarget(view, rng), precision };

@@ -23,6 +23,7 @@ registerErrors({
   INVALID_HOLE: 'Cette position n’est pas sur le bon plateau.',
   INVALID_PRECISION: 'Lancer invalide.',
   HOLE_TAKEN: 'Cette position est déjà occupée.',
+  WRONG_ROW: 'Les renforts se posent sur la ligne du dé rouge.',
   NOT_REMOVABLE: 'Ce bloc n’est pas autour du cratère.',
   CANNOT_SKIP: 'Seule la frappe peut être annulée.',
 });

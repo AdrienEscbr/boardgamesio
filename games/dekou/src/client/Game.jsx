@@ -97,7 +97,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     if (!canAct || !step) return false;
     const cell = v.board[r][c];
     if (step.kind === 'remove') return step.remaining.some((h) => h.row === r && h.col === c);
-    if (step.kind === 'place') return inBox(2, c) && cell === null;
+    if (step.kind === 'place') return inBox(2, c) && cell === null && (step.reason !== 'red' || r === step.row);
     if (step.item === 'die') return inBox(1, c) && cell === null;
     if (step.item === 'cube') return inBox(2, c) && cell === null;
     return isEnclosed(v.board, r, c);
@@ -111,7 +111,12 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     const at = coord(row, col);
     if (step.kind === 'throw' && step.item === 'die') {
       const need = empty - 1;
-      return { row, doomed: new Set(), text: need >= 1 && need <= 6 ? `${at} : un ${need} rentre aussitôt` : `${at} : aucune face ne rentre sur cette ligne` };
+      const base = need >= 1 && need <= 6 ? `${at} : un ${need} rentre aussitôt` : `${at} : aucune face ne rentre sur cette ligne`;
+      // the red die: its reinforcements can only go on its row
+      const isRed = v.players.some((p) => p.hand.some((d) => d.id === step.dieId && d.color === 'red'));
+      if (!isRed || v.phase === 'opening') return { row, doomed: new Set(), text: base };
+      const free = Math.min(v.reserve, v.board[row].filter((cell, c) => inBox(2, c) && cell === null).length);
+      return { row, doomed: new Set(), text: `${base} · renforts : ${free ? `jusqu’à ${plural(free, 'bloc')}` : 'aucun bloc'} sur cette ligne` };
     }
     if (step.kind === 'remove') {
       const doomed = doomedBy(v.board, (b) => { b[row][col] = null; });
@@ -547,7 +552,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     }
     if (preview) return preview.text;
     if (v.phase === 'opening') return 'Visez la tranchée de gauche : la plus forte face engage.';
-    if (step.kind === 'place') return step.reason === 'red' ? `Touchez ${step.remaining > 1 ? 'les positions' : 'la position'} de droite où poser vos blocs.` : `Le bloc de ${opp.nickname} s’est égaré : posez-le où vous voulez.`;
+    if (step.kind === 'place') return step.reason === 'red' ? `Renforts : posez ${plural(step.remaining, 'bloc')} sur la ligne ${ROW_NAMES[step.row]}, à droite.` : `Le bloc de ${opp.nickname} s’est égaré : posez-le où vous voulez.`;
     if (step.kind === 'remove') return 'Touchez les blocs autour du cratère, dans l’ordre de votre choix.';
     if (step.item === 'die') return 'Touchez une position de la tranchée de gauche.';
     if (step.item === 'cube') return `Touchez une position de la tranchée de droite · ${plural(v.reserve, 'bloc')} en réserve.`;
@@ -608,7 +613,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         const enemyAim = reticle && reticle.row === r && reticle.col === c;
         const targetable = can(r, c);
         const doomed = cell?.kind === 'die' && preview?.doomed.has(cell.id);
-        const lit = preview?.row === r || (focus && step?.item === 'die' && focus.row === r);
+        const lit = preview?.row === r || (focus && step?.item === 'die' && focus.row === r) || (step?.kind === 'place' && step.reason === 'red' && step.row === r);
         const struck = ballHole && ballHole.row === r && ballHole.col === c;
         const html = struck ? craterHTML() : ghost ?? cellHTML(cell);
         holes.push(

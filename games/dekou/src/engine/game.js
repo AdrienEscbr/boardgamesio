@@ -297,9 +297,11 @@ function landDie(game, playerId, dieId, hole) {
   reclaim(game, playerId, die.value);
   settle(game, playerId);
   if (game.phase === 'opening') { openingNext(game, playerId, die.value); return; }
-  // Red die: the thrower places as many cubes as its face (as far as the reserve goes).
-  const count = die.color === 'red' ? Math.min(die.value, game.reserve) : 0;
-  if (count > 0) game.step = { kind: 'place', item: 'cube', playerId, remaining: count, reason: 'red' };
+  // Red die: the thrower places as many cubes as its face, only in the box-2 half of the row
+  // it landed in (so 4 at most); what does not fit, or is not in the reserve, is lost.
+  const free = emptyHoles(game.board, 2).filter((h) => h.row === hole.row).length;
+  const count = die.color === 'red' ? Math.min(die.value, game.reserve, free) : 0;
+  if (count > 0) game.step = { kind: 'place', item: 'cube', playerId, remaining: count, reason: 'red', row: hole.row };
   else afterDie(game);
 }
 
@@ -373,11 +375,18 @@ function endTurn(game) {
   beginTurn(game);
 }
 
+/** Holes where the cube of a place step may go: the red die's row, or anywhere in box 2. */
+export function placeableHoles(board, step) {
+  const holes = emptyHoles(board, 2);
+  return step?.reason === 'red' ? holes.filter((h) => h.row === step.row) : holes;
+}
+
 /** Places a cube in an empty box-2 hole (red die power, or a cube the opponent missed). */
 export function placeCube(game, playerId, cell) {
   expect(game, playerId, 'place');
   checkHole(cell, 2);
   if (game.board[cell.row][cell.col] !== null) throw new GameError('HOLE_TAKEN');
+  if (game.step.reason === 'red' && cell.row !== game.step.row) throw new GameError('WRONG_ROW', { row: game.step.row });
   game.seq += 1;
   game.board[cell.row][cell.col] = { kind: 'cube' };
   game.reserve -= 1;
@@ -386,7 +395,7 @@ export function placeCube(game, playerId, cell) {
   const step = game.step;
   step.remaining -= 1;
   if (step.reason === 'missed') { afterCube(game); return; }
-  if (step.remaining > 0 && game.reserve > 0) return;
+  if (step.remaining > 0 && game.reserve > 0 && placeableHoles(game.board, step).length) return;
   afterDie(game);
 }
 

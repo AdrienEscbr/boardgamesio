@@ -1,6 +1,6 @@
 // DekouIO as a platform game plugin (see packages/core-server/src/plugin.js).
 import {
-  BOT_LEVELS, GameError, awaitingId, botAction, createGame, emptyHoles, placeCube, removeCube, skipBall, throwItem, viewFor,
+  BOT_LEVELS, GameError, awaitingId, botAction, createGame, placeCube, placeableHoles, removeCube, skipBall, throwItem, viewFor,
 } from '../engine/index.js';
 
 export const TURN_SECONDS_OPTIONS = [20, 30, 45, 60];
@@ -38,7 +38,7 @@ function timeoutAction(game, playerId) {
   const action = botAction({ ...view, botLevel: 'normal' }, playerId, () => 0.5);
   if (action?.type === 'throw') return { ...action, precision: 0.3 };
   if (action) return action;
-  return { type: 'place', cell: emptyHoles(game.board, 2)[0] };
+  return { type: 'place', cell: placeableHoles(game.board, game.step)[0] };
 }
 
 export function createDekouPlugin() {
