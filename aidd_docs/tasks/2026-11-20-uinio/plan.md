@@ -1,6 +1,6 @@
 ---
 objective: "Ajouter UINIO, un jeu de défausse par couleurs (famille du Huit américain) de 2 à 8 joueurs, robots possibles, en plusieurs manches aux points."
-status: in-progress (étape 1 faite)
+status: in-progress (étapes 1 et 2 faites)
 ---
 
 # Plan: UINIO (jeu de défausse par couleurs)
@@ -40,7 +40,7 @@ Mécaniques de la famille du Huit américain / Mau-Mau, avec un nom et une ident
 | # | Phase | Commit |
 | - | ----- | ------ |
 | 1 | Moteur + plugin + robots + tests + arène | `UINIO : moteur, robots et plugin` |
-| 2 | Maquette visuelle `/#/dev/uinio` (univers à choisir) | `UINIO : maquette visuelle` |
+| 2 | Maquette visuelle `/#/dev/uinio` : plaques en céramique émaillée sur un comptoir de café (univers choisi par Adrien) | `UINIO : maquette visuelle` |
 | 3 | Écran de jeu complet, enregistrement dans `apps/server` et `apps/web`, docs | `UINIO : écran de jeu…` |
 
 ## Impact
