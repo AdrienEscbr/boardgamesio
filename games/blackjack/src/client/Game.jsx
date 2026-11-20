@@ -133,6 +133,16 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     send({ type });
   };
 
+  // My chips going down are shown live to the table (a short pause groups quick taps).
+  useEffect(() => {
+    if (!myBetTurn) return undefined;
+    const t = setTimeout(() => {
+      const action = { type: 'draft', amount: draft };
+      Promise.resolve(local ? local.act(action) : sendAction(room.id, action)).catch(() => {});
+    }, 180);
+    return () => clearTimeout(t);
+  }, [draft, myBetTurn]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Time is up with chips in my box: they are bet, as if I had pressed "Miser" (the server
   // only knows a bet once it is sent, so the page sends it just before the clock runs out).
   // An empty box, or "Passer", is what sits a round out.
@@ -188,8 +198,14 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     }
     // The hole card turns over.
     if (v.dealer.revealed && !before.dealer.revealed && !newRound) sound('flip');
-    // A robot or a player bet.
-    if (v.phase === 'bet' && !newRound && v.players.filter((p) => p.betPlaced).length > before.players.filter((p) => p.betPlaced).length) sound('chip');
+    // Another player puts chips down, or bets.
+    if (v.phase === 'bet' && !newRound) {
+      const moved = v.players.some((p) => {
+        const b = before.players.find((x) => x.id === p.id);
+        return p.id !== me && b && (p.betPlaced !== b.betPlaced || p.draft > b.draft);
+      });
+      if (moved) sound('chip');
+    }
     // Paid: my result.
     if (settled && before.phase !== 'settle' && before.phase !== 'over' && meP?.hands.length) {
       const bj = meP.hands.some((h) => h.outcome === 'blackjack');

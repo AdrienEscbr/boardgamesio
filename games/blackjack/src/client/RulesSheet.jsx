@@ -20,7 +20,7 @@ export default function RulesSheet({ open, onClose }) {
         <section>
           <h3>Une manche</h3>
           <ul>
-            <li><strong>Mise</strong> : tout le monde mise en même temps (par 10, à partir de la mise minimum), sans voir les mises des autres. On peut aussi passer la manche.</li>
+            <li><strong>Mise</strong> : tout le monde mise en même temps (par 10, à partir de la mise minimum), et voit les jetons des autres se poser en direct. On peut aussi passer la manche.</li>
             <li><strong>Distribution</strong> : deux cartes visibles pour chacun ; la banque en a une visible et une cachée. Sous un as ou un 10, elle vérifie sa carte cachée : avec un blackjack, elle gagne tout de suite (un blackjack du joueur fait égalité).</li>
             <li><strong>Jeu</strong> : chacun à son tour, de gauche à droite.</li>
             <li><strong>La banque</strong> retourne sa carte et tire jusqu’à 17 au moins, puis s’arrête. Au-delà de 21, elle saute : toutes les mains encore en jeu gagnent.</li>

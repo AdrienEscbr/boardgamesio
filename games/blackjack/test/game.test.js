@@ -34,7 +34,7 @@ test('table sizes and settings', () => {
   assert.equal(solo.totalRounds, 10);
 });
 
-test('bets: steps of ten between the minimum and the stack, secret until everyone has bet', () => {
+test('bets: steps of ten between the minimum and the stack, seen by the whole table', () => {
   const game = table(2);
   assert.throws(() => act(game, 'A', { type: 'bet', amount: 5 }), { code: 'INVALID_BET' });
   assert.throws(() => act(game, 'A', { type: 'bet', amount: 25 }), { code: 'INVALID_BET' });
@@ -43,9 +43,14 @@ test('bets: steps of ten between the minimum and the stack, secret until everyon
   act(game, 'A', { type: 'bet', amount: 100 });
   assert.throws(() => act(game, 'A', { type: 'bet', amount: 100 }), { code: 'ALREADY_BET' });
   const seen = viewFor(game, 'B').players[0];
-  assert.equal(seen.bet, null);
-  assert.equal(seen.stack, 1000);
+  assert.equal(seen.bet, 100);
+  assert.equal(seen.stack, 900);
   assert.equal(seen.betPlaced, true);
+  // B's chips going down are seen live, before B bets.
+  act(game, 'B', { type: 'draft', amount: 30 });
+  assert.equal(viewFor(game, 'A').players[1].draft, 30);
+  assert.throws(() => act(game, 'B', { type: 'draft', amount: 35 }), { code: 'INVALID_BET' });
+  assert.throws(() => act(game, 'A', { type: 'draft', amount: 10 }), { code: 'ALREADY_BET' });
   assert.equal(viewFor(game, 'A').players[0].bet, 100);
   assert.deepEqual(viewFor(game, 'A').awaiting, ['B']);
   rig(game, '9s 5h 7d 8c Ts 2h');

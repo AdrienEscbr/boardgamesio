@@ -9,7 +9,7 @@
 // after a split allowed; split aces get one card each; no insurance, no surrender.
 //
 // A round, phases:
-//   'bet'     everyone places a bet at the same time (or passes)
+//   'bet'     everyone places a bet at the same time (or passes), in sight of the others
 //   'play'    players play their hands one after the other, seat order (`turn`)
 //   'dealer'  the dealer turns the hole card over, then draws to 17, one step per `advance`
 //   'settle'  hands are paid; `advance` starts the next round (or ends the game)
@@ -62,7 +62,7 @@ export function createGame({ playerIds, botIds = [], settings = {}, rng = Math.r
     players: playerIds.map((id) => ({
       id, isBot: botIds.includes(id), stack, out: false,
       // per round
-      bet: 0, betPlaced: false, hands: [], net: 0,
+      bet: 0, betPlaced: false, draft: 0, hands: [], net: 0,
     })),
     roundNumber: 0,
     shoe: [],
@@ -86,7 +86,7 @@ function startRound(game, rng) {
   const cut = Math.max(Math.ceil(game.shoeSize / 4), 8 + bettors * 6);
   game.reshuffled = game.shoe.length < cut;
   if (game.reshuffled) game.shoe = freshShoe(game.decks, rng);
-  for (const p of game.players) Object.assign(p, { bet: 0, betPlaced: p.out, hands: [], net: 0 });
+  for (const p of game.players) Object.assign(p, { bet: 0, betPlaced: p.out, draft: 0, hands: [], net: 0 });
   game.dealer = { cards: [], revealed: false };
   game.turn = null;
   game.phase = 'bet';
@@ -157,6 +157,7 @@ function options(game, p, h) {
  * A player's action:
  *   { type: 'bet', amount }   during 'bet', a multiple of BET_STEP between minBet and the stack
  *   { type: 'pass' }          during 'bet', sit this round out
+ *   { type: 'draft', amount } during 'bet', the chips being put in the box, shown live to the table
  *   { type: 'hit' | 'stand' | 'double' | 'split' }   during 'play', on the hand in turn
  */
 export function act(game, playerId, action, rng = Math.random) {
@@ -164,6 +165,16 @@ export function act(game, playerId, action, rng = Math.random) {
   const seat = seatOf(game, playerId);
   if (seat < 0) throw new GameError('NOT_IN_GAME');
   const p = game.players[seat];
+
+  if (action?.type === 'draft') {
+    if (game.phase !== 'bet') throw new GameError('WRONG_PHASE');
+    if (p.out || p.betPlaced) throw new GameError('ALREADY_BET');
+    const a = action.amount;
+    if (!Number.isInteger(a) || a < 0 || a % BET_STEP || a > p.stack) throw new GameError('INVALID_BET', { min: 0, max: p.stack - (p.stack % BET_STEP), step: BET_STEP });
+    p.draft = a;
+    game.seq += 1;
+    return { draft: a };
+  }
 
   if (action?.type === 'bet' || action?.type === 'pass') {
     if (game.phase !== 'bet') throw new GameError('WRONG_PHASE');
@@ -312,8 +323,8 @@ export function timeoutAction(game) {
 }
 
 // ---------------------------------------------------------------------------
-// View: the hole card stays hidden until the dealer turns it over, the bets of the others
-// until everyone has bet; the shoe never leaves the server.
+// View: the hole card stays hidden until the dealer turns it over; the shoe never leaves the
+// server. Bets are open: everyone sees the others' chips go down, live.
 // ---------------------------------------------------------------------------
 
 const handView = (h) => ({ ...h, cards: [...h.cards], ...handValue(h.cards), blackjack: !h.split && isBlackjack(h.cards) });
@@ -348,10 +359,11 @@ export function viewFor(game, viewerId) {
         isBot: p.isBot,
         seat,
         out: p.out,
-        // While bets are secret, the others' stacks are shown as before their bet.
-        stack: betting && !mine ? p.stack + p.bet : p.stack,
+        stack: p.stack,
         betPlaced: p.betPlaced,
-        bet: betting && !mine ? null : p.bet,
+        bet: p.bet,
+        // the chips being put down, before "Miser"
+        draft: betting && !p.betPlaced ? p.draft : 0,
         hands: p.hands.map(handView),
         net: game.phase === 'settle' || game.phase === 'over' ? p.net : 0,
       };

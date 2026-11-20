@@ -53,7 +53,8 @@ export default function Seat({ p, v, isMe, draft = 0, delayOf, compact = false, 
               {betting && isMe && !p.betPlaced && draft > 0 && <ChipStack amount={draft} ghost onPick={busy ? undefined : onRemoveChip} />}
               {betting && isMe && !p.betPlaced && draft === 0 && onClearBet && <span className="bj-spot__hint">vos jetons ici</span>}
               {betting && p.betPlaced && p.bet > 0 && <ChipStack amount={p.bet} layoutId={`bet-${p.id}`} />}
-              {betting && p.betPlaced && p.bet == null && <span className="bj-spot__secret" aria-label="Mise posée">?</span>}
+              {/* The others' chips going down, live, before they bet. */}
+              {betting && !isMe && !p.betPlaced && p.draft > 0 && <ChipStack amount={p.draft} ghost />}
               {/* A player who passed keeps the word in the box for the whole round. */}
               {!p.out && (betting ? p.betPlaced && p.bet === 0 : !hasHands) && <span className="bj-spot__pass">passe</span>}
               {p.out && <span className="bj-spot__pass">sans jetons</span>}
