@@ -133,6 +133,18 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     send({ type });
   };
 
+  // Time is up with chips in my box: they are bet, as if I had pressed "Miser" (the server
+  // only knows a bet once it is sent, so the page sends it just before the clock runs out).
+  // An empty box, or "Passer", is what sits a round out.
+  const confirmRef = useRef(confirmBet);
+  confirmRef.current = confirmBet;
+  const betClock = myBetTurn && !hostPaused && turn?.endsAt ? turn.endsAt : null;
+  useEffect(() => {
+    if (!betClock) return undefined;
+    const t = setTimeout(() => confirmRef.current(), Math.max(0, betClock - serverNow() - 700));
+    return () => clearTimeout(t);
+  }, [betClock]);
+
   // Keyboard: T R D S on my hand, Enter to bet.
   const keys = useRef({});
   keys.current = { myTurn, myBetTurn, play, confirmBet, clearBet };
@@ -403,7 +415,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           </>
         )}
       >
-        <p className="sheet-lead">Votre place est gardée : vous pourrez revenir depuis l’accueil. En votre absence, vous passez les mises et restez sur vos mains.</p>
+        <p className="sheet-lead">Votre place est gardée : vous pourrez revenir depuis l’accueil. En votre absence, vous passez les mises et restez sur vos mains ; une mise déjà posée sur la table est jouée.</p>
       </Sheet>
     </div>
   );

@@ -42,7 +42,7 @@ export default function RulesSheet({ open, onClose }) {
             <li>Blackjack : 3 contre 2 (une mise de 100 rapporte 150).</li>
             <li>Main gagnante : 1 contre 1. Égalité : la mise est rendue.</li>
             <li>Sous la mise minimum, vous quittez la table et regardez la fin.</li>
-            <li>Si le temps s’écoule, vous passez la mise, ou restez sur votre main.</li>
+            <li>Si le temps s’écoule pendant la mise, les jetons posés sur la table sont joués ; sans jeton, vous passez la manche. Pendant votre main, vous restez.</li>
           </ul>
         </section>
         <section>
