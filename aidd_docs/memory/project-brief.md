@@ -48,14 +48,14 @@ BoardGamesIO : plateforme de jeux de société en ligne, un serveur et un site c
 - Créer un salon pour un jeu, partager son code, rejoindre via le code ou un lien `/#/room/<code>`.
 - Choisir son pseudo ; préférences thème, son, vibrations.
 - Régler la partie dans le salon (nombre de joueurs, temps par tour, options du jeu).
-- Ajouter/retirer des robots (sauf ScrabbleIO).
+- Ajouter/retirer des robots (sauf PlanchettesIO).
 - Jouer avec chrono par tour, pause/reprise par l'hôte.
 - Reconnexion transparente ; reprise d'une partie en cours depuis l'accueil.
 - Consulter les règles (`RulesSheet`) et les résultats en fin de partie.
 
 | Jeu | Joueurs | Robots | Auteur |
 | --- | --- | --- | --- |
-| ScrabbleIO (FR/EN) | 2 à 4 | non | Adrien |
+| ScrabbleIO (FR/EN) | 2 à 4 | oui (3 niveaux) | Adrien |
 | TarotIO | 3 à 5 | oui | Adrien |
 | NavalIO (bataille navale, chacun pour soi) | 2 à 4 | oui | Adrien |
 | P4IO (alignement de 4, plusieurs manches) | 2 à 3 | oui | Adrien |

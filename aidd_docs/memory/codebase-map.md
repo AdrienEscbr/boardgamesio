@@ -38,6 +38,6 @@ flowchart TD
 - `packages/core-server/src` : `server.js` (Express + Socket.IO), `rooms.js` (`RoomManager`), `sessions.js` (`SessionStore`), `plugin.js` (contrat), `errors.js` (`GameError`).
 - `packages/ui/src` : `components/` (`ui.jsx`, `Toaster`, `NicknameSheet`, `SettingsSheet`…), `lib/` (`socket.js`, `store.js`, `i18n.js`, `prefs.js`, `feedback.js`), `styles/` (`tokens.css`, `base.css`).
 - `games/<jeu>/package.json` : exports `./engine`, `./server`, `./client`, `./client/*`.
-- `games/scrabble/assets/dictionaries` : dictionnaires FR/EN chargés côté serveur (`src/server/dictionary.js`).
+- `games/scrabble/assets/dictionaries` : dictionnaires FR/EN chargés côté serveur (`src/server/dictionary.js`), qui en tire aussi le trie des robots (`src/engine/lexicon.js`, coups générés par `src/engine/bot.js`).
 - Pages de revue design non liées : `/#/dev/cartes` (tarot), `/#/dev/naval`, `/#/dev/p4`, `/#/dev/mind`.
 - `.github/workflows/pages.yml` : tests + build + déploiement GitHub Pages.

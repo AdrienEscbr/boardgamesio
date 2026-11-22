@@ -54,13 +54,16 @@ const race = {
   bot: (view) => ({ type: 'add', n: view.total >= 7 ? 10 - view.total : 3 }),
 };
 
+/** The same game without robots. */
+const raceNoBots = { ...race, id: 'race-nobots', bot: undefined };
+
 let server;
 let url;
 const clients = new Set();
 
 before(async () => {
   server = createPlatformServer({
-    games: [scrabbleAnyWord, race, tarot, naval, p4, dutch, cactus, blackjack, dekou],
+    games: [scrabbleAnyWord, race, raceNoBots, tarot, naval, p4, dutch, cactus, blackjack, dekou],
     origins: [],
     timings: { lobbyGraceMs: 150, awayTurnMs: 150, botMinMs: 20, botMaxMs: 40 },
   });
@@ -131,12 +134,33 @@ test('only the host can start, and only with enough players', async () => {
   assert.equal((await guest.call('room:start', { roomId: room.id })).error, 'NOT_HOST');
   assert.equal((await guest.call('room:updateSettings', { roomId: room.id, settings: { lang: 'EN' } })).error, 'NOT_HOST');
   assert.equal((await host.call('room:updateSettings', { roomId: room.id, settings: { turnSeconds: 7 } })).error, 'INVALID_SETTINGS');
-  assert.equal((await host.call('room:addBot', { roomId: room.id })).error, 'BOTS_UNSUPPORTED');
   assert.equal((await host.call('room:start', { roomId: room.id })).ok, true);
   const stranger = await connect();
   assert.equal((await stranger.call('room:join', { roomId: room.id })).error, 'ROOM_IN_GAME');
   assert.equal((await stranger.call('room:join', { roomId: 'NOPE1' })).error, 'ROOM_NOT_FOUND');
   host.close(); guest.close(); stranger.close();
+});
+
+test('scrabble robots take their seat and play on their own', async () => {
+  const host = await connect();
+  const { room } = await host.call('room:create', { gameId: 'scrabble', settings: { botLevel: 'hard' } });
+  const { botId } = await host.call('room:addBot', { roomId: room.id });
+  assert.equal((await host.call('room:start', { roomId: room.id })).ok, true);
+  const first = await host.nextState((s) => s.game);
+  if (first.game.currentPlayerId !== botId) {
+    assert.equal((await host.call('game:action', { roomId: room.id, action: { type: 'pass' } })).ok, true);
+  }
+  const s = await host.nextState((st) => st.game?.log.some((m) => m.playerId === botId));
+  const move = s.game.log.find((m) => m.playerId === botId);
+  assert.ok(['play', 'exchange'].includes(move.type), `the robot played (${move.type})`);
+  host.close();
+});
+
+test('a game without robots refuses them', async () => {
+  const host = await connect();
+  const { room } = await host.call('room:create', { gameId: 'race-nobots' });
+  assert.equal((await host.call('room:addBot', { roomId: room.id })).error, 'BOTS_UNSUPPORTED');
+  host.close();
 });
 
 test('reloading the page during a game puts the player back in their seat', async () => {

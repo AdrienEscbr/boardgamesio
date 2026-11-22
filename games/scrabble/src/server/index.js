@@ -1,8 +1,8 @@
 // ScrabbleIO as a platform game plugin (see packages/core-server/src/plugin.js).
 import {
-  GameError, createGame, currentPlayer, exchangeTiles, isLanguage, passTurn, playTiles,
+  BOT_LEVELS, GameError, chooseAction, createGame, currentPlayer, exchangeTiles, isLanguage, passTurn, playTiles,
 } from '../engine/index.js';
-import { getDictionary, isWord } from './dictionary.js';
+import { getLexicon, isWord } from './dictionary.js';
 
 export const TURN_SECONDS_OPTIONS = [60, 90, 120, 180, 300];
 
@@ -16,6 +16,10 @@ function sanitizeSettings(base, patch = {}, { memberCount = 1 } = {}) {
     if (patch.turnSeconds !== undefined) {
       if (!TURN_SECONDS_OPTIONS.includes(patch.turnSeconds)) throw new GameError('INVALID_SETTINGS', { field: 'turnSeconds' });
       next.turnSeconds = patch.turnSeconds;
+    }
+    if (patch.botLevel !== undefined) {
+      if (!BOT_LEVELS.includes(patch.botLevel)) throw new GameError('INVALID_SETTINGS', { field: 'botLevel' });
+      next.botLevel = patch.botLevel;
     }
     if (patch.maxPlayers !== undefined) {
       const n = patch.maxPlayers;
@@ -31,11 +35,13 @@ export const scrabble = {
   name: 'ScrabbleIO',
   minPlayers: 2,
   maxPlayers: 4,
-  defaultSettings: { lang: 'FR', turnSeconds: 180, maxPlayers: 4 },
+  defaultSettings: { lang: 'FR', turnSeconds: 180, maxPlayers: 4, botLevel: 'normal' },
   sanitizeSettings,
 
   createGame({ playerIds, settings, rng, now }) {
-    return createGame({ playerIds, lang: settings.lang, turnDurationMs: settings.turnSeconds * 1000, rng, now });
+    const game = createGame({ playerIds, lang: settings.lang, turnDurationMs: settings.turnSeconds * 1000, rng, now });
+    game.botLevel = settings.botLevel ?? 'normal';
+    return game;
   },
 
   act(game, playerId, action, { rng, now, auto }) {
@@ -64,6 +70,7 @@ export const scrabble = {
     return {
       status: game.status,
       lang: game.lang,
+      botLevel: game.botLevel ?? 'normal',
       board: game.board,
       bagCount: game.bag.length,
       turnNumber: game.turnNumber,
@@ -80,9 +87,12 @@ export const scrabble = {
     };
   },
 
+  // Decides from the robot's own view: its rack, the board and the bag size.
+  bot: (view, playerId, rng) => chooseAction(view, getLexicon(view.lang), { level: view.botLevel, rng }),
+
   preload() {
-    getDictionary('FR');
-    getDictionary('EN');
+    getLexicon('FR');
+    getLexicon('EN');
   },
 };
 
