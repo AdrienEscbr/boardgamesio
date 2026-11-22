@@ -60,9 +60,6 @@ export const craterHTML = () => `<span class="dk-crater"><i></i><i></i><i></i></
 
 // ---- the phase overlays ------------------------------------------------------------
 
-/** A free hole of the deployment trench: the NATO infantry symbol. */
-export const markHTML = () => '<span class="dk-mark" aria-hidden="true"></span>';
-
 /** Radar: a block a strike can reach (a blip), or one it cannot (a faint echo). */
 export const blipHTML = () => '<span class="dk-blip"></span>';
 export const echoHTML = () => '<span class="dk-echo"></span>';

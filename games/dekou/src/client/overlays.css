@@ -4,11 +4,7 @@
    and the look of the pieces change.
    ========================================================= */
 .dk-table { --scope: #04140e; --phos: #7dffb0; --phos-dim: rgba(125, 255, 176, 0.35); --amber: #ffc247; --bp: #17324f; --bp-line: rgba(170, 210, 255, 0.55); --bp-ink: #cfe6ff; --enemy: #ff5a5f; }
-.dk-table.cq-enemy { --bp: #3a1a22; --bp-line: rgba(255, 170, 170, 0.5); --bp-ink: #ffd4d4; }
-
-/* the acetate swap */
-.dk-acetate { position: absolute; inset: 0; pointer-events: none; z-index: 6; background: linear-gradient(100deg, transparent 0 40%, rgba(255, 255, 255, 0.14) 48%, rgba(255, 255, 255, 0.04) 52%, transparent 60%); transform: translateX(-110%); animation: dk-wipe 0.45s ease-out; }
-@keyframes dk-wipe { from { transform: translateX(-110%); } to { transform: translateX(110%); } }
+.dk-board.cq-enemy { --bp: #3a1a22; --bp-line: rgba(255, 170, 170, 0.5); --bp-ink: #ffd4d4; }
 
 /* the trench of the order: a lit rim and a tag; the other one: a darker ground */
 .dk-tag { position: absolute; top: -4px; left: 50%; transform: translate(-50%, -100%); white-space: nowrap; font-family: var(--stencil); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; background: var(--brass); color: var(--olive-3); z-index: 3; }
@@ -23,17 +19,15 @@
 .dk-trench__pits.is-quiet .dk-hole__pit { background: radial-gradient(circle at 50% 40%, #0c0906, #15100b 70%, #1d1610); }
 .dk-trench__pits.is-quiet::before { opacity: 0.4; }
 
-/* deployment: the NATO infantry symbol in the free holes */
-.dk-mark {
-  --c: rgba(240, 211, 107, 0.55);
-  width: calc(var(--hole) * 0.5); height: calc(var(--hole) * 0.34); border: 1.5px solid var(--c); border-radius: 1px;
-  background:
-    linear-gradient(to top right, transparent calc(50% - 0.75px), var(--c) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px)),
-    linear-gradient(to bottom right, transparent calc(50% - 0.75px), var(--c) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+/* deployment: the block trench keeps only the blueprint's ground, unlit */
+.dk-trench__pits.is-bp-dim {
+  background: linear-gradient(rgba(170, 210, 255, 0.05) 1px, transparent 1px) 0 0 / 8px 8px, linear-gradient(90deg, rgba(170, 210, 255, 0.05) 1px, transparent 1px) 0 0 / 8px 8px, #0f2134;
+  box-shadow: 0 0 0 5px #7d8794, 0 0 0 7px #3f4a57, 0 10px 22px rgba(0, 0, 0, 0.5), inset 0 3px 10px rgba(0, 0, 0, 0.5);
 }
-.cq-enemy .dk-mark { --c: rgba(255, 90, 95, 0.55); }
+.dk-trench__pits.is-bp-dim::before { display: none; }
+.dk-trench__pits.is-bp-dim .dk-hole__pit { background: radial-gradient(circle at 50% 40%, #060d16, #0b1623 70%, #12202f); }
 
-/* fortification and reinforcements: the engineers' blueprint */
+/* fortification and reinforcements: the engineers' blueprint, lit */
 .dk-trench__pits.is-bp {
   background: linear-gradient(rgba(170, 210, 255, 0.09) 1px, transparent 1px) 0 0 / 8px 8px, linear-gradient(90deg, rgba(170, 210, 255, 0.09) 1px, transparent 1px) 0 0 / 8px 8px, var(--bp);
   box-shadow: 0 0 0 5px #c9d7e6, 0 0 0 7px #6f8aa6, 0 0 18px 4px rgba(150, 200, 255, 0.3), 0 10px 22px rgba(0, 0, 0, 0.5);
@@ -50,10 +44,17 @@
   top: calc(var(--hole) * 0.22 + var(--row) * (var(--hole) + var(--gap)) - 4px); height: calc(var(--hole) + 8px);
   border: 2px solid var(--brass); border-radius: 6px; pointer-events: none; z-index: 2; box-shadow: 0 0 12px rgba(240, 211, 107, 0.45);
 }
-.cq-fort .dk-btn--fire { background: #2a5a8c; box-shadow: 0 4px 0 #13304f; }
+.tq-fort .dk-btn--fire { background: #2a5a8c; box-shadow: 0 4px 0 #13304f; }
 
 /* strike: the radar scope, a wave from the bottom centre over both trenches */
-.dk-table.cq-radar { background: repeating-radial-gradient(circle at 50% 70%, transparent 0 46px, rgba(125, 255, 176, 0.05) 47px 48px), radial-gradient(120% 90% at 50% 70%, #0a2a1c, #04110b 70%); }
+/* the scope's dark green fades in over the map rather than snapping */
+.dk-table { position: relative; isolation: isolate; }
+.dk-table::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 0.8s ease-in-out;
+  background: repeating-radial-gradient(circle at 50% 70%, transparent 0 46px, rgba(125, 255, 176, 0.05) 47px 48px), radial-gradient(120% 90% at 50% 70%, #0a2a1c, #04110b 70%);
+}
+.dk-table.tq-radar::before { opacity: 1; }
+.dk-board { padding-bottom: 26px; }
 .cq-radar .dk-trench__pits { background: radial-gradient(circle at 50% 50%, #08251a, var(--scope) 85%); box-shadow: 0 0 0 5px #123a2a, 0 0 0 7px #0a1f16, 0 10px 22px rgba(0, 0, 0, 0.6); }
 .cq-radar .dk-trench__pits::before { display: none; }
 .cq-radar .dk-hole__pit { background: radial-gradient(circle at 50% 45%, #020a07, #082017); box-shadow: inset 0 0 0 1px rgba(125, 255, 176, 0.12), inset 0 2px 6px rgba(0, 0, 0, 0.8); }
@@ -65,7 +66,7 @@
 .cq-radar .dk-hole .dk-die.is-red i { background: rgba(255, 140, 140, 0.75); }
 .cq-radar .dk-rows span, .cq-radar .dk-trench__cols span { color: rgba(125, 255, 176, 0.55); }
 .cq-radar .dk-count { color: var(--phos); border-color: var(--phos-dim); }
-.cq-radar .dk-btn--fire { background: #0f6a45; box-shadow: 0 4px 0 #063a24, 0 0 14px rgba(125, 255, 176, 0.3); }
+.tq-radar .dk-btn--fire { background: #0f6a45; box-shadow: 0 4px 0 #063a24, 0 0 14px rgba(125, 255, 176, 0.3); }
 .dk-blip { width: 7px; height: 7px; border-radius: 50%; background: #d8ffe8; box-shadow: 0 0 4px 1px var(--phos), 0 0 10px 2px rgba(125, 255, 176, 0.5); opacity: 0.75; }
 .dk-echo { width: calc(var(--hole) * 0.62); height: calc(var(--hole) * 0.62); border: 1px solid rgba(125, 255, 176, 0.25); border-radius: 2px; }
 .dk-weak { position: absolute; inset: 6%; display: grid; place-items: center; }
@@ -75,11 +76,11 @@
 @keyframes dk-weak { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
 .dk-sonar { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 5; mix-blend-mode: screen; }
 .dk-sonar__wave {
-  position: absolute; left: 50%; bottom: 0; border-radius: 50%; transform: scale(0);
-  width: calc(var(--R, 400px) * 2); height: calc(var(--R, 400px) * 2); margin-left: calc(var(--R, 400px) * -1); margin-bottom: calc(var(--R, 400px) * -1);
+  position: absolute; left: var(--ox, 50%); top: var(--oy, 100%); border-radius: 50%; transform: scale(0);
+  width: calc(var(--R, 400px) * 2); height: calc(var(--R, 400px) * 2); margin-left: calc(var(--R, 400px) * -1); margin-top: calc(var(--R, 400px) * -1);
   background: radial-gradient(circle closest-side, transparent 70%, rgba(125, 255, 176, 0.06) 88%, rgba(125, 255, 176, 0.3) 97%, rgba(210, 255, 230, 0.95) 99.3%, transparent 100%);
 }
-.dk-sonar__emitter { position: absolute; left: 50%; bottom: -4px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--phos); box-shadow: 0 0 10px 3px var(--phos); z-index: 5; }
+.dk-sonar__emitter { position: absolute; left: var(--ox, 50%); top: var(--oy, 100%); width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--phos); box-shadow: 0 0 10px 3px var(--phos); z-index: 5; }
 .dk-sonar__readout { position: absolute; left: 0; right: 0; top: -2px; display: flex; justify-content: space-between; font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--phos); z-index: 5; pointer-events: none; }
 .cq-enemy .dk-sonar__readout { color: var(--enemy); }
 .cq-enemy .dk-sonar__emitter { background: var(--enemy); box-shadow: 0 0 10px 3px var(--enemy); }
@@ -105,6 +106,6 @@
 .dk-dust { position: absolute; left: 0; top: 0; width: calc(var(--hole) * 1.3); height: calc(var(--hole) * 1.3); border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(190, 180, 150, 0.75), rgba(120, 110, 90, 0.3) 50%, transparent 70%); }
 
 @media (prefers-reduced-motion: reduce) {
-  .dk-acetate, .dk-weak__pulse, .dk-smoke i, .dk-hole.is-removable .dk-cube.is-cracked { animation: none; }
+  .dk-weak__pulse, .dk-smoke i, .dk-hole.is-removable .dk-cube.is-cracked { animation: none; }
   .dk-sonar__wave { display: none; }
 }

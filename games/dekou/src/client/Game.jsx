@@ -10,7 +10,7 @@ import Icon from '@bgio/ui/components/Icon.jsx';
 import { toast, useToastPlacement } from '@bgio/ui/components/Toaster.jsx';
 import SettingsSheet from '@bgio/ui/components/SettingsSheet.jsx';
 import { BOX_COLS, COLS, ROWS, emptyInRow, enclosedHoles, inBox, isEnclosed, neighbours, settleBoard } from '../engine/game.js';
-import { blipHTML, cellHTML, crackedHTML, craterHTML, cubeHTML, dieHTML, echoHTML, markHTML, pieceNode, shellHTML, weakHTML } from './pieces.js';
+import { blipHTML, cellHTML, crackedHTML, craterHTML, cubeHTML, dieHTML, echoHTML, pieceNode, shellHTML, weakHTML } from './pieces.js';
 import RulesSheet from './RulesSheet.jsx';
 import { MISS_LABELS, ORDERS, ROW_NAMES, coord, plural } from './i18n.js';
 import './fonts.js';
@@ -609,6 +609,28 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const strikable = new Set(weakPoints.flatMap((h) => neighbours(h.row, h.col).map((n) => cellKey(n.row, n.col))));
   const cracked = new Set(cq === 'clear' && Array.isArray(cqStep.remaining) ? cqStep.remaining.map((h) => cellKey(h.row, h.col)) : []);
 
+  // A phase change dissolves the old overlay into the new one: the board as it was is
+  // copied (while the DOM still shows it, during render) and fades out over the new one.
+  const cqKey = `${cq}-${cqEnemy}`;
+  const lastCq = useRef(cqKey);
+  const oldBoard = useRef(null);
+  if (lastCq.current !== cqKey) {
+    lastCq.current = cqKey;
+    const el = typeof document !== 'undefined' ? document.querySelector('.dk-table .dk-board') : null;
+    oldBoard.current = el && !reduced() ? { node: el.cloneNode(true), rect: el.getBoundingClientRect() } : null;
+  }
+  useLayoutEffect(() => {
+    const snap = oldBoard.current;
+    oldBoard.current = null;
+    const layer = fxRef.current;
+    if (!snap || !layer) return;
+    const { node, rect } = snap;
+    node.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
+    Object.assign(node.style, { position: 'fixed', left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', pointerEvents: 'none' });
+    layer.prepend(node);
+    node.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 750, easing: 'ease-in-out', fill: 'forwards' }).onfinish = () => node.remove();
+  }, [cqKey]);
+
   // the radar wave and the blips share one clock, so a blip flares when the wave reaches it
   useLayoutEffect(() => {
     if (cq !== 'radar' || reduced()) return undefined;
@@ -617,8 +639,16 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       const wave = board?.querySelector('.dk-sonar__wave');
       if (!board || !wave) return;
       const b = board.getBoundingClientRect();
-      const R = Math.max(Math.hypot(b.width / 2, b.height), 1);
+      const p1 = document.getElementById('dk-pits-1')?.getBoundingClientRect();
+      const p2 = document.getElementById('dk-pits-2')?.getBoundingClientRect();
+      if (!p1 || !p2) return;
+      // the emitter sits midway between the two trenches, just below them,
+      // so the wave spreads evenly over both
+      const o = { x: (p1.left + p2.right) / 2, y: Math.max(p1.bottom, p2.bottom) + 16 };
+      const R = Math.max(...[[b.left, b.top], [b.right, b.top], [b.left, b.bottom], [b.right, b.bottom]].map(([x, y]) => Math.hypot(x - o.x, y - o.y)), 1);
       board.style.setProperty('--R', `${R}px`);
+      board.style.setProperty('--ox', `${o.x - b.left}px`);
+      board.style.setProperty('--oy', `${o.y - b.top}px`);
       const T = RADAR_MS;
       const loop = (el, frames, offset) => {
         el.getAnimations().forEach((a) => a.cancel());
@@ -628,7 +658,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       loop(wave, [{ transform: 'scale(0)', opacity: 1 }, { transform: 'scale(.85)', opacity: 1, offset: 0.85 }, { transform: 'scale(1)', opacity: 0 }], 0);
       board.querySelectorAll('.dk-blip').forEach((el) => {
         const r = el.getBoundingClientRect();
-        const d = Math.hypot(r.left + r.width / 2 - (b.left + b.width / 2), r.top + r.height / 2 - b.bottom);
+        const d = Math.hypot(r.left + r.width / 2 - o.x, r.top + r.height / 2 - o.y);
         loop(el, [
           { transform: 'scale(2.6)', opacity: 1, boxShadow: '0 0 8px 4px #7dffb0, 0 0 22px 8px rgba(125,255,176,.6)' },
           { transform: 'scale(1)', opacity: 0.75, boxShadow: '0 0 4px 1px #7dffb0, 0 0 10px 2px rgba(125,255,176,.5)', offset: 0.3 },
@@ -693,7 +723,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           if (cell?.kind === 'cube') html = strikable.has(key) ? blipHTML() : echoHTML();
           else if (!cell && weakPoints.some((h) => h.row === r && h.col === c)) html = weakHTML(neighbours(r, c).length);
         }
-        if (cq === 'deploy' && b === 1 && !cell && !ghost && !held) html = markHTML();
         if (cq === 'clear' && cell?.kind === 'cube' && cracked.has(key)) html = crackedHTML();
         const closed = redRow != null && b === 2 && r !== redRow;
         holes.push(
@@ -721,7 +750,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         {activeBox === b && <span className="dk-tag">{cqEnemy ? 'Zone ennemie' : 'Zone active'}</span>}
         <div className="dk-trench__cols" aria-hidden>{Array.from({ length: BOX_COLS }, (_, i) => <span key={i}>{i + 1 + (b === 2 ? BOX_COLS : 0)}</span>)}</div>
         <div
-          className={`dk-trench__pits ${activeBox === b ? 'is-active' : ''} ${activeBox && activeBox !== b ? 'is-quiet' : ''} ${cq === 'fort' && b === 2 ? 'is-bp' : ''}`}
+          className={`dk-trench__pits ${activeBox === b ? 'is-active' : ''} ${activeBox && activeBox !== b && !(cq === 'deploy' && b === 2) ? 'is-quiet' : ''} ${cq === 'fort' && b === 2 ? 'is-bp' : ''} ${cq === 'deploy' && b === 2 ? 'is-bp-dim' : ''}`}
           id={`dk-pits-${b}`}
         >
           {holes}
@@ -732,7 +761,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   };
 
   return (
-    <div className={`dk-table ${cq ? `cq-${cq}` : ''} ${cqEnemy ? 'cq-enemy' : ''}`}>
+    <div className={`dk-table ${cq ? `tq-${cq}` : ''}`}>
       <header className="dk-bar">
         <IconButton icon="settings" label="Réglages" onClick={() => setSheet('menu')} className="dk-icon" />
         <div className="dk-bar__title">
@@ -766,7 +795,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       </div>
 
       <main className="dk-map">
-        <div className="dk-board">
+        <div className={`dk-board ${cq ? `cq-${cq}` : ''} ${cqEnemy ? 'cq-enemy' : ''}`}>
           {cq === 'radar' && (
             <>
               <div className="dk-sonar" aria-hidden><span className="dk-sonar__wave" /></div>
@@ -777,8 +806,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
               </div>
             </>
           )}
-          {/* a new phase lays its sheet on the map: a transparent acetate wipes across */}
-          <span key={`${cq}-${cqStep?.playerId}`} className="dk-acetate" aria-hidden />
           <div className="dk-rows" aria-hidden>{Array.from({ length: ROWS }, (_, r) => <span key={r} className={preview?.row === r ? 'is-lit' : ''}>{ROW_NAMES[r]}</span>)}</div>
           {box(1)}
           {box(2)}
