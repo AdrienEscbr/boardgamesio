@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CUBES, createGame, emptyBoard, enclosedHoles, isEnclosed, landing, neighbours, placeCube, removeCube, settleBoard, skipBall,
+  CUBES, createGame, emptyBoard, enclosedHoles, isEnclosed, landing, neighbours, placeCube, settleBoard, skipBall,
   throwItem, viewFor,
 } from '../src/engine/index.js';
 
@@ -136,19 +136,18 @@ function withEnclosedCorner() {
   return g;
 }
 
-test('ball strike: the player removes the neighbouring cubes in the order they like', () => {
+test('ball strike: the cubes around the ball are blown at once and go back to the reserve', () => {
   const g = withEnclosedCorner();
   assert.deepEqual([g.step.kind, g.step.item], ['throw', 'ball']);
   // an open hole is a miss
   throwItem(g, 'A', { row: 3, col: 5 }, 1, seq(...STRAIGHT));
   assert.equal(g.step.tries, 1);
-  throwItem(g, 'A', { row: 0, col: 4 }, 1, seq(...STRAIGHT));
-  assert.equal(g.step.kind, 'remove');
-  assert.throws(() => removeCube(g, 'A', { row: 4, col: 7 }), { code: 'NOT_REMOVABLE' });
   const reserve = g.reserve;
-  removeCube(g, 'A', { row: 1, col: 4 });
-  removeCube(g, 'A', { row: 0, col: 5 });
+  throwItem(g, 'A', { row: 0, col: 4 }, 1, seq(...STRAIGHT));
+  assert.equal(g.board[1][4], null);
+  assert.equal(g.board[0][5], null);
   assert.equal(g.reserve, reserve + 2);
+  assert.deepEqual(g.events.filter((e) => e.type === 'remove').map((e) => [e.cell.row, e.cell.col]).sort(), [[0, 5], [1, 4]]);
   assert.equal(g.currentId, 'B');
 });
 

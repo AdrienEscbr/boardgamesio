@@ -18,7 +18,7 @@ export default function RulesSheet({ open, onClose }) {
           <ul>
             <li><strong>Déploiement</strong> : lancez une unité dans la tranchée de gauche.</li>
             <li><strong>Fortification</strong> : lancez un bloc dans la tranchée de droite (tant que la réserve en a).</li>
-            <li><strong>Frappe tactique</strong> : si une position vide est <strong>encerclée</strong> de blocs (4 voisins, 3 sur un bord, 2 dans un coin ; l’autre tranchée compte comme un bord), vous pouvez y lancer l’obus. Il fait sauter ces blocs, un par un, dans l’ordre de votre choix. La frappe est facultative.</li>
+            <li><strong>Frappe tactique</strong> : si une position vide est <strong>encerclée</strong> de blocs (4 voisins, 3 sur un bord, 2 dans un coin ; l’autre tranchée compte comme un bord), vous pouvez y lancer l’obus. Il fait sauter tous ces blocs, qui retournent dans la réserve. La frappe est facultative.</li>
           </ul>
         </section>
         <section>

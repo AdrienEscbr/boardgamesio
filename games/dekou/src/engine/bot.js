@@ -133,9 +133,6 @@ export function botAction(view, playerId, rng = Math.random) {
   const step = view.step;
   const level = view.botLevel ?? 'normal';
   if (!step || step.playerId !== playerId) return null;
-  if (step.kind === 'remove') {
-    return { type: 'remove', cell: bestStrike(view, step.remaining).order[0] };
-  }
   if (step.kind === 'place') {
     return { type: 'place', cell: chooseCubeHole(view, rng, level === 'easy' ? 'easy' : 'hard', placeableHoles(view.board, step)) };
   }

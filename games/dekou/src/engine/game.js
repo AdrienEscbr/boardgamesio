@@ -279,10 +279,17 @@ export function throwItem(game, playerId, target, precision, rng = Math.random) 
     return { hit, hole };
   }
 
-  // Ball
+  // Ball: it blows every cube around it, one after the other, and they go back to the
+  // reserve. The order cannot change the outcome (a removal only frees a hole in its own
+  // row), so the strike clears them at once instead of asking for an order.
   if (hit) {
-    const cubes = neighbours(hole.row, hole.col);
-    game.step = { kind: 'remove', item: 'cube', playerId, hole: { ...hole }, remaining: cubes };
+    for (const cell of neighbours(hole.row, hole.col)) {
+      game.board[cell.row][cell.col] = null;
+      game.reserve += 1;
+      emit(game, { type: 'remove', playerId, cell: { row: cell.row, col: cell.col }, hole: { ...hole } });
+      settle(game, playerId);
+    }
+    endTurn(game);
   } else if (step.tries >= TRIES) {
     endTurn(game);
   }
@@ -397,21 +404,6 @@ export function placeCube(game, playerId, cell) {
   if (step.reason === 'missed') { afterCube(game); return; }
   if (step.remaining > 0 && game.reserve > 0 && placeableHoles(game.board, step).length) return;
   afterDie(game);
-}
-
-/** Ball strike: removes one of the cubes around the ball, in the order the player likes. */
-export function removeCube(game, playerId, cell) {
-  expect(game, playerId, 'remove');
-  const step = game.step;
-  const k = step.remaining.findIndex((h) => h.row === cell?.row && h.col === cell?.col);
-  if (k < 0) throw new GameError('NOT_REMOVABLE');
-  game.seq += 1;
-  step.remaining.splice(k, 1);
-  game.board[cell.row][cell.col] = null;
-  game.reserve += 1;
-  emit(game, { type: 'remove', playerId, cell: { row: cell.row, col: cell.col } });
-  settle(game, playerId);
-  if (!step.remaining.length) endTurn(game);
 }
 
 /** The ball is optional: the player may skip it (only at the ball step). */

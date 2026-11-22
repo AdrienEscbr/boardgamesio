@@ -77,7 +77,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   latest.current = v;
   // What the effects still owe the board: cells shown empty until a piece lands, pieces
   // shown although they left (until they fly away), dice not yet back in a hand.
-  const [hold, setHold] = useState({ cells: {}, ghosts: {}, hands: {}, ball: false });
+  const [hold, setHold] = useState({ cells: {}, ghosts: {}, hands: {}, cracks: {}, crater: null, clearing: null });
   const [reticle, setReticle] = useState(null);
   useToastPlacement('top');
 
@@ -103,7 +103,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const can = (r, c) => {
     if (!canAct || !step) return false;
     const cell = v.board[r][c];
-    if (step.kind === 'remove') return step.remaining.some((h) => h.row === r && h.col === c);
     if (step.kind === 'place') return inBox(2, c) && cell === null && (step.reason !== 'red' || r === step.row);
     if (step.item === 'die') return inBox(1, c) && cell === null;
     if (step.item === 'cube') return inBox(2, c) && cell === null;
@@ -124,10 +123,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       if (!isRed || v.phase === 'opening') return { row, doomed: new Set(), text: base };
       const free = Math.min(v.reserve, v.board[row].filter((cell, c) => inBox(2, c) && cell === null).length);
       return { row, doomed: new Set(), text: `${base} · renforts : ${free ? `jusqu’à ${plural(free, 'bloc')}` : 'aucun bloc'} sur cette ligne` };
-    }
-    if (step.kind === 'remove') {
-      const doomed = doomedBy(v.board, (b) => { b[row][col] = null; });
-      return { row, doomed, text: doomed.size ? `Retirer ${at} rapatrie ${plural(doomed.size, 'unité')}` : `Retirer ${at} : rien ne rentre encore` };
     }
     if (step.kind === 'throw' && step.item === 'ball') {
       const around = neighbours(row, col);
@@ -171,7 +166,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
 
   const onHole = (r, c) => {
     if (!can(r, c)) return;
-    if (step.kind === 'remove') { sound('rubble'); send({ type: 'remove', cell: { row: r, col: c } }); return; }
     if (step.kind === 'place') { send({ type: 'place', cell: { row: r, col: c } }); return; }
     sound('pick');
     haptic('light');
@@ -191,7 +185,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const patch = (fn) => setHold((h) => {
-    const n = { cells: { ...h.cells }, ghosts: { ...h.ghosts }, hands: { ...h.hands }, ball: h.ball };
+    const n = { cells: { ...h.cells }, ghosts: { ...h.ghosts }, hands: { ...h.hands }, cracks: { ...h.cracks }, crater: h.crater, clearing: h.clearing };
     fn(n);
     return n;
   });
@@ -210,14 +204,13 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     patch((n) => {
       for (const e of fresh) {
         if (e.type === 'throw' && e.hit && e.item !== 'ball') bump(n.cells, cellKey(e.hole.row, e.hole.col), 1);
-        if (e.type === 'throw' && e.hit && e.item === 'ball') n.ball = true;
         if (e.type === 'place') bump(n.cells, cellKey(e.cell.row, e.cell.col), 1);
         if (e.type === 'recover') {
           for (const d of e.dice) n.ghosts[cellKey(d.row, d.col)] = dieHTML(d.value, d.color, d.seat);
           bump(n.hands, e.playerId, e.dice.length);
         }
         if (e.type === 'reclaim') bump(n.hands, e.playerId, e.dice.length);
-        if (e.type === 'remove') n.ghosts[cellKey(e.cell.row, e.cell.col)] = crackedHTML();
+        if (e.type === 'remove') { const k = cellKey(e.cell.row, e.cell.col); n.ghosts[k] = crackedHTML(); n.cracks[k] = true; }
       }
     });
     // once these effects have played, the plate and the overlay move to the step they led to
@@ -426,8 +419,10 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   };
 
   async function play(e) {
-    if (e.type === 'release') { setReleased(e.state); return; }
+    if (e.type === 'release') { setReleased(e.state); patch((n) => { n.clearing = null; }); return; }
     if (e.type === 'throw') {
+      // the next throw: the old crater has stopped smoking
+      patch((n) => { n.crater = null; });
       // the outcome is known when the piece leaves: it flies straight to where it comes down
       const land = landingOf(e);
       // the opponent's aim shows for a moment, so their throw can be followed
@@ -448,7 +443,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       if (e.hit) {
         node?.remove();
         if (isBall) {
-          patch((n) => { n.ball = false; });
+          patch((n) => { n.crater = { row: e.hole.row, col: e.hole.col }; n.clearing = e.playerId; });
           blast(to);
         } else {
           patch((n) => bump(n.cells, cellKey(e.hole.row, e.hole.col), -1));
@@ -515,11 +510,12 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     if (e.type === 'remove') {
       // the cracked block shudders, splits and slumps into its hole in a cloud of dust
       const key = cellKey(e.cell.row, e.cell.col);
+      await wait(420); // the cracked block smokes a moment before it gives way
       sound('rubble');
       haptic('light');
       flash(e.cell.row, e.cell.col, 'is-crumbling');
       await wait(200);
-      patch((n) => { delete n.ghosts[key]; });
+      patch((n) => { delete n.ghosts[key]; delete n.cracks[key]; });
       collapse(holeCentre(e.cell.row, e.cell.col));
       await wait(320);
       return;
@@ -577,13 +573,15 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         ? { eyebrow: 'Renforts', name: `Poser ${plural(ps.remaining, 'bloc')}` }
         : { eyebrow: 'Bloc égaré', name: 'Poser le bloc' };
     }
-    const o = ORDERS[ps.kind === 'remove' ? 'remove' : ps.item];
+    if (hold.clearing) return { eyebrow: 'Ordre 3 / 3', name: ORDERS.remove.name };
+    const o = ORDERS[ps.item];
     return { eyebrow: `Ordre ${o.n} / 3`, name: o.name };
   })();
 
   const instruction = (() => {
     if (readOnly) return 'Partie terminée.';
     if (hostPaused) return 'Partie en pause.';
+    if (hold.clearing) return `Les blocs autour du cratère s’effondrent : ils retournent dans la réserve.`;
     if (!ps) {
       if (!v.winnerId) return 'Au bout des tours, les deux camps ont autant d’unités.';
       if (v.results?.reason === 'limit') return `Au bout des tours, ${v.winnerId === me ? 'vous avez' : `${nameOf(v.winnerId)} a`} le plus d’unités en main.`;
@@ -593,12 +591,11 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       if (ps.kind === 'place' && ps.reason === 'missed') return `${nameOf(ps.playerId)} pose votre bloc égaré…`;
       if (released.phase === 'opening') return `${nameOf(ps.playerId)} lance son dé d’ouverture…`;
       if (ps.kind === 'place') return `${nameOf(ps.playerId)} pose ses renforts…`;
-      return `${nameOf(ps.playerId)} ${ORDERS[ps.kind === 'remove' ? 'remove' : ps.item].verb}…`;
+      return `${nameOf(ps.playerId)} ${ORDERS[ps.item].verb}…`;
     }
     if (preview && pLive) return preview.text;
     if (released.phase === 'opening') return 'Visez la tranchée de gauche : la plus forte face engage.';
     if (ps.kind === 'place') return ps.reason === 'red' ? `Renforts : posez ${plural(ps.remaining, 'bloc')} sur la ligne ${ROW_NAMES[ps.row]}, à droite.` : `Le bloc de ${opp.nickname} s’est égaré : posez-le où vous voulez.`;
-    if (ps.kind === 'remove') return 'Touchez les blocs autour du cratère, dans l’ordre de votre choix.';
     if (ps.item === 'die') return 'Touchez une position de la tranchée de gauche.';
     if (ps.item === 'cube') return `Touchez une position de la tranchée de droite · ${plural(v.reserve, 'bloc')} en réserve.`;
     return 'Visez une position vide encerclée de blocs, ou annulez la frappe.';
@@ -610,19 +607,20 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   // deploy: the unit trench lit, the other one's ground darkened; fort: the engineers'
   // blueprint on the block trench; radar: the strike scope over both; clear: cracked blocks.
   const cqStep = readOnly ? null : plate.step;
-  const cq = !cqStep ? null
-    : cqStep.kind === 'remove' ? 'clear'
+  const cq = hold.clearing ? 'clear'
+    : !cqStep ? null
       : cqStep.kind === 'throw' && cqStep.item === 'die' ? 'deploy'
         : cqStep.kind === 'throw' && cqStep.item === 'ball' ? 'radar' : 'fort';
-  const cqEnemy = !!cqStep && cqStep.playerId !== me;
+  const cqEnemy = hold.clearing ? hold.clearing !== me : !!cqStep && cqStep.playerId !== me;
   const activeBox = cq === 'deploy' ? 1 : cq === 'fort' || cq === 'clear' ? 2 : 0;
   // the reinforcement row is framed only while the red die's cubes are really being placed:
   // it shows once its landing has played out, and goes as soon as the placing is over
   const isRedPlace = (s) => s?.kind === 'place' && s.reason === 'red';
   const redRow = cq === 'fort' && isRedPlace(cqStep) && isRedPlace(step) && step.row === cqStep.row ? step.row : null;
-  const weakPoints = cq === 'radar' ? enclosedHoles(v.board) : [];
+  // under the radar, the blocks a strike already took still show until it has played out
+  const scopeBoard = cq === 'radar' ? v.board.map((row, r) => row.map((cell, c) => (hold.cracks[cellKey(r, c)] ? { kind: 'cube' } : cell))) : v.board;
+  const weakPoints = cq === 'radar' ? enclosedHoles(scopeBoard) : [];
   const strikable = new Set(weakPoints.flatMap((h) => neighbours(h.row, h.col).map((n) => cellKey(n.row, n.col))));
-  const cracked = new Set(cq === 'clear' && Array.isArray(cqStep.remaining) ? cqStep.remaining.map((h) => cellKey(h.row, h.col)) : []);
 
   // A phase change dissolves the old overlay into the new one: the board as it was is
   // copied (while the DOM still shows it, during render) and fades out over the new one.
@@ -723,7 +721,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     );
   };
 
-  const ballHole = step?.kind === 'remove' && !hold.ball ? step.hole : null;
+  const ballHole = hold.crater;
   const ringSet = new Set((preview?.ring ?? []).map((h) => cellKey(h.row, h.col)));
   const box = (b) => {
     const holes = [];
@@ -740,18 +738,19 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         const lit = preview?.row === r || (focus && step?.item === 'die' && focus.row === r) || (step?.kind === 'place' && step.reason === 'red' && step.row === r);
         const struck = ballHole && ballHole.row === r && ballHole.col === c;
         let html = struck ? craterHTML() : ghost ?? cellHTML(cell);
+        // a block a strike will take stays whole until the shell has gone off
+        if (hold.cracks[key] && !hold.clearing) html = cubeHTML();
         if (cq === 'radar' && !held) {
-          if (cell?.kind === 'cube') html = strikable.has(key) ? blipHTML() : echoHTML();
-          else if (!cell && weakPoints.some((h) => h.row === r && h.col === c)) html = weakHTML(neighbours(r, c).length);
+          if (cell?.kind === 'cube' || hold.cracks[key]) html = strikable.has(key) ? blipHTML() : echoHTML();
+          else if (!cell && !hold.cracks[key] && weakPoints.some((h) => h.row === r && h.col === c)) html = weakHTML(neighbours(r, c).length);
         }
-        if (cq === 'clear' && cell?.kind === 'cube' && cracked.has(key)) html = crackedHTML();
         const closed = redRow != null && b === 2 && r !== redRow;
         holes.push(
           <button
             key={key}
             id={holeId(r, c)}
             type="button"
-            className={`dk-hole ${targetable ? 'is-can' : ''} ${isTarget ? 'is-target' : ''} ${enemyAim ? 'is-enemy-aim' : ''} ${doomed ? 'is-doomed' : ''} ${lit ? 'is-lit' : ''} ${ringSet.has(key) ? 'is-ring' : ''} ${step?.kind === 'remove' && targetable ? 'is-removable' : ''} ${struck ? 'is-struck' : ''}`}
+            className={`dk-hole ${targetable ? 'is-can' : ''} ${isTarget ? 'is-target' : ''} ${enemyAim ? 'is-enemy-aim' : ''} ${doomed ? 'is-doomed' : ''} ${lit ? 'is-lit' : ''} ${ringSet.has(key) ? 'is-ring' : ''} ${struck ? 'is-struck' : ''}`}
             disabled={!targetable}
             aria-label={`${coord(r, c)}${cell ? (cell.kind === 'die' ? `, unité ${cell.value}` : ', bloc') : ', vide'}`}
             onClick={() => onHole(r, c)}

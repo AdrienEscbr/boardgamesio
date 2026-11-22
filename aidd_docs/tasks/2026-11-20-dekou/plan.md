@@ -20,7 +20,7 @@ Auteur affiché : Adrien. Jeu `games/dekou`, paquet `@bgio/dekou`, préfixe de c
 | Ouverture | Chacun lance un dé blanc, qui reste sur le plateau. La plus forte face commence |
 | Tour | Un dé dans la boîte 1, puis un cube dans la boîte 2 (tant qu'il en reste), puis la balle si un trou enfermé existe |
 | Récupération | Le dé occupe son trou. Un dé dont la face est égale au nombre de trous vides de sa ligne de 8 quitte le plateau. On vérifie **tous** les dés, des deux joueurs, **en continu**. Le dé va dans la main de **celui qui a provoqué** la correspondance |
-| Balle | Elle ne se pose que dans un trou vide dont tous les voisins orthogonaux sont des cubes : 4 voisins, 3 sur un bord, 2 dans un angle. Elle retire ces cubes dans l'ordre choisi par le joueur, et ils retournent dans la réserve |
+| Balle | Elle ne se pose que dans un trou vide dont tous les voisins orthogonaux sont des cubes : 4 voisins, 3 sur un bord, 2 dans un angle. Elle retire ces cubes, qui retournent dans la réserve. Le retrait est **automatique** (demande d'Adrien, 2026-11-22) : l'ordre ne change jamais le résultat, puisqu'un retrait ne libère un trou que dans sa propre ligne |
 | Dé rouge | Il se lance quand on n'a plus de dé blanc. Sa face donne le nombre de cubes que le lanceur **pose** dans la boîte 2, **uniquement sur la ligne où il a atterri** (précision d'Adrien, 2026-11-21). Les cubes qui n'y trouvent pas de place sont perdus : entre 0 et 4. Il se récupère comme un dé blanc, et le perdre ne fait pas perdre la partie |
 | Dé raté 3 fois | Il va dans la défausse **personnelle** du joueur et garde la face sur laquelle il est tombé |
 | Défausse | Quand un de mes dés atterrit, je reprends dans ma défausse tous les dés qui montrent la même face |
