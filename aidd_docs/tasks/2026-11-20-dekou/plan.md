@@ -1,6 +1,6 @@
 ---
 objective: "Ajouter DekouIO, un jeu d'adresse inventé par Adrien : on lance des dés, des cubes et une balle dans deux boîtes d'œufs, à 2 joueurs, robots possibles."
-status: en cours (étapes 1 et 2 faites)
+status: terminé (en attente de la PR)
 ---
 
 # Plan : DekouIO (dés dans les boîtes d'œufs)
@@ -47,4 +47,4 @@ Auteur affiché : Adrien. Jeu `games/dekou`, paquet `@bgio/dekou`, préfixe de c
 
 1. ✅ Moteur, robots, plugin, 20 tests, arène (`node games/dekou/scripts/arena.js 200`).
 2. ✅ Maquette visuelle (`/#/dev/dekou`), univers « champ de bataille » choisi par Adrien parmi trois maquettes : table d’état-major, tranchées, unités, blocs de béton, obus ; défausse appelée « pertes ». En attente de la revue d’Adrien.
-3. Écran complet, salon, résultats, vignette, enregistrement dans `apps/server` et `apps/web`, documentation.
+3. ✅ Calques de phase (déploiement, plan du génie, radar, déblaiement automatique), salon (niveau des robots, temps par ordre), résultats, vignette, enregistrement dans `apps/server` et `apps/web`, test réseau dans `packages/core-server`, documentation.

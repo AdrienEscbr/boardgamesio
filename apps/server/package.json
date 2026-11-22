@@ -4,5 +4,5 @@
   "private": true,
   "type": "module",
   "scripts": { "start": "node index.js", "dev": "node --watch index.js" },
-  "dependencies": { "@bgio/blackjack": "*", "@bgio/cactus": "*", "@bgio/core-server": "*", "@bgio/dutch": "*", "@bgio/mind": "*", "@bgio/naval": "*", "@bgio/p4": "*", "@bgio/planchettes": "*", "@bgio/poker": "*", "@bgio/scrabble": "*", "@bgio/tarot": "*", "@bgio/uinio": "*" }
+  "dependencies": { "@bgio/blackjack": "*", "@bgio/cactus": "*", "@bgio/core-server": "*", "@bgio/dekou": "*", "@bgio/dutch": "*", "@bgio/mind": "*", "@bgio/naval": "*", "@bgio/p4": "*", "@bgio/planchettes": "*", "@bgio/poker": "*", "@bgio/scrabble": "*", "@bgio/tarot": "*", "@bgio/uinio": "*" }
 }
