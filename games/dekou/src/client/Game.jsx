@@ -642,9 +642,9 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       const p1 = document.getElementById('dk-pits-1')?.getBoundingClientRect();
       const p2 = document.getElementById('dk-pits-2')?.getBoundingClientRect();
       if (!p1 || !p2) return;
-      // the emitter sits midway between the two trenches, just below them,
+      // the wave starts midway between the two trenches, level with their bottom edge,
       // so the wave spreads evenly over both
-      const o = { x: (p1.left + p2.right) / 2, y: Math.max(p1.bottom, p2.bottom) + 16 };
+      const o = { x: (p1.left + p2.right) / 2, y: Math.max(p1.bottom, p2.bottom) };
       const R = Math.max(...[[b.left, b.top], [b.right, b.top], [b.left, b.bottom], [b.right, b.bottom]].map(([x, y]) => Math.hypot(x - o.x, y - o.y)), 1);
       board.style.setProperty('--R', `${R}px`);
       board.style.setProperty('--ox', `${o.x - b.left}px`);
@@ -799,7 +799,6 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           {cq === 'radar' && (
             <>
               <div className="dk-sonar" aria-hidden><span className="dk-sonar__wave" /></div>
-              <span className="dk-sonar__emitter" aria-hidden />
               <div className="dk-sonar__readout" aria-hidden>
                 <span>Radar · {plural(weakPoints.length, 'point faible', 'points faibles')}</span>
                 <span>{cqEnemy ? 'Cible : vous' : plural(strikable.size, 'écho')}</span>

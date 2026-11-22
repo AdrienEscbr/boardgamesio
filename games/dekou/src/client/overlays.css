@@ -54,7 +54,6 @@
   background: repeating-radial-gradient(circle at 50% 70%, transparent 0 46px, rgba(125, 255, 176, 0.05) 47px 48px), radial-gradient(120% 90% at 50% 70%, #0a2a1c, #04110b 70%);
 }
 .dk-table.tq-radar::before { opacity: 1; }
-.dk-board { padding-bottom: 26px; }
 .cq-radar .dk-trench__pits { background: radial-gradient(circle at 50% 50%, #08251a, var(--scope) 85%); box-shadow: 0 0 0 5px #123a2a, 0 0 0 7px #0a1f16, 0 10px 22px rgba(0, 0, 0, 0.6); }
 .cq-radar .dk-trench__pits::before { display: none; }
 .cq-radar .dk-hole__pit { background: radial-gradient(circle at 50% 45%, #020a07, #082017); box-shadow: inset 0 0 0 1px rgba(125, 255, 176, 0.12), inset 0 2px 6px rgba(0, 0, 0, 0.8); }
@@ -80,10 +79,8 @@
   width: calc(var(--R, 400px) * 2); height: calc(var(--R, 400px) * 2); margin-left: calc(var(--R, 400px) * -1); margin-top: calc(var(--R, 400px) * -1);
   background: radial-gradient(circle closest-side, transparent 70%, rgba(125, 255, 176, 0.06) 88%, rgba(125, 255, 176, 0.3) 97%, rgba(210, 255, 230, 0.95) 99.3%, transparent 100%);
 }
-.dk-sonar__emitter { position: absolute; left: var(--ox, 50%); top: var(--oy, 100%); width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--phos); box-shadow: 0 0 10px 3px var(--phos); z-index: 5; }
 .dk-sonar__readout { position: absolute; left: 0; right: 0; top: -2px; display: flex; justify-content: space-between; font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--phos); z-index: 5; pointer-events: none; }
 .cq-enemy .dk-sonar__readout { color: var(--enemy); }
-.cq-enemy .dk-sonar__emitter { background: var(--enemy); box-shadow: 0 0 10px 3px var(--enemy); }
 
 /* clearing: the smoking crater and the cracked blocks around it */
 .dk-smoke { position: absolute; left: 50%; bottom: 55%; width: 0; height: 0; pointer-events: none; z-index: 2; }
