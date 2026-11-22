@@ -102,6 +102,14 @@ const SOUNDS = {
   // UINIO: an enamelled ceramic plaque set down on the tray, and the last-card call.
   clink: (ac, at = 0) => { click(ac, { at, freq: 4600, gain: 0.15, dur: 0.018 }); tone(ac, { at, freq: 2490, slideTo: 2440, dur: 0.22, gain: 0.03 }); tone(ac, { at: at + 0.005, freq: 3730, dur: 0.12, gain: 0.012 }); tone(ac, { at, freq: 240, slideTo: 170, dur: 0.05, gain: 0.06 }); },
   uinio: (ac) => { [659, 880, 1319].forEach((f, i) => tone(ac, { freq: f, at: i * 0.07, dur: 0.32, gain: 0.07, type: 'triangle' })); tone(ac, { freq: 2637, at: 0.2, dur: 0.4, gain: 0.02 }); },
+  // DekouIO: a unit dropping into earth, a concrete block, a throw gone wide, the shell's
+  // whistle, the rally call of a unit coming home, rubble.
+  thud: (ac) => { noise(ac, { freq: 260, dur: 0.18, gain: 0.45 }); tone(ac, { freq: 120, slideTo: 60, dur: 0.12, gain: 0.12 }); },
+  concrete: (ac) => { click(ac, { freq: 1300, gain: 0.22, dur: 0.04 }); noise(ac, { freq: 900, type: 'bandpass', dur: 0.12, gain: 0.18, q: 1.4 }); },
+  whiff: (ac) => noise(ac, { freq: 2400, type: 'highpass', dur: 0.28, gain: 0.07 }),
+  whistle: (ac) => tone(ac, { freq: 1900, slideTo: 700, dur: 0.6, gain: 0.035, type: 'sine' }),
+  rally: (ac) => [392, 523, 659, 784].forEach((f, i) => tone(ac, { freq: f, at: i * 0.09, dur: i === 3 ? 0.4 : 0.12, gain: 0.06, type: 'square' })),
+  rubble: (ac) => { for (let i = 0; i < 4; i++) click(ac, { at: i * 0.05, freq: 700 + i * 260, gain: 0.14, dur: 0.03 }); noise(ac, { freq: 600, dur: 0.3, gain: 0.12 }); },
   chip: (ac, at = 0) => { click(ac, { at, freq: 3600, gain: 0.14, dur: 0.02 }); click(ac, { at: at + 0.045, freq: 2900, gain: 0.08, dur: 0.018 }); tone(ac, { at, freq: 2100, slideTo: 1800, dur: 0.05, gain: 0.025 }); },
 };
 

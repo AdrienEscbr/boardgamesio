@@ -12,6 +12,7 @@ Plateforme de jeux de société en ligne : un serveur et un site communs, et un 
 | MindIO (Mastermind : duel, classique, course) | 2, robots possibles | Jouable |
 | BlackjackIO (Black Jack contre la banque) | 1 à 6, robots possibles | Jouable |
 | UINIO (même couleur ou même chiffre, plusieurs manches) | 2 à 8, robots possibles | Jouable |
+| DekouIO (lancer visé de dés, cubes et obus dans deux boîtes d’œufs) | 2, robots possibles | Jouable |
 
 ## Démarrer en local
 
