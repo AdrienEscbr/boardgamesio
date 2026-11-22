@@ -18,6 +18,7 @@ import './dekou.css';
 import './overlays.css';
 
 const RADAR_MS = 2600; // one radar sweep
+const releaseOf = (v) => ({ step: v.step, phase: v.phase, round: v.opening?.round ?? 1, seq: v.seq });
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const centre = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
 const rectOf = (id) => document.getElementById(id)?.getBoundingClientRect() ?? null;
@@ -70,6 +71,10 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const [target, setTarget] = useState(null);
   const [hover, setHover] = useState(null);
   const [animating, setAnimating] = useState(false);
+  // the step the plate and the overlay show: released by the effects queue once played out
+  const [released, setReleased] = useState(() => releaseOf(v));
+  const latest = useRef(v);
+  latest.current = v;
   // What the effects still owe the board: cells shown empty until a piece lands, pieces
   // shown although they left (until they fly away), dice not yet back in a hand.
   const [hold, setHold] = useState({ cells: {}, ghosts: {}, hands: {}, ball: false });
@@ -194,9 +199,14 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
 
   useEffect(() => {
     const fresh = v.events.filter((e) => e.n > seen.current);
-    if (!fresh.length) return;
+    const now = releaseOf(v);
+    if (!fresh.length || readOnly) {
+      if (fresh.length) seen.current = Math.max(...fresh.map((e) => e.n));
+      // nothing to play out: the plate and the overlay follow at once
+      if (!running.current && !queue.current.length) setReleased(now);
+      return;
+    }
     seen.current = Math.max(...fresh.map((e) => e.n));
-    if (readOnly) return;
     patch((n) => {
       for (const e of fresh) {
         if (e.type === 'throw' && e.hit && e.item !== 'ball') bump(n.cells, cellKey(e.hole.row, e.hole.col), 1);
@@ -210,7 +220,8 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         if (e.type === 'remove') n.ghosts[cellKey(e.cell.row, e.cell.col)] = crackedHTML();
       }
     });
-    queue.current.push(...fresh);
+    // once these effects have played, the plate and the overlay move to the step they led to
+    queue.current.push(...fresh, { type: 'release', state: now });
     run();
   }, [v.seq]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -223,6 +234,8 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       try { await play(e); } catch { /* an effect must never block the table */ }
     }
     running.current = false;
+    // everything has played out: the plate catches up with the game as it stands
+    if (alive.current && latest.current.events.every((e) => e.n <= seen.current)) setReleased(releaseOf(latest.current));
     if (alive.current) setAnimating(false);
   }
 
@@ -413,6 +426,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   };
 
   async function play(e) {
+    if (e.type === 'release') { setReleased(e.state); return; }
     if (e.type === 'throw') {
       // the outcome is known when the piece leaves: it flies straight to where it comes down
       const land = landingOf(e);
@@ -550,49 +564,47 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   };
 
   // ---- words ----------------------------------------------------------------------
+  // The plate shows the step the effects have reached (`released`), so it never tells the
+  // outcome of a throw before the piece comes down, and it keeps pace when moves pile up.
+  const ps = released.step;
+  const pMine = playing && !hostPaused && ps?.playerId === me;
+  const pLive = released.seq === v.seq;
   const order = (() => {
-    if (!step) return { eyebrow: 'Fin des opérations', name: v.winnerId === me ? 'Victoire' : v.winnerId ? 'Défaite' : 'Armistice' };
-    if (v.phase === 'opening') return { eyebrow: `Ouverture${v.opening?.round > 1 ? ` · relance ${v.opening.round - 1}` : ''}`, name: 'Prise d’initiative' };
-    if (step.kind === 'place') {
-      return step.reason === 'red'
-        ? { eyebrow: 'Renforts', name: `Poser ${plural(step.remaining, 'bloc')}` }
+    if (!ps) return { eyebrow: 'Fin des opérations', name: v.winnerId === me ? 'Victoire' : v.winnerId ? 'Défaite' : 'Armistice' };
+    if (released.phase === 'opening') return { eyebrow: `Ouverture${released.round > 1 ? ` · relance ${released.round - 1}` : ''}`, name: 'Prise d’initiative' };
+    if (ps.kind === 'place') {
+      return ps.reason === 'red'
+        ? { eyebrow: 'Renforts', name: `Poser ${plural(ps.remaining, 'bloc')}` }
         : { eyebrow: 'Bloc égaré', name: 'Poser le bloc' };
     }
-    const o = ORDERS[step.kind === 'remove' ? 'remove' : step.item];
+    const o = ORDERS[ps.kind === 'remove' ? 'remove' : ps.item];
     return { eyebrow: `Ordre ${o.n} / 3`, name: o.name };
   })();
 
   const instruction = (() => {
     if (readOnly) return 'Partie terminée.';
     if (hostPaused) return 'Partie en pause.';
-    if (!step) {
+    if (!ps) {
       if (!v.winnerId) return 'Au bout des tours, les deux camps ont autant d’unités.';
       if (v.results?.reason === 'limit') return `Au bout des tours, ${v.winnerId === me ? 'vous avez' : `${nameOf(v.winnerId)} a`} le plus d’unités en main.`;
       return v.winnerId === me ? `${opp.nickname} n’a plus aucune unité en main.` : 'Vous n’avez plus aucune unité en main.';
     }
-    if (!myTurn) {
-      if (step.kind === 'place' && step.reason === 'missed') return `${nameOf(step.playerId)} pose votre bloc égaré…`;
-      if (v.phase === 'opening') return `${nameOf(step.playerId)} lance son dé d’ouverture…`;
-      if (step.kind === 'place') return `${nameOf(step.playerId)} pose ses renforts…`;
-      return `${nameOf(step.playerId)} ${ORDERS[step.kind === 'remove' ? 'remove' : step.item].verb}…`;
+    if (!pMine) {
+      if (ps.kind === 'place' && ps.reason === 'missed') return `${nameOf(ps.playerId)} pose votre bloc égaré…`;
+      if (released.phase === 'opening') return `${nameOf(ps.playerId)} lance son dé d’ouverture…`;
+      if (ps.kind === 'place') return `${nameOf(ps.playerId)} pose ses renforts…`;
+      return `${nameOf(ps.playerId)} ${ORDERS[ps.kind === 'remove' ? 'remove' : ps.item].verb}…`;
     }
-    if (preview) return preview.text;
-    if (v.phase === 'opening') return 'Visez la tranchée de gauche : la plus forte face engage.';
-    if (step.kind === 'place') return step.reason === 'red' ? `Renforts : posez ${plural(step.remaining, 'bloc')} sur la ligne ${ROW_NAMES[step.row]}, à droite.` : `Le bloc de ${opp.nickname} s’est égaré : posez-le où vous voulez.`;
-    if (step.kind === 'remove') return 'Touchez les blocs autour du cratère, dans l’ordre de votre choix.';
-    if (step.item === 'die') return 'Touchez une position de la tranchée de gauche.';
-    if (step.item === 'cube') return `Touchez une position de la tranchée de droite · ${plural(v.reserve, 'bloc')} en réserve.`;
+    if (preview && pLive) return preview.text;
+    if (released.phase === 'opening') return 'Visez la tranchée de gauche : la plus forte face engage.';
+    if (ps.kind === 'place') return ps.reason === 'red' ? `Renforts : posez ${plural(ps.remaining, 'bloc')} sur la ligne ${ROW_NAMES[ps.row]}, à droite.` : `Le bloc de ${opp.nickname} s’est égaré : posez-le où vous voulez.`;
+    if (ps.kind === 'remove') return 'Touchez les blocs autour du cratère, dans l’ordre de votre choix.';
+    if (ps.item === 'die') return 'Touchez une position de la tranchée de gauche.';
+    if (ps.item === 'cube') return `Touchez une position de la tranchée de droite · ${plural(v.reserve, 'bloc')} en réserve.`;
     return 'Visez une position vide encerclée de blocs, ou annulez la frappe.';
   })();
 
-  // the plate keeps the order being played out until its effects end, so it never tells
-  // the outcome of a throw before the piece comes down
-  const settling = animating || v.events.some((e) => e.n > seen.current);
-  const shown = useRef(null);
-  if (!settling || !shown.current) {
-    shown.current = { order, instruction, mine: myTurn, step, tries: step?.kind === 'throw' && step.tries > 0 ? ` · essai ${step.tries + 1}/3` : '' };
-  }
-  const plate = shown.current;
+  const plate = { order, instruction, mine: pMine, step: ps, tries: ps?.kind === 'throw' && ps.tries > 0 ? ` · essai ${ps.tries + 1}/3` : '' };
 
   // ---- the phase overlay: each order lays its own sheet on the map ----------------
   // deploy: the unit trench lit, the other one's ground darkened; fort: the engineers'
