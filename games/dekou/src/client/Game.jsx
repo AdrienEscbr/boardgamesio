@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { useApp, serverNow } from '@bgio/ui/lib/store.js';
@@ -9,13 +9,15 @@ import { Avatar, Button, IconButton, Sheet } from '@bgio/ui/components/ui.jsx';
 import Icon from '@bgio/ui/components/Icon.jsx';
 import { toast, useToastPlacement } from '@bgio/ui/components/Toaster.jsx';
 import SettingsSheet from '@bgio/ui/components/SettingsSheet.jsx';
-import { BOX_COLS, COLS, ROWS, emptyInRow, inBox, isEnclosed, neighbours, settleBoard } from '../engine/game.js';
-import { cellHTML, craterHTML, cubeHTML, dieHTML, pieceNode, shellHTML } from './pieces.js';
+import { BOX_COLS, COLS, ROWS, emptyInRow, enclosedHoles, inBox, isEnclosed, neighbours, settleBoard } from '../engine/game.js';
+import { blipHTML, cellHTML, crackedHTML, craterHTML, cubeHTML, dieHTML, echoHTML, markHTML, pieceNode, shellHTML, weakHTML } from './pieces.js';
 import RulesSheet from './RulesSheet.jsx';
 import { MISS_LABELS, ORDERS, ROW_NAMES, coord, plural } from './i18n.js';
 import './fonts.js';
 import './dekou.css';
+import './overlays.css';
 
+const RADAR_MS = 2600; // one radar sweep
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const centre = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
 const rectOf = (id) => document.getElementById(id)?.getBoundingClientRect() ?? null;
@@ -205,7 +207,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           bump(n.hands, e.playerId, e.dice.length);
         }
         if (e.type === 'reclaim') bump(n.hands, e.playerId, e.dice.length);
-        if (e.type === 'remove') n.ghosts[cellKey(e.cell.row, e.cell.col)] = cubeHTML();
+        if (e.type === 'remove') n.ghosts[cellKey(e.cell.row, e.cell.col)] = crackedHTML();
       }
     });
     queue.current.push(...fresh);
@@ -295,13 +297,14 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   }
 
   /** A short-lived node of the effects layer at a screen point. */
-  function spark(cls, at, frames, opts) {
+  function spark(cls, at, frames, opts, clip = '') {
     const layer = fxRef.current;
     if (!layer || !at) return;
     const el = document.createElement('span');
     el.className = cls;
     el.style.left = `${at.x}px`;
     el.style.top = `${at.y}px`;
+    if (clip) el.style.clipPath = clip;
     layer.appendChild(el);
     el.animate(frames, { fill: 'both', ...opts }).onfinish = () => el.remove();
   }
@@ -330,6 +333,25 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       { transform: 'none' }, { transform: 'translate(-4px, 2px)' }, { transform: 'translate(4px, -2px)' },
       { transform: 'translate(-2px, -1px)' }, { transform: 'translate(1px, 1px)' }, { transform: 'none' },
     ], { duration: 360, easing: 'ease-out' });
+  }
+
+  /** A block breaking into four pieces that sink into its hole, and the dust it raises. */
+  function collapse(at) {
+    if (!at || reduced()) return;
+    const cuts = [
+      'polygon(0 0, 55% 0, 40% 45%, 0 60%)', 'polygon(55% 0, 100% 0, 100% 50%, 40% 45%)',
+      'polygon(0 60%, 40% 45%, 55% 100%, 0 100%)', 'polygon(40% 45%, 100% 50%, 100% 100%, 55% 100%)',
+    ];
+    const c = 'translate(-50%, -50%)';
+    cuts.forEach((clip, i) => {
+      const dx = (i % 2 ? 1 : -1) * (2 + Math.random() * 3);
+      spark('dk-shard', at, [
+        { transform: `${c}`, opacity: 1 },
+        { transform: `${c} translate(${dx}px, 4px) rotate(${dx * 3}deg) scale(.92)`, opacity: 1, offset: 0.4 },
+        { transform: `${c} translate(${dx * 1.6}px, 10px) rotate(${dx * 5}deg) scale(.55)`, opacity: 0 },
+      ], { duration: 700, delay: i * 50, easing: 'cubic-bezier(.5,0,.8,.6)' }, clip);
+    });
+    spark('dk-dust', at, [{ transform: `${c} scale(.3)`, opacity: 0.9 }, { transform: `${c} scale(1.3)`, opacity: 0 }], { duration: 900, easing: 'ease-out' });
   }
 
   /** A puff of grey smoke rising from a point. */
@@ -477,11 +499,15 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       return;
     }
     if (e.type === 'remove') {
+      // the cracked block shudders, splits and slumps into its hole in a cloud of dust
       const key = cellKey(e.cell.row, e.cell.col);
-      if (e.playerId !== me) sound('rubble');
-      flash(e.cell.row, e.cell.col, 'is-cleared');
-      await wait(380);
+      sound('rubble');
+      haptic('light');
+      flash(e.cell.row, e.cell.col, 'is-crumbling');
+      await wait(200);
       patch((n) => { delete n.ghosts[key]; });
+      collapse(holeCentre(e.cell.row, e.cell.col));
+      await wait(320);
       return;
     }
     if (e.type === 'discard') {
@@ -564,9 +590,56 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
   const settling = animating || v.events.some((e) => e.n > seen.current);
   const shown = useRef(null);
   if (!settling || !shown.current) {
-    shown.current = { order, instruction, mine: myTurn, tries: step?.kind === 'throw' && step.tries > 0 ? ` · essai ${step.tries + 1}/3` : '' };
+    shown.current = { order, instruction, mine: myTurn, step, tries: step?.kind === 'throw' && step.tries > 0 ? ` · essai ${step.tries + 1}/3` : '' };
   }
   const plate = shown.current;
+
+  // ---- the phase overlay: each order lays its own sheet on the map ----------------
+  // deploy: the unit trench lit, the other one's ground darkened; fort: the engineers'
+  // blueprint on the block trench; radar: the strike scope over both; clear: cracked blocks.
+  const cqStep = readOnly ? null : plate.step;
+  const cq = !cqStep ? null
+    : cqStep.kind === 'remove' ? 'clear'
+      : cqStep.kind === 'throw' && cqStep.item === 'die' ? 'deploy'
+        : cqStep.kind === 'throw' && cqStep.item === 'ball' ? 'radar' : 'fort';
+  const cqEnemy = !!cqStep && cqStep.playerId !== me;
+  const activeBox = cq === 'deploy' ? 1 : cq === 'fort' || cq === 'clear' ? 2 : 0;
+  const redRow = cq === 'fort' && cqStep.kind === 'place' && cqStep.reason === 'red' ? cqStep.row : null;
+  const weakPoints = cq === 'radar' ? enclosedHoles(v.board) : [];
+  const strikable = new Set(weakPoints.flatMap((h) => neighbours(h.row, h.col).map((n) => cellKey(n.row, n.col))));
+  const cracked = new Set(cq === 'clear' && Array.isArray(cqStep.remaining) ? cqStep.remaining.map((h) => cellKey(h.row, h.col)) : []);
+
+  // the radar wave and the blips share one clock, so a blip flares when the wave reaches it
+  useLayoutEffect(() => {
+    if (cq !== 'radar' || reduced()) return undefined;
+    const sync = () => {
+      const board = document.querySelector('.dk-board');
+      const wave = board?.querySelector('.dk-sonar__wave');
+      if (!board || !wave) return;
+      const b = board.getBoundingClientRect();
+      const R = Math.max(Math.hypot(b.width / 2, b.height), 1);
+      board.style.setProperty('--R', `${R}px`);
+      const T = RADAR_MS;
+      const loop = (el, frames, offset) => {
+        el.getAnimations().forEach((a) => a.cancel());
+        const a = el.animate(frames, { duration: T, iterations: Infinity });
+        a.startTime = offset; // anchored to the page clock: every node keeps the same beat
+      };
+      loop(wave, [{ transform: 'scale(0)', opacity: 1 }, { transform: 'scale(.85)', opacity: 1, offset: 0.85 }, { transform: 'scale(1)', opacity: 0 }], 0);
+      board.querySelectorAll('.dk-blip').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const d = Math.hypot(r.left + r.width / 2 - (b.left + b.width / 2), r.top + r.height / 2 - b.bottom);
+        loop(el, [
+          { transform: 'scale(2.6)', opacity: 1, boxShadow: '0 0 8px 4px #7dffb0, 0 0 22px 8px rgba(125,255,176,.6)' },
+          { transform: 'scale(1)', opacity: 0.75, boxShadow: '0 0 4px 1px #7dffb0, 0 0 10px 2px rgba(125,255,176,.5)', offset: 0.3 },
+          { transform: 'scale(1)', opacity: 0.75, boxShadow: '0 0 4px 1px #7dffb0, 0 0 10px 2px rgba(125,255,176,.5)' },
+        ], (d / R) * T);
+      });
+    };
+    sync();
+    window.addEventListener('resize', sync);
+    return () => window.removeEventListener('resize', sync);
+  });
 
   const clock = turn?.endsAt && turn.durationMs >= 2000 && playing ? turn : null;
   const aiming = canAct && step?.kind === 'throw' && !!target;
@@ -615,7 +688,14 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         const doomed = cell?.kind === 'die' && preview?.doomed.has(cell.id);
         const lit = preview?.row === r || (focus && step?.item === 'die' && focus.row === r) || (step?.kind === 'place' && step.reason === 'red' && step.row === r);
         const struck = ballHole && ballHole.row === r && ballHole.col === c;
-        const html = struck ? craterHTML() : ghost ?? cellHTML(cell);
+        let html = struck ? craterHTML() : ghost ?? cellHTML(cell);
+        if (cq === 'radar' && !held) {
+          if (cell?.kind === 'cube') html = strikable.has(key) ? blipHTML() : echoHTML();
+          else if (!cell && weakPoints.some((h) => h.row === r && h.col === c)) html = weakHTML(neighbours(r, c).length);
+        }
+        if (cq === 'deploy' && b === 1 && !cell && !ghost && !held) html = markHTML();
+        if (cq === 'clear' && cell?.kind === 'cube' && cracked.has(key)) html = crackedHTML();
+        const closed = redRow != null && b === 2 && r !== redRow;
         holes.push(
           <button
             key={key}
@@ -630,6 +710,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
           >
             <span className="dk-hole__pit" />
             <span className="dk-hole__piece" dangerouslySetInnerHTML={{ __html: html }} />
+            {closed && <span className="dk-hole__closed" aria-hidden />}
             {(isTarget || enemyAim) && <span className="dk-cross" aria-hidden><i /><i /></span>}
           </button>,
         );
@@ -637,14 +718,21 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
     }
     return (
       <div className={`dk-trench is-box${b}`}>
+        {activeBox === b && <span className="dk-tag">{cqEnemy ? 'Zone ennemie' : 'Zone active'}</span>}
         <div className="dk-trench__cols" aria-hidden>{Array.from({ length: BOX_COLS }, (_, i) => <span key={i}>{i + 1 + (b === 2 ? BOX_COLS : 0)}</span>)}</div>
-        <div className="dk-trench__pits" id={`dk-pits-${b}`}>{holes}</div>
+        <div
+          className={`dk-trench__pits ${activeBox === b ? 'is-active' : ''} ${activeBox && activeBox !== b ? 'is-quiet' : ''} ${cq === 'fort' && b === 2 ? 'is-bp' : ''}`}
+          id={`dk-pits-${b}`}
+        >
+          {holes}
+          {redRow != null && b === 2 && <span className="dk-rowband" aria-hidden style={{ '--row': redRow }} />}
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="dk-table">
+    <div className={`dk-table ${cq ? `cq-${cq}` : ''} ${cqEnemy ? 'cq-enemy' : ''}`}>
       <header className="dk-bar">
         <IconButton icon="settings" label="Réglages" onClick={() => setSheet('menu')} className="dk-icon" />
         <div className="dk-bar__title">
@@ -679,6 +767,18 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
 
       <main className="dk-map">
         <div className="dk-board">
+          {cq === 'radar' && (
+            <>
+              <div className="dk-sonar" aria-hidden><span className="dk-sonar__wave" /></div>
+              <span className="dk-sonar__emitter" aria-hidden />
+              <div className="dk-sonar__readout" aria-hidden>
+                <span>Radar · {plural(weakPoints.length, 'point faible', 'points faibles')}</span>
+                <span>{cqEnemy ? 'Cible : vous' : plural(strikable.size, 'écho')}</span>
+              </div>
+            </>
+          )}
+          {/* a new phase lays its sheet on the map: a transparent acetate wipes across */}
+          <span key={`${cq}-${cqStep?.playerId}`} className="dk-acetate" aria-hidden />
           <div className="dk-rows" aria-hidden>{Array.from({ length: ROWS }, (_, r) => <span key={r} className={preview?.row === r ? 'is-lit' : ''}>{ROW_NAMES[r]}</span>)}</div>
           {box(1)}
           {box(2)}

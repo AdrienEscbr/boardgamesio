@@ -54,7 +54,28 @@ const SHELL_SVG = `<svg viewBox="0 0 40 84" aria-hidden="true">
 export const shellHTML = (extra = '') => `<span class="dk-shell ${extra}">${SHELL_SVG}</span>`;
 
 /** The hole the shell struck: scorched earth, a smouldering ember. */
-export const craterHTML = () => '<span class="dk-crater"><i></i><i></i><i></i></span>';
+const SMOKE = '<span class="dk-smoke" aria-hidden="true"><i></i><i></i><i></i></span>';
+
+export const craterHTML = () => `<span class="dk-crater"><i></i><i></i><i></i></span>${SMOKE}`;
+
+// ---- the phase overlays ------------------------------------------------------------
+
+/** A free hole of the deployment trench: the NATO infantry symbol. */
+export const markHTML = () => '<span class="dk-mark" aria-hidden="true"></span>';
+
+/** Radar: a block a strike can reach (a blip), or one it cannot (a faint echo). */
+export const blipHTML = () => '<span class="dk-blip"></span>';
+export const echoHTML = () => '<span class="dk-echo"></span>';
+
+/** Radar: an enclosed hole, a weak point, with the number of blocks a strike there blows. */
+export const weakHTML = (n) => `<span class="dk-weak"><svg viewBox="0 0 40 40" aria-hidden="true">
+  <circle class="dk-weak__pulse" cx="20" cy="20" r="14" fill="none" stroke="#ffc247" stroke-width="1.5"/>
+  <path d="M20 4 L36 20 L20 36 L4 20 Z" fill="rgba(255,194,71,.14)" stroke="#ffc247" stroke-width="2"/>
+  <path d="M20 9 L18 16 L23 19 L17 24 L21 31" fill="none" stroke="#fff3d0" stroke-width="1.6" stroke-linejoin="round"/>
+</svg><b>${n}</b></span>`;
+
+/** Clearing: a block around the crater, cracked and smoking. */
+export const crackedHTML = () => `<span class="dk-cube is-cracked"><b></b><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 2 L8 8 L6 12 L10 18 M8 8 L14 6 L18 9 M10 18 L13 13 L17 15" fill="none" stroke="#2b2a24" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.6 8.4 L13.6 6.6" stroke="rgba(255,255,255,.35)" stroke-width=".5"/></svg></span>${SMOKE}`;
 
 export function cellHTML(cell) {
   if (!cell) return '';
