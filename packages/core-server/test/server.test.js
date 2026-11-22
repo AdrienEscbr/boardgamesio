@@ -11,6 +11,8 @@ import { createP4Plugin } from '@bgio/p4/server';
 import { createDutchPlugin } from '@bgio/dutch/server';
 import { createCactusPlugin } from '@bgio/cactus/server';
 import { createBlackjackPlugin } from '@bgio/blackjack/server';
+import { dekou } from '@bgio/dekou/server';
+import { botAction as dekouBot } from '@bgio/dekou/engine';
 
 const tarot = createTarotPlugin({ trickPauseMs: 0, chienPauseMs: 0 });
 const naval = createNavalPlugin({ placementMs: 60_000, finalPauseMs: 0 });
@@ -61,7 +63,7 @@ const clients = new Set();
 
 before(async () => {
   server = createPlatformServer({
-    games: [scrabbleAnyWord, race, raceNoBots, tarot, naval, p4, dutch, cactus, blackjack],
+    games: [scrabbleAnyWord, race, raceNoBots, tarot, naval, p4, dutch, cactus, blackjack, dekou],
     origins: [],
     timings: { lobbyGraceMs: 150, awayTurnMs: 150, botMinMs: 20, botMaxMs: 40 },
   });
@@ -430,6 +432,30 @@ test('p4: a human plays a round against a robot over the network', async () => {
   }
   assert.equal(state.status, 'finished');
   assert.equal(state.game.results.ranking[0].wins, 1);
+  host.close();
+});
+
+test('dekou: a human throws dice, cubes and shells against a robot over the network', async () => {
+  const host = await connect();
+  const { room } = await host.call('room:create', { gameId: 'dekou', settings: { botLevel: 'hard' } });
+  assert.equal((await host.call('room:updateSettings', { roomId: room.id, settings: { maxPlayers: 3 } })).error, 'INVALID_SETTINGS');
+  await host.call('room:addBot', { roomId: room.id });
+  assert.equal((await host.call('room:addBot', { roomId: room.id })).error, 'ROOM_FULL');
+  assert.equal((await host.call('room:start', { roomId: room.id })).ok, true);
+  const me = host.session.playerId;
+  let state = (await host.call('room:sync', { roomId: room.id })).room;
+  assert.equal(state.game.board.length, 5);
+  for (let guard = 0; guard < 3000 && state.status !== 'finished'; guard++) {
+    if (state.game.step?.playerId === me) {
+      const action = dekouBot({ ...state.game, botLevel: 'hard' }, me, Math.random);
+      const res = await host.call('game:action', { roomId: room.id, action });
+      assert.equal(res.ok, true, res.error);
+    }
+    const seq = state.game.seq;
+    state = await host.nextState((s) => s.status === 'finished' || (s.game && s.game.seq > seq));
+  }
+  assert.equal(state.status, 'finished');
+  assert.ok(['empty', 'limit'].includes(state.game.results.reason));
   host.close();
 });
 

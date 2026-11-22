@@ -11,8 +11,9 @@ import { cactus } from '@bgio/cactus/server';
 import { mind } from '@bgio/mind/server';
 import { blackjack } from '@bgio/blackjack/server';
 import { uinio } from '@bgio/uinio/server';
+import { dekou } from '@bgio/dekou/server';
 
-const server = createPlatformServer({ games: [scrabble, tarot, naval, p4, poker, planchettes, dutch, cactus, mind, blackjack, uinio] });
+const server = createPlatformServer({ games: [scrabble, tarot, naval, p4, poker, planchettes, dutch, cactus, mind, blackjack, uinio, dekou] });
 server.preload();
 const port = await server.listen(process.env.PORT || 3001);
 console.log(`BoardGamesIO server listening on port ${port}`);
