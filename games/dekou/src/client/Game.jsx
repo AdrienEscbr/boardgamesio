@@ -604,7 +604,10 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         : cqStep.kind === 'throw' && cqStep.item === 'ball' ? 'radar' : 'fort';
   const cqEnemy = !!cqStep && cqStep.playerId !== me;
   const activeBox = cq === 'deploy' ? 1 : cq === 'fort' || cq === 'clear' ? 2 : 0;
-  const redRow = cq === 'fort' && cqStep.kind === 'place' && cqStep.reason === 'red' ? cqStep.row : null;
+  // the reinforcement row is framed only while the red die's cubes are really being placed:
+  // it shows once its landing has played out, and goes as soon as the placing is over
+  const isRedPlace = (s) => s?.kind === 'place' && s.reason === 'red';
+  const redRow = cq === 'fort' && isRedPlace(cqStep) && isRedPlace(step) && step.row === cqStep.row ? step.row : null;
   const weakPoints = cq === 'radar' ? enclosedHoles(v.board) : [];
   const strikable = new Set(weakPoints.flatMap((h) => neighbours(h.row, h.col).map((n) => cellKey(n.row, n.col))));
   const cracked = new Set(cq === 'clear' && Array.isArray(cqStep.remaining) ? cqStep.remaining.map((h) => cellKey(h.row, h.col)) : []);
