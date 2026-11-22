@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { buildLexicon } from '../engine/lexicon.js';
 
 const FILES = {
   FR: new URL('../../assets/dictionaries/fr.txt', import.meta.url),
@@ -20,7 +21,7 @@ export function getDictionary(lang) {
     const w = line.trim().toUpperCase();
     if (w) words.add(w);
   }
-  dict = { lang, size: words.size, has: (word) => words.has(word) };
+  dict = { lang, size: words.size, has: (word) => words.has(word), words };
   cache.set(lang, dict);
   console.log(`[dict] ${lang}: ${words.size} words loaded in ${Date.now() - started} ms`);
   return dict;
@@ -28,4 +29,17 @@ export function getDictionary(lang) {
 
 export function isWord(lang, word) {
   return getDictionary(lang).has(word);
+}
+
+const lexicons = new Map();
+
+/** The robots' trie for a language, built once from the dictionary. */
+export function getLexicon(lang) {
+  let lexicon = lexicons.get(lang);
+  if (lexicon) return lexicon;
+  const started = Date.now();
+  lexicon = buildLexicon(getDictionary(lang).words);
+  lexicons.set(lang, lexicon);
+  console.log(`[dict] ${lang}: robot lexicon built in ${Date.now() - started} ms`);
+  return lexicon;
 }

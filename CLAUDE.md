@@ -15,7 +15,7 @@ npm run build             # build du site (apps/web/dist)
 
 node --test games/p4/test/game.test.js              # un seul fichier
 node --test --test-name-pattern="discs fall" games/p4/test/game.test.js   # un seul test
-node games/p4/scripts/arena.js 50 large             # robots les uns contre les autres (aussi naval, tarot)
+node games/p4/scripts/arena.js 50 large             # robots les uns contre les autres (aussi naval, tarot, scrabble)
 ```
 
 La CI (`.github/workflows/pages.yml`) lance `npm test` puis `npm run build` à chaque push sur `main` et publie le site sur GitHub Pages (`BASE_PATH=/<repo>/`).

@@ -3,3 +3,5 @@
 export * from './constants.js';
 export * from './move.js';
 export * from './game.js';
+export * from './lexicon.js';
+export * from './bot.js';

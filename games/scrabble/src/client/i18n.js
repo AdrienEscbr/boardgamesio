@@ -29,6 +29,13 @@ registerErrors({
 
 export const LANG_LABELS = { FR: 'Français', EN: 'English' };
 
+export const LEVEL_LABELS = { easy: 'Facile', normal: 'Normal', hard: 'Difficile' };
+export const LEVEL_HINTS = {
+  easy: 'Des mots courts et simples, autour de 150 à 200 points par partie.',
+  normal: 'Un bon joueur du dimanche, autour de 250 à 350 points.',
+  hard: 'Connaît tout le dictionnaire et soigne son chevalet : plus de 450 points.',
+};
+
 export const PREMIUM_LABELS = {
   TW: { short: '×3', word: 'MOT', aria: 'mot compte triple' },
   DW: { short: '×2', word: 'MOT', aria: 'mot compte double' },

@@ -15,7 +15,7 @@ const scrabbleClient = {
   players: { min: 2, max: 4 },
   turnOptions: [60, 120, 180, 300],
   coverLetters: ['S', 'C', 'R', 'A'],
-  supportsBots: false,
+  supportsBots: true,
   LobbySettings,
   RulesSheet,
   Game: lazy(() => import('./Game.jsx')),

@@ -38,6 +38,10 @@ export default function RulesSheet({ open, onClose }) {
           <p>Le joker (✦) remplace la lettre de votre choix et vaut 0 point ; une fois posé, il garde cette lettre. Placer vos 7 lettres d’un coup rapporte <strong>50 points</strong> de bonus.</p>
         </section>
         <section>
+          <h3>Robots</h3>
+          <p>L’hôte peut compléter la table avec des robots depuis le salon. Ils ne voient que leur propre chevalet. En <strong>facile</strong>, ils posent des mots courts ; en <strong>normal</strong>, ils jouent comme un bon amateur ; en <strong>difficile</strong>, ils connaissent tout le dictionnaire et n’hésitent pas à échanger.</p>
+        </section>
+        <section>
           <h3>Fin de partie</h3>
           <p>La partie s’arrête quand un joueur pose sa dernière lettre une fois le sac vide — il récupère les points restant chez ses adversaires — ou quand chacun a passé deux fois de suite.</p>
         </section>
