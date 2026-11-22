@@ -25,6 +25,8 @@
   box-shadow: 0 0 0 5px #7d8794, 0 0 0 7px #3f4a57, 0 10px 22px rgba(0, 0, 0, 0.5), inset 0 3px 10px rgba(0, 0, 0, 0.5);
 }
 .dk-trench__pits.is-bp-dim::before { display: none; }
+.dk-trench__pits.is-bp-dim.is-active { box-shadow: 0 0 0 5px #7d8794, 0 0 0 7px var(--brass), 0 0 18px 4px rgba(240, 211, 107, 0.35), 0 10px 22px rgba(0, 0, 0, 0.5), inset 0 3px 10px rgba(0, 0, 0, 0.5); }
+.cq-enemy .dk-trench__pits.is-bp-dim.is-active { box-shadow: 0 0 0 5px #7d8794, 0 0 0 7px var(--enemy), 0 0 18px 4px rgba(255, 90, 95, 0.3), 0 10px 22px rgba(0, 0, 0, 0.5), inset 0 3px 10px rgba(0, 0, 0, 0.5); }
 .dk-trench__pits.is-bp-dim .dk-hole__pit { background: radial-gradient(circle at 50% 40%, #060d16, #0b1623 70%, #12202f); }
 
 /* fortification and reinforcements: the engineers' blueprint, lit */
@@ -73,7 +75,7 @@
 .dk-weak b { position: absolute; bottom: -8px; right: -8px; font-size: 10px; font-weight: 600; color: #1a1100; background: var(--amber); padding: 0 3px; border-radius: 2px; }
 .dk-weak__pulse { transform-origin: 50% 50%; animation: dk-weak 1.4s ease-out infinite; }
 @keyframes dk-weak { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
-.dk-sonar { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 5; mix-blend-mode: screen; }
+.dk-sonar { position: absolute; left: var(--sx, 0); top: var(--sy, 0); width: var(--sw, 100%); height: var(--sh, 100%); border-radius: 6px; overflow: hidden; pointer-events: none; z-index: 5; mix-blend-mode: screen; }
 .dk-sonar__wave {
   position: absolute; left: var(--ox, 50%); top: var(--oy, 100%); border-radius: 50%; transform: scale(0);
   width: calc(var(--R, 400px) * 2); height: calc(var(--R, 400px) * 2); margin-left: calc(var(--R, 400px) * -1); margin-top: calc(var(--R, 400px) * -1);

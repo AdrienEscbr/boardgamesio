@@ -645,10 +645,16 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
       // the wave starts midway between the two trenches, level with their bottom edge,
       // so the wave spreads evenly over both
       const o = { x: (p1.left + p2.right) / 2, y: Math.max(p1.bottom, p2.bottom) };
-      const R = Math.max(...[[b.left, b.top], [b.right, b.top], [b.left, b.bottom], [b.right, b.bottom]].map(([x, y]) => Math.hypot(x - o.x, y - o.y)), 1);
+      // the scope is the outline of the two trenches: the wave never shows beyond it
+      const box = { left: p1.left, top: Math.min(p1.top, p2.top), right: p2.right, bottom: o.y };
+      const R = Math.max(...[[box.left, box.top], [box.right, box.top]].map(([x, y]) => Math.hypot(x - o.x, y - o.y)), 1);
       board.style.setProperty('--R', `${R}px`);
-      board.style.setProperty('--ox', `${o.x - b.left}px`);
-      board.style.setProperty('--oy', `${o.y - b.top}px`);
+      board.style.setProperty('--sx', `${box.left - b.left}px`);
+      board.style.setProperty('--sy', `${box.top - b.top}px`);
+      board.style.setProperty('--sw', `${box.right - box.left}px`);
+      board.style.setProperty('--sh', `${box.bottom - box.top}px`);
+      board.style.setProperty('--ox', `${o.x - box.left}px`);
+      board.style.setProperty('--oy', `${o.y - box.top}px`);
       const T = RADAR_MS;
       const loop = (el, frames, offset) => {
         el.getAnimations().forEach((a) => a.cancel());
@@ -750,7 +756,7 @@ export default function Game({ room, readOnly = false, onExitBoard, local }) {
         {activeBox === b && <span className="dk-tag">{cqEnemy ? 'Zone ennemie' : 'Zone active'}</span>}
         <div className="dk-trench__cols" aria-hidden>{Array.from({ length: BOX_COLS }, (_, i) => <span key={i}>{i + 1 + (b === 2 ? BOX_COLS : 0)}</span>)}</div>
         <div
-          className={`dk-trench__pits ${activeBox === b ? 'is-active' : ''} ${activeBox && activeBox !== b && !(cq === 'deploy' && b === 2) ? 'is-quiet' : ''} ${cq === 'fort' && b === 2 ? 'is-bp' : ''} ${cq === 'deploy' && b === 2 ? 'is-bp-dim' : ''}`}
+          className={`dk-trench__pits ${activeBox === b ? 'is-active' : ''} ${b === 1 && activeBox === 2 ? 'is-quiet' : ''} ${b === 2 && cq === 'fort' ? 'is-bp' : ''} ${b === 2 && cq !== 'fort' && cq !== 'radar' ? 'is-bp-dim' : ''}`}
           id={`dk-pits-${b}`}
         >
           {holes}
